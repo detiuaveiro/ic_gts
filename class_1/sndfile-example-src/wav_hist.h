@@ -28,10 +28,10 @@ class WAVHist {
 		for(size_t i = 0; i < samples.size(); i++){
 			counts[n++ % nChannels][samples[i]]++;
 			if(i > 0 && i%2 != 0){
-				int left = i - 1;
-				int right = i;
-				counts[2][samples[right]]=(left-right)/2; // Side
-				counts[3][samples[left]]=(left+right)/2; // Mid
+				short left = samples[i - 1];
+				short right = samples[i];
+				counts[2][(left-right)/2]++; // Side
+				counts[3][(left+right)/2]++; // Mid
 			}
 		}	
 	}
