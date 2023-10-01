@@ -60,42 +60,65 @@ int main(int argc, char *argv[])
 
     int numChannels = sndFile1.channels();
     vector<double> channelErrors(numChannels);
+    vector<double> channelMaxErrors(numChannels); // Maximum per sample absolute error
+    vector<double> SNRs(numChannels);
 
     for(int channel = 0; channel < numChannels; ++channel)
     {
         // Norma L² = sqrt(x1² + x2² + ... + xN²)/n
         // Sendo x1 a xN as diferenças entre a data do ficheiro posterior e do original
         // n -> Nº frames gerados
-        vector<double> audioData1(sndFile1.frames());
-        vector<double> audioData2(sndFile2.frames());
+        vector<double> audio1_samples(sndFile1.frames());
+        vector<double> audio2_samples(sndFile2.frames());
 
-        sndFile1.read(audioData1.data(), sndFile1.frames());
-        sndFile2.read(audioData2.data(), sndFile2.frames());
+        sndFile1.read(audio1_samples.data(), sndFile1.frames());
+        sndFile2.read(audio2_samples.data(), sndFile2.frames());
     
-        double channelError = 0.0;
+        double channelError = 0.0; //Or energy Noise
+        double channelMaxError = 0.0;
+        double energySignal = 0.0;
 
-        for (int i = 0; i < sndFile1.frames(); ++i)
+        for (long unsigned int i = 0; i < audio1_samples.size(); ++i)
         {
-            double diff = audioData1[i] - audioData2[i];
+            double diff = audio1_samples[i] - audio2_samples[i];
             channelError += pow(diff,2);
+            // L∞ norm
+            if(diff > channelMaxError){
+                channelMaxError = diff;
+            }
+            energySignal += pow(audio1_samples[i],2);
         }
-        channelErrors[channel] = sqrt(channelError) / sndFile1.frames();
+        
+        // ?? Sqrt está certo?
+        channelErrors[channel] = sqrt(channelError / sndFile1.frames());
+        channelMaxErrors[channel] = channelMaxError;
+        SNRs[channel] = 10*log10(energySignal/channelError); // 10*log10(energySignal/energyNoise) ou 10*log10(potenciaSignal/potenciaNoise)
     }
 
     // Calculate the average L2 norm (mean squared error) across all channels
     double averageError = 0.0;
+    double averageMaxError = 0.0;
+    double averageSNR = 0.0;
     for (int channel = 0; channel < numChannels; ++channel)
     {
         averageError += channelErrors[channel];
+        averageMaxError += channelMaxErrors[channel];
+        averageSNR += SNRs[channel];
     }
     averageError /= numChannels;
+    averageMaxError /= numChannels;
+    averageSNR /= numChannels;
 
-
-    cout << "Mean squared error for each channel:\n";
     for(int channel = 0; channel < numChannels; ++channel)
     {
-        cout << "Channel " << channel + 1 << ": " << channelErrors[channel] << endl;
+        cout << "Channel " << channel + 1 << " MSE: " << channelErrors[channel] << endl;
+        cout << "Channel " << channel + 1 << " Max sample error: " << channelMaxErrors[channel] << endl;
+        cout << "Channel " << channel + 1 << " SNR: " << SNRs[channel] << endl;
     }
+
+    cout << "Average MSE of the channels: " << averageError << endl;
+    cout << "Average Max sample error fo the channels: " << averageMaxError << endl;
+    cout << "Average SNR of the channels: " << averageSNR << endl;
 
     return 0;
 }
