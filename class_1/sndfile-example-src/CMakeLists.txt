@@ -16,6 +16,9 @@ SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIR}/../sndfile-example-bin)
 add_executable (wav_cp wav_cp.cpp)
 target_link_libraries (wav_cp sndfile)
 
+add_executable (wav_cmp wav_cmp.cpp)
+target_link_libraries (wav_cmp sndfile)
+
 add_executable (wav_hist wav_hist.cpp)
 target_link_libraries (wav_hist sndfile)
 
