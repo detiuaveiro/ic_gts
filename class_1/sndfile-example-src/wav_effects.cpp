@@ -32,6 +32,18 @@ void setEffect(Effects effect, const char* arg) {
     }
 }
 
+void WAVEffects::effect_echo(const std::vector<double>& input, std::vector<double>& output, double delaySeconds, double decay) {
+    int delaySamples = static_cast<int>(delaySeconds * sampleRate); 
+
+    for (long i = 0; i < (long) input.size(); i++) {
+        double echoSample = input[i];
+        if (i >= delaySamples) {
+            echoSample += decay * input[i - delaySamples];
+        }
+        output.push_back(echoSample);
+    }
+}
+
 int main(int argc, char *argv[])
 {   
     // Parse command line arguments
@@ -90,7 +102,9 @@ int main(int argc, char *argv[])
         
     }
 
-    SndfileHandle sfhIn{argv[argc - 1]};
+    EffectsInfo::inputFileName = argv[argc - 1];
+
+    SndfileHandle sfhIn{EffectsInfo::inputFileName};
     if (sfhIn.error())
     {
         cerr << "Error: invalid input file\n";
@@ -109,6 +123,59 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+    // Open the input audio file
+    SF_INFO inputInfo;
+    SNDFILE* inputFileHandle = sf_open(EffectsInfo::inputFileName.c_str(), SFM_READ, &inputInfo);
+    if (!inputFileHandle) {
+        std::cerr << "Error: Failed to open input file." << std::endl;
+        return 1;
+    }
+
+    // Initialize output audio file parameters
+    SF_INFO outputInfo;
+    outputInfo.format = inputInfo.format;
+    outputInfo.channels = inputInfo.channels;
+    outputInfo.samplerate = inputInfo.samplerate;
+
+    // Create a buffer for reading and writing audio data
+    std::vector<double> inputBuffer(MAX_BUFFER_SIZE);
+    std::vector<double> outputBuffer;
+
+    // Create the output audio file
+    SNDFILE* outputFileHandle = sf_open(EffectsInfo::outputFileName.c_str(), SFM_WRITE, &outputInfo);
+    if (!outputFileHandle) {
+        std::cerr << "Error: Failed to create output file." << std::endl;
+        sf_close(inputFileHandle);
+        return 1;
+    }
+
+    // Effects class
+    WAVEffects effects{EffectsInfo::effect, EffectsInfo::param};
+
+    // Read and process audio data in chunks
+    while (true) {
+        sf_count_t bytesRead = sf_readf_double(inputFileHandle, inputBuffer.data(), MAX_BUFFER_SIZE);
+        if (bytesRead <= 0) {
+            break; // EOF
+        }
+
+        double delaySeconds = std::stod(argv[3]);
+        double decay = 0.5; // Adjust this for echo decay strength
+
+        // Apply the desired effect to the input buffer
+        if(EffectsInfo::effect == ECHOE)
+            effects.effect_echo(inputBuffer, outputBuffer, delaySeconds, decay);
+
+        // Write the modified audio data to the output file
+        sf_writef_double(outputFileHandle, outputBuffer.data(), bytesRead);
+        outputBuffer.clear();
+    }
+
+    // Close the input and output files
+    sf_close(inputFileHandle);
+    sf_close(outputFileHandle);
+
+    std::cout << "Echo effect applied and saved to " << EffectsInfo::outputFileName << std::endl;
 
     return 0;
 }
