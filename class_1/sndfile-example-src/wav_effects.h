@@ -8,15 +8,24 @@
 
 using namespace std;
 
-enum EFFECTS
-{
-    echoes
+enum Effects{
+    NONE,
+    ECHOE,
+    AMPLITUDE_MODULATION,
+    TIME_VARYING_DELAYS,
+    DELAY,
+    REVERSE,
+    SPEED_UP,
+    SLOW_DOWN,
+    CHORUS,
+    INVERT
 };
 
 namespace EffectsInfo{
-    string outputFileName;
-
-}
+    string outputFileName = "output.wav";
+    Effects effect = NONE;
+    char param;
+};
 
 class WAVEffects
 {
