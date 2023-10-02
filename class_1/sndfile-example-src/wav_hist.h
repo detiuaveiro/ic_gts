@@ -48,12 +48,12 @@ public:
 				Rsum += samples[i];
 			}
 			int power = pow(2, binningFactor);
-			//When index reaches the last of the bin
-			//i.e. bFactor = 2 (2 lefts and 2 rights) ==> last index = 3, 7, 11, 15, ...
+			// When index reaches the last of the bin
+			// i.e. bFactor = 2 (2 lefts and 2 rights) ==> last index = 3, 7, 11, 15, ...
 			if (i % (power - 1) == 0)
 			{
-				binnedSamples[binnedSamplesCounter] = Lsum/(power/2);
-				binnedSamples[binnedSamplesCounter + 1] = Rsum/(power/2);
+				binnedSamples[binnedSamplesCounter] = Lsum / (power / 2);
+				binnedSamples[binnedSamplesCounter + 1] = Rsum / (power / 2);
 				Lsum = Rsum = 0;
 				binnedSamplesCounter += 2;
 			}
@@ -96,9 +96,28 @@ public:
 
 	void dump(const size_t channel) const
 	{
-		std::cout << "Value" << '\t' << "Count" << '\n';
-		for (auto [value, counter] : counts[channel])
-			std::cout << value << '\t' << counter <<'\n';
+		for (size_t i = 0; i < channel; i++)
+		{
+			switch (i)
+			{
+			case 0:
+				std::cout << "Value" << '\t' << "Count" << '\t' << "Left" << '\n';
+				break;
+			case 1:
+				std::cout << "Value" << '\t' << "Count" << '\t' << "Right" << '\n';
+				break;
+			case 2:
+				std::cout << "Value" << '\t' << "Count" << '\t' << "MID" << '\n';
+				break;
+			case 3:
+				std::cout << "Value" << '\t' << "Count" << '\t' << "SIDE" << '\n';
+				break;
+			default:
+				break;
+			}
+			for (auto [value, counter] : counts[i])
+				std::cout << value << '\t' << counter << '\n';
+		}
 	}
 };
 
