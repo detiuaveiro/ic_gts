@@ -10,8 +10,9 @@ static void print_usage() {
            "  -o, --output      --- set output file name (default: "
            "output.wav)\n"
         << "  EFFECTS:\n"
-           "  -e echoes         --- apply echo effect, from single=1 to "
-           "multiple=n echoes  (default: 1)\n"
+           "  -e n d g          --- apply echo effect, [number echoes], "
+           "[delay], [gain]"
+           "(default: 1, 1.0, 0.1)\n"
            "  -a                --- apply amplitude modulation effect\n"
            "  -t                --- apply Time-varying delays\n"
            "  -d time           --- apply delay, time in seconds (default: 1)\n"
@@ -25,12 +26,12 @@ static void print_usage() {
         << endl;
 }
 
-void setEffect(Effects effect, const char* arg) {
+void setEffect(Effects effect, double arg) {
     EffectsInfo::effect = effect;
-    if (arg == nullptr)
+    if (arg == (double)INT32_MAX)
         return;
     try {
-        EffectsInfo::param = *arg;
+        EffectsInfo::param.push_back(arg);
     } catch (std::invalid_argument& e) {
         std::cerr << "Error: Invalid argument for option." << std::endl;
         exit(1);
@@ -71,40 +72,54 @@ int process_arguments(int argc, char* argv[]) {
                           << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-e") == 0) {
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-e") == 0) {
             i++;
-            if (i < (argc - 1)) {
-                setEffect(ECHOE, argv[i]);
+            //double delay = 1.0;
+            //double decay = 0.1;  // Adjust this for echo decay/gain strength
+            if (i < (argc - 3)) {
+                setEffect(ECHOE, atof(argv[i]));
+                setEffect(ECHOE, atof(argv[i + 1]));
+                setEffect(ECHOE, atof(argv[i + 2]));
             } else {
                 std::cerr << "Error: Missing argument for -e option."
                           << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-a") == 0) {
-            setEffect(AMPLITUDE_MODULATION, nullptr);
-        } else if (strcmp(argv[i], "-t") == 0) {
-            setEffect(TIME_VARYING_DELAYS, nullptr);
-        } else if (strcmp(argv[i], "-d") == 0) {
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-a") == 0) {
+            setEffect(AMPLITUDE_MODULATION, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
+            setEffect(TIME_VARYING_DELAYS, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-d") == 0) {
             i++;
             if (i < (argc - 1)) {
-                setEffect(DELAY, argv[i]);
+                setEffect(DELAY, atof(argv[i]));
             } else {
                 std::cerr << "Error: Missing argument for -d option."
                           << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-r") == 0) {
-            setEffect(REVERSE, nullptr);
-        } else if (strcmp(argv[i], "-s") == 0) {
-            setEffect(SPEED_UP, nullptr);
-        } else if (strcmp(argv[i], "-b") == 0) {
-            setEffect(SLOW_DOWN, nullptr);
-        } else if (strcmp(argv[i], "-c") == 0) {
-            setEffect(CHORUS, nullptr);
-        } else if (strcmp(argv[i], "-i") == 0) {
-            setEffect(INVERT, nullptr);
-        } else if (strcmp(argv[i], "-m") == 0) {
-            setEffect(MONO, nullptr);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-r") == 0) {
+            setEffect(REVERSE, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-s") == 0) {
+            setEffect(SPEED_UP, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-b") == 0) {
+            setEffect(SLOW_DOWN, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-c") == 0) {
+            setEffect(CHORUS, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-i") == 0) {
+            setEffect(INVERT, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-m") == 0) {
+            setEffect(MONO, INT32_MAX);
+            EffectsInfo::effectChosen = true;
             // checks if the user introduced something unknown that starts with a '-'
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
@@ -145,23 +160,20 @@ int main(int argc, char* argv[]) {
     std::vector<double> inputSamples(FRAMES_BUFFER_SIZE * sfhIn.channels());
     std::vector<double> outputSamples;
     size_t nFrames;
-    double delay = 1.0;
-    double decay = 0.1;  // Adjust this for echo decay/gain strength
 
     // Effects class
     WAVEffects effects{EffectsInfo::effect, EffectsInfo::param,
                        sfhIn.samplerate()};
 
     // Read and process audio data in chunks
-    while (nFrames = sfhIn.readf(inputSamples.data(), FRAMES_BUFFER_SIZE)) {
+    while ((nFrames = sfhIn.readf(inputSamples.data(), FRAMES_BUFFER_SIZE))) {
 
         inputSamples.resize(nFrames * sfhIn.channels());
         // Apply the desired effect to the input buffer
         // Using switch because it's faster ehehe: https://www.youtube.com/watch?v=fjUG_y5ZaL4&pp=ygUNc3dpdGNoIGZhc3Rlcg%3D%3D
         switch (EffectsInfo::effect) {
             case ECHOE:
-                effects.effect_echo(inputSamples, outputSamples, delay,
-                                    decay);
+                effects.effect_echo(inputSamples, outputSamples);
                 break;
 
             default:

@@ -2,7 +2,6 @@
 #define WAVEFFECTS_H
 
 #include <cstring>
-#include <functional>
 #include <iostream>
 #include <map>
 #include <sndfile.hh>
@@ -33,7 +32,8 @@ namespace EffectsInfo {
 string outputFileName = "output.wav";
 string inputFileName = "sample.wav";
 Effects effect = NONE;
-char param;
+vector<double> param;
+bool effectChosen = false;
 };  // namespace EffectsInfo
 
 void setEffect(Effects effect, const char* arg);
@@ -41,8 +41,8 @@ void setEffect(Effects effect, const char* arg);
 class WAVEffects {
    private:
     Effects effect;
-    uint32_t sampleRate;
-    char arg;
+    int sampleRate;
+    vector<double> arg;
 
     static double feedback_lines(const std::vector<double>& inputSamples,
                                  std::vector<double>& outputSamples,
@@ -59,22 +59,34 @@ class WAVEffects {
     }
 
    public:
-    WAVEffects(Effects eff, char param, uint32_t sampleR) {
+    WAVEffects(Effects eff, vector<double> param, int sampleR) {
         effect = eff;
         arg = param;
         sampleRate = sampleR;
     }
 
     void effect_echo(const std::vector<double>& inputSamples,
-                     std::vector<double>& outputSamples, double delay,
-                     double decay) {
-        int delaySamples = static_cast<int>(
-            delay * this->sampleRate);  // 1 * 44100, 2 * 44100...
+                     std::vector<double>& outputSamples) {
+        // arguments
+        if (arg.size() != 3)
+            throw std::invalid_argument(
+                "Expected 3 arguments for echo effect (number of echoes, delay "
+                "and gain/decay)");
 
-        uint8_t nLines = atoi(&arg);
+        uint8_t nLines = static_cast<uint8_t>(arg[0]);
         if (nLines == 0)
             throw std::invalid_argument(
                 "Invalid number of lines (needs to be > 0)");
+        double delay = arg[1];
+        if (delay == 0)
+            throw std::invalid_argument("Invalid delay (needs to be > 0)");
+        double decay = arg[2];
+        if (decay == 0)
+            throw std::invalid_argument(
+                "Invalid gain/decay (needs to be between 0 < x < 1)");
+
+        int delaySamples = static_cast<int>(
+            delay * this->sampleRate);  // 1 * 44100, 2 * 44100...
 
         for (long i = 0; i < (long)inputSamples.size(); i++) {
             double echoSample = inputSamples[i];  // x[n]
