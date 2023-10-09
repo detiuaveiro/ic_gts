@@ -25,9 +25,6 @@ public:
 		counts.resize(sfh.channels() + 2);
 		nChannels = sfh.channels();
 
-		if (bFactor % 2 != 0)
-			throw std::invalid_argument("Binning Factor must be even");
-
 		binningFactor = bFactor;
 	}
 
