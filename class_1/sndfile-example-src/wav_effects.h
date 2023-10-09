@@ -47,12 +47,18 @@ class WAVEffects {
     static double feedback_lines(const std::vector<double>& inputSamples,
                                  std::vector<double>& outputSamples,
                                  uint8_t numLines, double decay,
-                                 int sampleDelay, double sample) {
+                                 int sampleDelay, double sample, int iter) {
+        if (numLines == 0)
+            throw std::invalid_argument(
+                "The number of lines needs to be greater than 0");
+        else if (numLines == (double)1) {
+            return sample += decay * inputSamples[iter - sampleDelay];
+        }
         for (int i = 0; i < numLines; i++) {
             // Single echoe: y[n] = x[n] + decay * y[n - Delay]
             // Multiple echoe: y[n] = x[n] + decay1 * y[n - D1] + decay2 * y[n - D2]...
             // Maybe apply reduction value, to get D1,D2,decay1,decay2
-            sample += decay * inputSamples[i - sampleDelay];
+            sample += decay * outputSamples[iter - sampleDelay];
         }
 
         return sample;
@@ -92,8 +98,8 @@ class WAVEffects {
             double echoSample = inputSamples[i];  // x[n]
             if (i >= delaySamples) {
                 echoSample = feedback_lines(inputSamples, outputSamples, nLines,
-                                            decay, delaySamples, echoSample);
-                echoSample /= (1 + decay);
+                                            decay, delaySamples, echoSample, i);
+                //echoSample /= (1 + decay);
             }
             outputSamples.push_back(echoSample);
         }
