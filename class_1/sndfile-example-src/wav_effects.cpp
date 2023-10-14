@@ -21,7 +21,6 @@ static void print_usage() {
            "  -r                --- apply reverse effect\n"
            "  -s x              --- apply speed up effect (default: 10%)\n"
            "  -d x              --- apply slow down effect (default: 10%)\n"
-           "  -c                --- apply chorus effect\n"
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
@@ -144,9 +143,6 @@ int process_arguments(int argc, char* argv[]) {
                 setEffect(SLOW_DOWN, &def, 10.0);
             }
             EffectsInfo::effectChosen = true;
-        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-c") == 0) {
-            setEffect(CHORUS, nullptr, INT32_MAX);
-            EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-i") == 0) {
             setEffect(INVERT, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
@@ -224,7 +220,6 @@ int main(int argc, char* argv[]) {
             case SPEED_UP:
                 effects.effect_speed_up(inputSamples, outputSamples);
                 break;
-
             case INVERT:
                 effects.effect_invert(inputSamples, outputSamples);
                 break;

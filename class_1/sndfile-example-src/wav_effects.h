@@ -25,7 +25,6 @@ enum Effects {
     REVERSE,
     SPEED_UP,
     SLOW_DOWN,
-    CHORUS,
     INVERT,
     MONO
 };
@@ -192,9 +191,8 @@ class WAVEffects {
 
         size_t numOutputSamples =
             static_cast<size_t>(inputSamples.size() / speedUpFactor);
-        outputSamples.resize(numOutputSamples);
 
-        for (size_t i = 0; i < numOutputSamples; ++i) {
+        for (size_t i = 0; i < inputSamples.size(); ++i) {
             size_t inputIndex = static_cast<size_t>(i * speedUpFactor);
             outputSamples.push_back(inputSamples[inputIndex]);
         }
@@ -207,15 +205,11 @@ class WAVEffects {
     */
 
     /*
-    void effect_chorus(const std::vector<short>& inputSamples,
-                       std::vector<short>& outputSamples) {}
-
     void effect_time_varying_delays(const std::vector<short>& inputSamples,
                                     std::vector<short>& outputSamples) {
         
     }
     */
-
 
     void effect_invert(const std::vector<short>& inputSamples,
                        std::vector<short>& outputSamples) {
