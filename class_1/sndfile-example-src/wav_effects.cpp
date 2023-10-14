@@ -96,7 +96,8 @@ int process_arguments(int argc, char* argv[]) {
             if (i < (argc - 1)) {
                 setEffect(AMPLITUDE_MODULATION, argv[i], atof(argv[i]));
             } else {
-                setEffect(AMPLITUDE_MODULATION, "1.0", 1.0);
+                char def = '1';
+                setEffect(AMPLITUDE_MODULATION, &def, 1.0);
             }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
@@ -167,8 +168,8 @@ int main(int argc, char* argv[]) {
     }
 
     // Create a buffer for reading and writing audio data
-    std::vector<double> inputSamples(FRAMES_BUFFER_SIZE * sfhIn.channels());
-    std::vector<double> outputSamples;
+    std::vector<short> inputSamples(FRAMES_BUFFER_SIZE * sfhIn.channels());
+    std::vector<short> outputSamples;
     size_t nFrames;
 
     // Effects class
@@ -197,7 +198,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Write the modified audio data to the output file
-    sfhOut.writef(outputSamples.data(), outputSamples.size());
+    //  (divide by the number of channels, since they all get mixed up)
+    sfhOut.writef(outputSamples.data(),
+                  outputSamples.size() / sfhIn.channels());
 
     std::cout << "Effect applied and saved to " << EffectsInfo::outputFileName
               << std::endl;

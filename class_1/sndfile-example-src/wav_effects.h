@@ -45,10 +45,10 @@ class WAVEffects {
     int sampleRate;
     vector<double> arg;
 
-    static double feedback_lines(const std::vector<double>& inputSamples,
-                                 std::vector<double>& outputSamples,
+    static double feedback_lines(const std::vector<short>& inputSamples,
+                                 std::vector<short>& outputSamples,
                                  uint8_t numLines, double decay,
-                                 int sampleDelay, double sample, int iter) {
+                                 int sampleDelay, short sample, int iter) {
         if (numLines == 0)
             throw std::invalid_argument(
                 "The number of lines needs to be greater than 0");
@@ -72,8 +72,8 @@ class WAVEffects {
         sampleRate = sampleR;
     }
 
-    void effect_echo(const std::vector<double>& inputSamples,
-                     std::vector<double>& outputSamples) {
+    void effect_echo(const std::vector<short>& inputSamples,
+                     std::vector<short>& outputSamples) {
         // arguments
         if (arg.size() != 3)
             throw std::invalid_argument(
@@ -96,7 +96,7 @@ class WAVEffects {
             delay * this->sampleRate);  // 1 * 44100, 2 * 44100...
 
         for (long i = 0; i < (long)inputSamples.size(); i++) {
-            double echoSample = inputSamples[i];  // x[n]
+            short echoSample = inputSamples[i];  // x[n]
             if (i >= delaySamples) {
                 echoSample = feedback_lines(inputSamples, outputSamples, nLines,
                                             decay, delaySamples, echoSample, i);
@@ -108,8 +108,8 @@ class WAVEffects {
 
     /*! In AM, the amplitude (strength) of a carrier wave is varied in proportion 
         to the waveform being sent.*/
-    void effect_amplitude_modulation(const std::vector<double>& inputSamples,
-                                     std::vector<double>& outputSamples) {
+    void effect_amplitude_modulation(const std::vector<short>& inputSamples,
+                                     std::vector<short>& outputSamples) {
         // arguments
         if (arg.size() != 1)
             throw std::invalid_argument(
@@ -121,13 +121,12 @@ class WAVEffects {
 
         for (long i = 0; i < (long)inputSamples.size(); i++) {
             // C(t) = A_c * cos(2π * f_c * t) wnere f_C is 1/f = t
-            cout << "val: " << inputSamples.at(i) << endl;
-            double modulatedSample =
+            short modulatedSample =
                 inputSamples.at(i) * cos(2 * M_PI * (1 / sampleRate) * i);
             outputSamples.push_back(modulatedSample);
         }
     }
-
+    /*
     void effect_time_varying_delays(const std::vector<double>& input,
                                     std::vector<double>& output,
                                     double delaySeconds) {}
@@ -153,5 +152,6 @@ class WAVEffects {
 
     void effect_mono(const std::vector<double>& input,
                      std::vector<double>& output) {}
+    */
 };
 #endif
