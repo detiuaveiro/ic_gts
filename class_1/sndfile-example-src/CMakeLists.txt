@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(sndfile-example)
 
-SET (CMAKE_BUILD_TYPE "Release")
-#SET (CMAKE_BUILD_TYPE "Debug")
+#SET (CMAKE_BUILD_TYPE "Release")
+SET (CMAKE_BUILD_TYPE "Debug")
 
 find_library(sndfile libsndfile)
 
@@ -27,4 +27,7 @@ target_link_libraries (wav_hist sndfile)
 
 add_executable (wav_dct wav_dct.cpp)
 target_link_libraries (wav_dct sndfile fftw3)
+
+add_executable (wav_effects wav_effects.cpp)
+target_link_libraries (wav_effects sndfile fftw3)
 
