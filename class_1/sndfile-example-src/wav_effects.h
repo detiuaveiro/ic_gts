@@ -21,6 +21,7 @@ enum Effects {
     AMPLITUDE_MODULATION,
     TIME_VARYING_DELAYS,
     DELAY,
+    FORWARD,
     REVERSE,
     SPEED_UP,
     SLOW_DOWN,
@@ -44,6 +45,7 @@ class WAVEffects {
     Effects effect;
     int sampleRate;
     vector<double> arg;
+    long aux = 0;
 
     static double feedback_lines(const std::vector<short>& inputSamples,
                                  std::vector<short>& outputSamples,
@@ -53,13 +55,14 @@ class WAVEffects {
             throw std::invalid_argument(
                 "The number of lines needs to be greater than 0");
         else if (numLines == (double)1) {
-            return sample += decay * inputSamples[iter - sampleDelay];
-        }
-        for (int i = 0; i < numLines; i++) {
             // Single echoe: y[n] = x[n] + decay * y[n - Delay]
-            // Multiple echoe: y[n] = x[n] + decay1 * y[n - D1] + decay2 * y[n - D2]...
-            // Maybe apply reduction value, to get D1,D2,decay1,decay2
-            sample += decay * outputSamples[iter - sampleDelay];
+            sample += decay * inputSamples[iter - sampleDelay];
+        } else {
+            for (int i = 0; i < numLines; i++) {
+                // Multiple echoe: y[n] = x[n] + decay1 * y[n - D1] + decay2 * y[n - D2]...
+                // Maybe apply reduction value, to get D1,D2,decay1,decay2
+                sample += decay * outputSamples[iter - sampleDelay];
+            }
         }
 
         return sample;
@@ -88,7 +91,7 @@ class WAVEffects {
         if (delay == 0)
             throw std::invalid_argument("Invalid delay (needs to be > 0)");
         double decay = arg[2];
-        if (decay == 0)
+        if (decay <= 0 || decay >= 1)
             throw std::invalid_argument(
                 "Invalid gain/decay (needs to be between 0 < x < 1)");
 
@@ -100,7 +103,7 @@ class WAVEffects {
             if (i >= delaySamples) {
                 echoSample = feedback_lines(inputSamples, outputSamples, nLines,
                                             decay, delaySamples, echoSample, i);
-                //echoSample /= (1 + decay);
+                echoSample /= (1 + decay);
             }
             outputSamples.push_back(echoSample);
         }
@@ -120,38 +123,82 @@ class WAVEffects {
             throw std::invalid_argument("Invalid frequency (needs to be > 0)");
 
         for (long i = 0; i < (long)inputSamples.size(); i++) {
-            // C(t) = A_c * cos(2π * f_c * t) wnere f_C is 1/f = t
+            // C(t) = A_c * cos(2π * f_c * t) where f_C is 1/f = t
             short modulatedSample =
-                inputSamples.at(i) * cos(2 * M_PI * (1 / sampleRate) * i);
+                inputSamples.at(i) * cos(2 * M_PI * (freq / sampleRate) * i);
             outputSamples.push_back(modulatedSample);
         }
     }
     /*
-    void effect_time_varying_delays(const std::vector<double>& input,
-                                    std::vector<double>& output,
-                                    double delaySeconds) {}
+    void effect_time_varying_delays(const std::vector<short>& inputSamples,
+                                    std::vector<short>& outputSamples) {
+        
+    }
+    */
 
-    void effect_delay(const std::vector<double>& input,
-                      std::vector<double>& output, double delaySeconds) {}
+    void effect_delay(const std::vector<short>& inputSamples,
+                      std::vector<short>& outputSamples) {
+        if (arg.size() != 1)
+            throw std::invalid_argument(
+                "Expected 1 argument for delay effect (seconds)");
 
-    void effect_reverse(const std::vector<double>& input,
-                        std::vector<double>& output) {}
+        uint8_t delay = static_cast<uint>(arg[0]);
+        if (delay <= 0)
+            throw std::invalid_argument("Invalid delay (needs to be > 0)");
 
-    void effect_speed_up(const std::vector<double>& input,
-                         std::vector<double>& output, double factor) {}
+        long delaySamples = static_cast<long>(
+            delay * this->sampleRate);  // 1 * 44100, 2 * 44100...
 
-    void effect_slow_down(const std::vector<double>& input,
-                          std::vector<double>& output, double factor) {}
+        // Fill the extra time with emptiness
+        for (; aux < delaySamples*2; aux++)
+            outputSamples.push_back(0);
 
-    void effect_chorus(const std::vector<double>& input,
-                       std::vector<double>& output, double delaySeconds,
+        for (long i = 0; i < (long)inputSamples.size(); i++) {
+            //optimize this
+            outputSamples.push_back(inputSamples[i]);
+        }
+    }
+
+    void effect_forward(const std::vector<short>& inputSamples,
+                        std::vector<short>& outputSamples) {
+        if (arg.size() != 1)
+            throw std::invalid_argument(
+                "Expected 1 argument for forward effect (seconds)");
+
+        uint8_t time = static_cast<uint>(arg[0]);
+        if (time <= 0)
+            throw std::invalid_argument("Invalid time (needs to be > 0)");
+
+        int delaySamples = static_cast<int>(
+            time * this->sampleRate);  // 1 * 44100, 2 * 44100...
+        for (long i = 0; i < (long)inputSamples.size(); i++) {
+            if (aux++ > delaySamples*2)
+                outputSamples.push_back(inputSamples[i]);
+        }
+    }
+
+    void effect_reverse(const std::vector<short>& inputSamples,
+                        std::vector<short>& outputSamples) {
+        for (long i = ((long)inputSamples.size() - 1); i >= 0; i--)
+            outputSamples.push_back(inputSamples[i]);
+    }
+
+    /*
+    void effect_speed_up(const std::vector<double>& inputSamples,
+                         std::vector<double>& outputSamples, double factor) {}
+
+    void effect_slow_down(const std::vector<double>& inputSamples,
+                          std::vector<double>& outputSamples, double factor) {}
+
+    void effect_chorus(const std::vector<double>& inputSamples,
+                       std::vector<double>& outputSamples, double delaySeconds,
                        double decay) {}
 
-    void effect_invert(const std::vector<double>& input,
-                       std::vector<double>& output) {}
+    void effect_invert(const std::vector<double>& inputSamples,
+                       std::vector<double>& outputSamples) {}
 
-    void effect_mono(const std::vector<double>& input,
-                     std::vector<double>& output) {}
+    void effect_mono(const std::vector<double>& inputSamples,
+                     std::vector<double>& outputSamples) {}
     */
 };
 #endif

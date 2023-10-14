@@ -14,8 +14,10 @@ static void print_usage() {
            "[delay], [gain] (suggested: 1, 1.0, 0.5)\n"
            "  -a f              --- apply amplitude modulation effect, f is "
            "frequency (default: 1)\n"
-           "  -t                --- apply Time-varying delays\n"
+           //"  -t                --- apply Time-varying delays\n"
            "  -d time           --- apply delay, time in seconds (default: 1)\n"
+           "  -f time           --- advance in music, time in seconds "
+           "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
            "  -s \%             --- apply speed up effect (default: 10%)\n"
            "  -d \%             --- apply slow down effect (default: 10%)\n"
@@ -100,17 +102,25 @@ int process_arguments(int argc, char* argv[]) {
                 setEffect(AMPLITUDE_MODULATION, &def, 1.0);
             }
             EffectsInfo::effectChosen = true;
-        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
-            setEffect(TIME_VARYING_DELAYS, nullptr, INT32_MAX);
-            EffectsInfo::effectChosen = true;
+            //} else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
+            //    setEffect(TIME_VARYING_DELAYS, nullptr, INT32_MAX);
+            //    EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-d") == 0) {
             i++;
             if (i < (argc - 1)) {
                 setEffect(DELAY, argv[i], atof(argv[i]));
             } else {
-                std::cerr << "Error: Missing argument for -d option."
-                          << std::endl;
-                return -1;
+                char def = '1';
+                setEffect(DELAY, &def, 1.0);
+            }
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-f") == 0) {
+            i++;
+            if (i < (argc - 1)) {
+                setEffect(FORWARD, argv[i], atof(argv[i]));
+            } else {
+                char def = '1';
+                setEffect(FORWARD, &def, 1.0);
             }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-r") == 0) {
@@ -189,6 +199,15 @@ int main(int argc, char* argv[]) {
             case AMPLITUDE_MODULATION:
                 effects.effect_amplitude_modulation(inputSamples,
                                                     outputSamples);
+                break;
+            case DELAY:
+                effects.effect_delay(inputSamples, outputSamples);
+                break;
+            case FORWARD:
+                effects.effect_forward(inputSamples, outputSamples);
+                break;
+            case REVERSE:
+                effects.effect_reverse(inputSamples, outputSamples);
                 break;
 
             default:
