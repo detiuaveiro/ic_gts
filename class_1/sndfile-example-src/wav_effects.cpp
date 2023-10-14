@@ -19,8 +19,8 @@ static void print_usage() {
            "  -f time           --- advance in music, time in seconds "
            "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
-           "  -s \%             --- apply speed up effect (default: 10%)\n"
-           "  -d \%             --- apply slow down effect (default: 10%)\n"
+           "  -s x              --- apply speed up effect (default: 10%)\n"
+           "  -d x              --- apply slow down effect (default: 10%)\n"
            "  -c                --- apply chorus effect\n"
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
@@ -127,10 +127,22 @@ int process_arguments(int argc, char* argv[]) {
             setEffect(REVERSE, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-s") == 0) {
-            setEffect(SPEED_UP, nullptr, INT32_MAX);
+            i++;
+            if (i < (argc - 1)) {
+                setEffect(SPEED_UP, argv[i], atof(argv[i]));
+            } else {
+                char def = '1';
+                setEffect(SPEED_UP, &def, 10.0);
+            }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-b") == 0) {
-            setEffect(SLOW_DOWN, nullptr, INT32_MAX);
+            i++;
+            if (i < (argc - 1)) {
+                setEffect(SLOW_DOWN, argv[i], atof(argv[i]));
+            } else {
+                char def = '1';
+                setEffect(SLOW_DOWN, &def, 10.0);
+            }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-c") == 0) {
             setEffect(CHORUS, nullptr, INT32_MAX);
@@ -209,7 +221,16 @@ int main(int argc, char* argv[]) {
             case REVERSE:
                 effects.effect_reverse(inputSamples, outputSamples);
                 break;
+            case SPEED_UP:
+                effects.effect_speed_up(inputSamples, outputSamples);
+                break;
 
+            case INVERT:
+                effects.effect_invert(inputSamples, outputSamples);
+                break;
+            case MONO:
+                effects.effect_mono(inputSamples, outputSamples);
+                break;
             default:
                 cerr << "The specified effect is not supported.\n";
                 return 1;
