@@ -12,7 +12,8 @@ static void print_usage() {
         << "  EFFECTS:\n"
            "  -e n d g          --- apply echo effect, [number_echoes], "
            "[delay], [gain] (suggested: 1, 1.0, 0.5)\n"
-           "  -a                --- apply amplitude modulation effect\n"
+           "  -a f              --- apply amplitude modulation effect, f is "
+           "frequency (default: 1)\n"
            "  -t                --- apply Time-varying delays\n"
            "  -d time           --- apply delay, time in seconds (default: 1)\n"
            "  -r                --- apply reverse effect\n"
@@ -25,10 +26,15 @@ static void print_usage() {
         << endl;
 }
 
-void setEffect(Effects effect, double arg) {
+void setEffect(Effects effect, char* val, double arg) {
     EffectsInfo::effect = effect;
-    if (arg == (double)INT32_MAX)
+    if (val == nullptr)
         return;
+    if (!isdigit(*val)) {
+        cerr << "Error: Expecting numerical value, but received " << val
+             << " instead" << endl;
+        exit(1);
+    }
     try {
         EffectsInfo::param.push_back(arg);
     } catch (std::invalid_argument& e) {
@@ -76,9 +82,9 @@ int process_arguments(int argc, char* argv[]) {
             //double delay = 1.0;
             //double decay = 0.1;  // Adjust this for echo decay/gain strength
             if (i < (argc - 3)) {
-                setEffect(ECHOE, atof(argv[i]));
-                setEffect(ECHOE, atof(argv[i + 1]));
-                setEffect(ECHOE, atof(argv[i + 2]));
+                setEffect(ECHOE, argv[i], atof(argv[i]));
+                setEffect(ECHOE, argv[i + 1], atof(argv[i + 1]));
+                setEffect(ECHOE, argv[i + 2], atof(argv[i + 2]));
             } else {
                 std::cerr << "Error: Missing argument for -e option."
                           << std::endl;
@@ -86,15 +92,20 @@ int process_arguments(int argc, char* argv[]) {
             }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-a") == 0) {
-            setEffect(AMPLITUDE_MODULATION, INT32_MAX);
+            i++;
+            if (i < (argc - 1)) {
+                setEffect(AMPLITUDE_MODULATION, argv[i], atof(argv[i]));
+            } else {
+                setEffect(AMPLITUDE_MODULATION, "1.0", 1.0);
+            }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
-            setEffect(TIME_VARYING_DELAYS, INT32_MAX);
+            setEffect(TIME_VARYING_DELAYS, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-d") == 0) {
             i++;
             if (i < (argc - 1)) {
-                setEffect(DELAY, atof(argv[i]));
+                setEffect(DELAY, argv[i], atof(argv[i]));
             } else {
                 std::cerr << "Error: Missing argument for -d option."
                           << std::endl;
@@ -102,22 +113,22 @@ int process_arguments(int argc, char* argv[]) {
             }
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-r") == 0) {
-            setEffect(REVERSE, INT32_MAX);
+            setEffect(REVERSE, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-s") == 0) {
-            setEffect(SPEED_UP, INT32_MAX);
+            setEffect(SPEED_UP, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-b") == 0) {
-            setEffect(SLOW_DOWN, INT32_MAX);
+            setEffect(SLOW_DOWN, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-c") == 0) {
-            setEffect(CHORUS, INT32_MAX);
+            setEffect(CHORUS, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-i") == 0) {
-            setEffect(INVERT, INT32_MAX);
+            setEffect(INVERT, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-m") == 0) {
-            setEffect(MONO, INT32_MAX);
+            setEffect(MONO, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
             // checks if the user introduced something unknown that starts with a '-'
         } else if (argv[i][0] == '-') {
@@ -173,6 +184,10 @@ int main(int argc, char* argv[]) {
         switch (EffectsInfo::effect) {
             case ECHOE:
                 effects.effect_echo(inputSamples, outputSamples);
+                break;
+            case AMPLITUDE_MODULATION:
+                effects.effect_amplitude_modulation(inputSamples,
+                                                    outputSamples);
                 break;
 
             default:

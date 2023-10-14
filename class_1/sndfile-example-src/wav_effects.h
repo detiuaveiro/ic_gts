@@ -1,6 +1,7 @@
 #ifndef WAVEFFECTS_H
 #define WAVEFFECTS_H
 
+#include <math.h>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -105,9 +106,27 @@ class WAVEffects {
         }
     }
 
-    void effect_amplitude_modulation(const std::vector<double>& input,
-                                     std::vector<double>& output,
-                                     double modulationFrequency) {}
+    /*! In AM, the amplitude (strength) of a carrier wave is varied in proportion 
+        to the waveform being sent.*/
+    void effect_amplitude_modulation(const std::vector<double>& inputSamples,
+                                     std::vector<double>& outputSamples) {
+        // arguments
+        if (arg.size() != 1)
+            throw std::invalid_argument(
+                "Expected 1 argument for Amplitude Modulation effect "
+                "(frequency)");
+        double freq = arg[0];
+        if (freq == 0)
+            throw std::invalid_argument("Invalid frequency (needs to be > 0)");
+
+        for (long i = 0; i < (long)inputSamples.size(); i++) {
+            // C(t) = A_c * cos(2π * f_c * t) wnere f_C is 1/f = t
+            cout << "val: " << inputSamples.at(i) << endl;
+            double modulatedSample =
+                inputSamples.at(i) * cos(2 * M_PI * (1 / sampleRate) * i);
+            outputSamples.push_back(modulatedSample);
+        }
+    }
 
     void effect_time_varying_delays(const std::vector<double>& input,
                                     std::vector<double>& output,
