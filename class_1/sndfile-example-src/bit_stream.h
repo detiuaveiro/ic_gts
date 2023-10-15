@@ -4,93 +4,143 @@
 #include <string>
 #include <fstream>
 #include <ios>
+#include <cmath>
 
 class BitStream
 {
 private:
     std::fstream file;
     char mode;
-    std::vector<char> buffer;
+    char buffer;
     short buffer_index;
 
 public:
     BitStream(char mode, std::string fileName)
     {
-        if (mode == 'r')
+        if (mode == 'r' || mode == 'R')
+        {
             this->file.open(fileName, std::fstream::in | std::fstream::binary);
-        else
-            // https://cplusplus.com/reference/fstream/fstream/fstream/ second arg is a bitmask
+            this->buffer_index = -1;
+        }
+        else if (mode == 'w' || mode == 'W')
+        { // https://cplusplus.com/reference/fstream/fstream/fstream/ second arg is a bitmask
             this->file.open(fileName, std::fstream::out | std::fstream::binary);
-        this->buffer_index = 7;
-    }
-
-    void writeBit(short bit)
-    {
-        this->buffer[buffer_index] |= bit;
-        if (buffer_index == 0)
-        {
-            for (size_t i = 7; i >= 0; i--)
-            {
-                this->file << buffer[i];
-            }
-            buffer.clear();
-            buffer_index = 7;
+            this->buffer_index = 7;
         }
         else
-            buffer_index--;
+        {
+            std::cerr << "Error: mode " << mode << " unrecognizable";
+        }
     }
 
-    // a bit can't be read directly from file, only bytes
-    char readBit(char byte)
+    // Writes a bit into the file
+    void writeBit(int bit)
     {
-        this->buffer[buffer_index] = byte >> buffer_index;
-        if (buffer_index == 0)
+        buffer |= (bit & 1) << buffer_index;
+        buffer_index--;
+
+        if (buffer_index < 0)
+        {
+            file.put(buffer);
+            buffer = 0;
             buffer_index = 7;
+        }
+    }
+
+    // Reads a bit from the file
+    int readBit()
+    {
+        if (buffer_index < 0)
+        {
+            file.get(buffer);
+            buffer_index = 7;
+        }
+
+        int bit = (buffer >> buffer_index) & 1;
+        buffer_index--;
+
+        return bit;
+    }
+
+    // Converts a byte into the corresponding bitArray
+    std::vector<int> byteToBitArray(char byte)
+    {
+        std::vector<int> bitArray;
+
+        for (size_t i = 0; i <= 7; i--)
+        {
+            bitArray.push_back((byte >> i) & 1);
+        }
+        return bitArray;
+    }
+
+    // Converts a bitArray into the corresponding byte
+    char bitArrayToByte(std::vector<int> bitArray)
+    {
+        char byte = 0;
+        for (size_t i = 0; i < 8; i++)
+        {
+            byte |= bitArray[i] << i;
+        }
+
+        return byte;
+    }
+
+    // Writes N bits to file
+    void writeNBits(char byte)
+    {
+        std::vector<int> bitArray = byteToBitArray(byte);
+
+        if (isdigit(byte))
+        {
+            // https://www.geeksforgeeks.org/count-total-bits-number/ number of bits to represent a number
+            int bits = (int)log2((double)byte) + 1;
+            for (size_t i = 0; i < bits; i++)
+            {
+                writeBit(bitArray[i]);
+            }
+        }
         else
-            buffer_index--;
-    }
-
-    void writeNBits(std::vector<char> bits)
-    {
-        short N = bits.size();
-        for (short i = N - 1; i >= 0; i--)
         {
-            //if bits left to read are smaller than a byte, don't wait
-            //for buffer to be entirely full
-            if (i > 8)
+            for (int bit : bitArray)
             {
-                while (this->buffer.size() != 8);
+                writeBit(bit);
             }
-            writeBit(bits[i]);
         }
     }
 
-    std::vector<char> readNBits(int N)
+    // Reads N bits from file
+    char readNBits(int size)
     {
-        std::vector<char> readBits;
-        int counter;
-        while (1)
+        std::vector<int> bitArray;
+        for (size_t i = 0; i < size; i++)
         {
-            // check if a full byte can be read or not
-            counter = N - 8;
-            if (counter >= 0)
-            {
-                counter = 8;
-                N -= 8;
-            }
-            else
-                counter = N;
-            char byte = this->file.get();
-            for (int i = 0; i < counter; i++)
-            {
-                while (this->buffer.size() == 8)
-                    ;
-                readBit(byte);
-            }
-            //if the last bits were read get out of the loop
-            if (counter == N) break;
+            bitArray.push_back(readBit());
         }
 
-        return readBits;
+        return bitArrayToByte(bitArray);
+    }
+
+    // Writes string into file
+    void writeString(std::string str)
+    {
+        std::vector<char> chars;
+        for (char chr : str)
+        {
+            writeNBits(chr);
+        }
+    }
+
+    // Reads string from file
+    std::string readString(int size)
+    {
+        std::string string;
+
+        for (size_t i = 0; i < size / 8; i++)
+        {
+            string += readNBits(8);
+        }
+
+        return string;
     }
 };
