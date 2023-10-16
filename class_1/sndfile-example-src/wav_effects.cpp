@@ -14,13 +14,12 @@ static void print_usage() {
            "[delay], [gain] (suggested: 1, 1.0, 0.5)\n"
            "  -a f              --- apply amplitude modulation effect, f is "
            "frequency (default: 1)\n"
-           //"  -t                --- apply Time-varying delays\n"
            "  -d time           --- apply delay, time in seconds (default: 1)\n"
            "  -f time           --- advance in music, time in seconds "
            "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
-           "  -s x              --- apply speed up effect (default: 10%)\n"
-           "  -d x              --- apply slow down effect (default: 10%)\n"
+           "  -s x              --- apply speed up effect (default: 10%)\n" // attention, prob remove
+           "  -d x              --- apply slow down effect (default: 10%)\n" // attention, prob remove
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
@@ -103,9 +102,6 @@ int process_arguments(int argc, char* argv[]) {
                 setEffect(AMPLITUDE_MODULATION, &def, 1.0);
             }
             EffectsInfo::effectChosen = true;
-            //} else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
-            //    setEffect(TIME_VARYING_DELAYS, nullptr, INT32_MAX);
-            //    EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-d") == 0) {
             i++;
             if (i < (argc - 1)) {

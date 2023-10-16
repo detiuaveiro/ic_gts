@@ -55,7 +55,7 @@ class WAVEffects {
         if (numLines == 0)
             throw std::invalid_argument(
                 "The number of lines needs to be greater than 0");
-        else if (numLines == (double)1) {
+        else if (numLines == 1) {
             // Single echoe: y[n] = x[n] + decay * y[n - Delay]
             sample += decay * inputSamples[iter - sampleDelay];
         } else {
@@ -76,7 +76,7 @@ class WAVEffects {
         sampleRate = sampleR;
     }
 
-    // CHECK THIS ONE
+    // Maybe check for improvements
     void effect_echo(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
         // arguments
