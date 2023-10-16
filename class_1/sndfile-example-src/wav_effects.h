@@ -46,10 +46,10 @@ class WAVEffects {
     vector<double> arg;
     long aux = 0;
 
-    static double feedback_lines(const std::vector<short>& inputSamples,
-                                 std::vector<short>& outputSamples,
-                                 uint8_t numLines, double decay,
-                                 int sampleDelay, short sample, int iter) {
+    static int feedback_lines(const std::vector<short>& inputSamples,
+                              std::vector<short>& outputSamples,
+                              uint8_t numLines, double decay, int sampleDelay,
+                              int sample, int iter) {
         if (numLines == 0)
             throw std::invalid_argument(
                 "The number of lines needs to be greater than 0");
@@ -99,13 +99,13 @@ class WAVEffects {
             delay * this->sampleRate);  // 1 * 44100, 2 * 44100...
 
         for (long i = 0; i < (long)inputSamples.size(); i++) {
-            short echoSample = inputSamples[i];  // x[n]
+            int echoSample = inputSamples[i];  // x[n]
             if (i >= delaySamples) {
                 echoSample = feedback_lines(inputSamples, outputSamples, nLines,
                                             decay, delaySamples, echoSample, i);
                 echoSample /= (1 + decay);
             }
-            outputSamples.push_back(echoSample);
+            outputSamples.push_back((short)echoSample);
         }
     }
 
@@ -221,11 +221,18 @@ class WAVEffects {
     // CHECK THIS ONE
     void effect_mono(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
-        for (size_t i = 0; i < inputSamples.size(); i += 2) {
+        for (size_t i = 0; i < inputSamples.size(); i++) {
             // Calculate the average of the left and right channels
-            outputSamples.push_back((inputSamples[i] + inputSamples[i + 1]) /
-                                    2);
+            int sample = int((inputSamples[i] + inputSamples[i + 1]) / 2);
+            if (i % 2 == 0)
+                outputSamples.push_back(0);
+            else
+                outputSamples.push_back(sample);
         }
     }
+
+    // only right channel
+
+    // only left channel
 };
 #endif

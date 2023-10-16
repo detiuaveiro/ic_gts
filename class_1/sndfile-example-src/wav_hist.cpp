@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     }
 
     size_t bFactor = stoi(argv[argc - 1]);
-    if (bFactor == 0) {
-        cerr << "Error: bins should gather 2^k values (k > 0)\n";
+    if (bFactor % 2 != 0) {
+        cerr << "Error: binningFactor needs to be even\n";
         return 1;
     }
 

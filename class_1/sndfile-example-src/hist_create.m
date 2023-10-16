@@ -1,5 +1,5 @@
 %fileName = '../sndfile-example-bin/chMid.txt';
-fileName = '../sndfile-example-bin/chMid.txt';
+fileName = '../sndfile-example-bin/val.txt';
 T1 = readtable(fileName,'VariableNamingRule','preserve');
 
 figure(1);

@@ -31,14 +31,21 @@ class WAVHist {
 
     std::vector<short> createBin(size_t binningFactor,
                                  const std::vector<short>& samples) {
-        long binWidth = (INT16_MAX - INT16_MIN) / binningFactor;  //l
+
+        long numBins = (INT16_MAX - INT16_MIN) / binningFactor;  //l
 
         std::vector<short> binnedSamples;
-        binnedSamples.resize(samples.size());
+        binnedSamples.resize(numBins);
 
-        for (long i = 0; i < (long)samples.size(); i++) {
-            int index = samples[i] / binWidth;  // x/l
-            binnedSamples[index] = samples[i];
+        for (long i = 0; i < (long)samples.size(); i += binningFactor) {
+            int lVal = 0, rVal = 0;
+            for (long j = i; j < (i + binningFactor); j += 2) {
+                lVal += samples[j];
+                rVal += samples[j + 1];
+            }
+            int sValue = int((lVal + rVal) / 2);
+            int index = int(sValue / numBins);  // x/l
+            binnedSamples[index] = sValue;
         }
 
         return binnedSamples;
@@ -71,7 +78,7 @@ class WAVHist {
 			Constant value of bits to shift by: is (-2^15 - 2^15)/binningFactor ????
 				or max_min + max_max representation
 		*/
-        if (binningFactor > 1) {
+        if (binningFactor > 0) {
             std::vector<short> newSamples = createBin(binningFactor, samples);
             createMidSide(newSamples);
         } else {

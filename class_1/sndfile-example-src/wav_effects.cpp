@@ -230,12 +230,17 @@ int main(int argc, char* argv[]) {
                 cerr << "The specified effect is not supported.\n";
                 return 1;
         };
+        cout << "output size: " << outputSamples.size() << endl;
     }
 
     // Write the modified audio data to the output file
     //  (divide by the number of channels, since they all get mixed up)
-    sfhOut.writef(outputSamples.data(),
-                  outputSamples.size() / sfhIn.channels());
+    if (EffectsInfo::effect == MONO)
+        sfhOut.writef(outputSamples.data(),
+                      outputSamples.size() / sfhIn.channels());
+    else
+        sfhOut.writef(outputSamples.data(),
+                      outputSamples.size() / sfhIn.channels());
 
     std::cout << "Effect applied and saved to " << EffectsInfo::outputFileName
               << std::endl;
