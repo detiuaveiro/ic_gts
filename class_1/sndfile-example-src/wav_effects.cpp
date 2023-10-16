@@ -24,6 +24,8 @@ static void print_usage() {
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
+           "  -l                --- play only left channel\n"
+           "  -p                --- play only right channel\n"
         << endl;
 }
 
@@ -149,6 +151,12 @@ int process_arguments(int argc, char* argv[]) {
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-m") == 0) {
             setEffect(MONO, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-l") == 0) {
+            setEffect(LEFT_CHANNEL_ONLY, nullptr, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-p") == 0) {
+            setEffect(RIGHT_CHANNEL_ONLY, nullptr, INT32_MAX);
+            EffectsInfo::effectChosen = true;
             // checks if the user introduced something unknown that starts with a '-'
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
@@ -177,8 +185,13 @@ int main(int argc, char* argv[]) {
     if (check_wav_file(sfhIn) < 0)
         return 1;
 
+    int channels = sfhIn.channels();
+    if (EffectsInfo::effect == MONO)
+        channels = 1;
+
     SndfileHandle sfhOut{EffectsInfo::outputFileName, SFM_WRITE, sfhIn.format(),
-                         sfhIn.channels(), sfhIn.samplerate()};
+                         channels, sfhIn.samplerate()};
+
     if (sfhOut.error()) {
         cerr << "Error: problem encountered generating file "
              << EffectsInfo::outputFileName << endl;
@@ -226,18 +239,22 @@ int main(int argc, char* argv[]) {
             case MONO:
                 effects.effect_mono(inputSamples, outputSamples);
                 break;
+            case LEFT_CHANNEL_ONLY:
+                effects.effect_merge_left_channel(inputSamples, outputSamples);
+                break;
+            case RIGHT_CHANNEL_ONLY:
+                effects.effect_merge_right_channel(inputSamples, outputSamples);
+                break;
             default:
                 cerr << "The specified effect is not supported.\n";
                 return 1;
         };
-        cout << "output size: " << outputSamples.size() << endl;
     }
 
     // Write the modified audio data to the output file
     //  (divide by the number of channels, since they all get mixed up)
     if (EffectsInfo::effect == MONO)
-        sfhOut.writef(outputSamples.data(),
-                      outputSamples.size() / sfhIn.channels());
+        sfhOut.writef(outputSamples.data(), outputSamples.size());
     else
         sfhOut.writef(outputSamples.data(),
                       outputSamples.size() / sfhIn.channels());

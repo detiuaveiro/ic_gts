@@ -26,7 +26,9 @@ enum Effects {
     SPEED_UP,
     SLOW_DOWN,
     INVERT,
-    MONO
+    MONO,
+    LEFT_CHANNEL_ONLY,
+    RIGHT_CHANNEL_ONLY
 };
 
 namespace EffectsInfo {
@@ -189,8 +191,8 @@ class WAVEffects {
 
         double speedUpFactor = speedUp / 100;
 
-        size_t numOutputSamples =
-            static_cast<size_t>(inputSamples.size() / speedUpFactor);
+        //size_t numOutputSamples =
+        //    static_cast<size_t>(inputSamples.size() / speedUpFactor);
 
         for (size_t i = 0; i < inputSamples.size(); ++i) {
             size_t inputIndex = static_cast<size_t>(i * speedUpFactor);
@@ -204,13 +206,6 @@ class WAVEffects {
                           std::vector<double>& outputSamples, double factor) {}
     */
 
-    /*
-    void effect_time_varying_delays(const std::vector<short>& inputSamples,
-                                    std::vector<short>& outputSamples) {
-        
-    }
-    */
-
     void effect_invert(const std::vector<short>& inputSamples,
                        std::vector<short>& outputSamples) {
         for (size_t i = 0; i < inputSamples.size(); i++) {
@@ -218,21 +213,31 @@ class WAVEffects {
         }
     }
 
-    // CHECK THIS ONE
     void effect_mono(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
-        for (size_t i = 0; i < inputSamples.size(); i++) {
+        for (size_t i = 0; i < inputSamples.size(); i += 2) {
             // Calculate the average of the left and right channels
-            int sample = int((inputSamples[i] + inputSamples[i + 1]) / 2);
-            if (i % 2 == 0)
-                outputSamples.push_back(0);
-            else
-                outputSamples.push_back(sample);
+            int sample = (inputSamples[i] + inputSamples[i + 1]) / 2;
+            outputSamples.push_back(sample);
         }
     }
 
-    // only right channel
+    void effect_merge_right_channel(const std::vector<short>& inputSamples,
+                                    std::vector<short>& outputSamples) {
+        for (size_t i = 0; i < inputSamples.size(); i += 2) {
+            int sample = int((inputSamples[i] + inputSamples[i + 1]) / 2);
+            outputSamples.push_back(0);
+            outputSamples.push_back(sample);
+        }
+    }
 
-    // only left channel
+    void effect_merge_left_channel(const std::vector<short>& inputSamples,
+                                   std::vector<short>& outputSamples) {
+        for (size_t i = 0; i < inputSamples.size(); i += 2) {
+            int sample = int((inputSamples[i] + inputSamples[i + 1]) / 2);
+            outputSamples.push_back(sample);
+            outputSamples.push_back(0);
+        }
+    }
 };
 #endif
