@@ -1,34 +1,44 @@
-#include "bit_stream.h"
-#include <iostream>
-#include <vector>
-#include <map>
-#include <string>
+#include <cmath>
 #include <fstream>
 #include <ios>
-#include <cmath>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+#include "bit_stream.h"
 
-int main()
-{
+int main() {
     BitStream writer('w', "example.bin");
 
-    writer.writeNBits('3');
+    /*writebit ta a pescar bem os bits*/
+    writer.writeBit(0);
 
-    writer.writeNBits('A');
+    writer.writeBit(0);
 
-    writer.writeString("Hello");
+    writer.writeBit(0);
+
+    writer.writeNBits(42944, 7);  //A7C0
+
+    /*writer.writeChar('F');
+
+    writer.writeString("Hello");*/
 
     writer.~BitStream();
 
     BitStream reader('r', "example.bin");
 
-    char readNumber = reader.readNBits(2);
-    std::cout << "Read number: " << readNumber << std::endl;
+    int bit1 = reader.readBit();
+    int bit2 = reader.readBit();
+    int bit3 = reader.readBit();
 
-    char readChar = reader.readNBits(8);
-    std::cout << "Read Character: " << readNumber << std::endl;
+    std::cout << "Bit1: " << bit1 << " , Bit2: " << bit2 << " , Bit3: " << bit3
+              << std::endl;
 
-    std::string readString = reader.readString(40);
-    std::cout << "Read String: " << readString << std::endl;
+    long readNums = reader.readNBits(7);
+    std::cout << "Read Nums: " << readNums << std::endl;
+
+    //std::string readString = reader.readString(40);
+    //std::cout << "Read String: " << readString << std::endl;
 
     reader.~BitStream();
 
