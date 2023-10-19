@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SndfileHandle sndFile{argv[argc - 3]};
+    SndfileHandle sndFile{argv[1]};
     if (sndFile.error()) {
         cerr << "Error: invalid input file\n";
         return 1;
@@ -30,16 +30,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    size_t bFactor = stoi(argv[argc - 1]);
-    if (bFactor % 2 != 0) {
-        cerr << "Error: binningFactor needs to be even\n";
+    std::cout << "Number of channels: " << sndFile.channels() << '\n';
+    int channel{stoi(argv[2])};
+    if (channel == 1 && channel >= sndFile.channels() + 2) {
+        cerr << "Error: invalid channel requested\n";
         return 1;
     }
 
-    std::cout << "Number of channels: " << sndFile.channels() << '\n';
-    int channel{stoi(argv[argc - 2])};
-    if (channel == 1 && channel >= sndFile.channels() + 2) {
-        cerr << "Error: invalid channel requested\n";
+    size_t bFactor = stoi(argv[3]);
+    if (bFactor == 0) {
+        cerr << "Error: binningFactor needs to be > 0\n";
         return 1;
     }
 

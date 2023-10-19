@@ -29,70 +29,25 @@ class WAVHist {
         binningFactor = bFactor;
     }
 
-    std::vector<short> createBin(size_t binningFactor,
-                                 const std::vector<short>& samples) {
-
-        long numBins = (INT16_MAX - INT16_MIN) / binningFactor;  //l
-
-        std::vector<short> binnedSamples;
-        binnedSamples.resize(numBins);
-
-        for (long i = 0; i < (long)samples.size(); i += binningFactor) {
-            int lVal = 0, rVal = 0;
-            for (long j = i; j < (i + binningFactor); j += 2) {
-                lVal += samples[j];
-                rVal += samples[j + 1];
-            }
-            int sValue = int((lVal + rVal) / 2);
-            int index = int(sValue / numBins);  // x/l
-            binnedSamples[index] = sValue;
-        }
-
-        return binnedSamples;
-
-        /*std::vector<short> binnedSamples;
-
-        short Lsum = 0, Rsum = 0;
-        int binnedSamplesCounter = 0;
-        for (size_t i = 0; i < samples.size(); i++) {
-            if (i % 2 == 0 || i == 0) {
-                Lsum += samples[i];
-            } else {
-                Rsum += samples[i];
-            }
-            int power = pow(2, binningFactor);
-            // When index reaches the last of the bin
-            // i.e. bFactor = 2 (2 lefts and 2 rights) ==> last index = 3, 7, 11, 15, ...
-            if (i % (power - 1) == 0) {
-                binnedSamples[binnedSamplesCounter] = Lsum / (power / 2);
-                binnedSamples[binnedSamplesCounter + 1] = Rsum / (power / 2);
-                Lsum = Rsum = 0;
-                binnedSamplesCounter += 2;
-            }
-        }
-        return binnedSamples;*/
-    }
     // The vector is in format: LR LR LR...
     void update(const std::vector<short>& samples) {
         /*
 			Constant value of bits to shift by: is (-2^15 - 2^15)/binningFactor ????
 				or max_min + max_max representation
+            
+            numBins = l = (INT16_MAX - INT16_MIN) / binningFactor
 		*/
-        if (binningFactor > 0) {
-            std::vector<short> newSamples = createBin(binningFactor, samples);
-            createMidSide(newSamples);
-        } else {
-            createMidSide(samples);
-        }
-    }
 
-    void createMidSide(const std::vector<short>& samples) {
+        // take into account that when 1 is introduced, no shifts should be done
+        short binSize = binningFactor - 1;
+
         size_t n{};
         for (size_t i = 0; i < samples.size(); i++) {
-            counts[n++ % nChannels][samples[i]]++;
+            short index = samples[i] >> binSize;
+            counts[n++ % nChannels][index]++;
             if (i > 0 && i % 2 != 0) {
-                short left = samples[i - 1];
-                short right = samples[i];
+                short left = samples[i - 1] >> binSize;
+                short right = samples[i] >> binSize;
                 counts[2][(left - right) / 2]++;  // Side
                 counts[3][(left + right) / 2]++;  // Mid
             }
