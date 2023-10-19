@@ -10,18 +10,20 @@
 int main() {
     BitStream writer('w', "example.bin");
 
-    /*writebit ta a pescar bem os bits*/
-    writer.writeBit(0);
+    //writebit ta a pescar bem os bits
+    writer.writeBit(1);
 
-    writer.writeBit(0);
+    writer.writeBit(1);
 
-    writer.writeBit(0);
+    writer.writeBit(1);
 
-    writer.writeNBits(42944, 7);  //A7C0
+    writer.writeNBits(42944, 14);  //A7C0
 
-    /*writer.writeChar('F');
+    writer.writeChar('Z');
 
-    writer.writeString("Hello");*/
+    writer.writeString("Samu T");
+
+    writer.writeInt(-1);
 
     writer.~BitStream();
 
@@ -34,11 +36,15 @@ int main() {
     std::cout << "Bit1: " << bit1 << " , Bit2: " << bit2 << " , Bit3: " << bit3
               << std::endl;
 
-    long readNums = reader.readNBits(7);
+    long readNums = reader.readNBits(14);
     std::cout << "Read Nums: " << readNums << std::endl;
 
-    //std::string readString = reader.readString(40);
-    //std::cout << "Read String: " << readString << std::endl;
+    char readCharacter = reader.readChar();
+    std::cout << "Read Character: " << readCharacter << std::endl;
+    std::string readString = reader.readString(48);
+    std::cout << "Read String: " << readString << std::endl;
+    int readInteger = reader.readInt(32);
+    std::cout << "Read Int: " << readInteger << std::endl;
 
     reader.~BitStream();
 
