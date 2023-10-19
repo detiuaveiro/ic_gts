@@ -14,16 +14,17 @@ static void print_usage() {
            "[delay], [gain] (suggested: 1, 1.0, 0.5)\n"
            "  -a f              --- apply amplitude modulation effect, f is "
            "frequency (default: 1)\n"
-           //"  -t                --- apply Time-varying delays\n"
            "  -d time           --- apply delay, time in seconds (default: 1)\n"
            "  -f time           --- advance in music, time in seconds "
            "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
-           "  -s x              --- apply speed up effect (default: 10%)\n"
-           "  -d x              --- apply slow down effect (default: 10%)\n"
+           "  -s x              --- apply speed up effect (default: 10%)\n" // attention, prob remove
+           "  -d x              --- apply slow down effect (default: 10%)\n" // attention, prob remove
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
+           "  -l                --- play only left channel\n"
+           "  -p                --- play only right channel\n"
         << endl;
 }
 
@@ -101,9 +102,6 @@ int process_arguments(int argc, char* argv[]) {
                 setEffect(AMPLITUDE_MODULATION, &def, 1.0);
             }
             EffectsInfo::effectChosen = true;
-            //} else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-t") == 0) {
-            //    setEffect(TIME_VARYING_DELAYS, nullptr, INT32_MAX);
-            //    EffectsInfo::effectChosen = true;
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-d") == 0) {
             i++;
             if (i < (argc - 1)) {
@@ -149,6 +147,12 @@ int process_arguments(int argc, char* argv[]) {
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-m") == 0) {
             setEffect(MONO, nullptr, INT32_MAX);
             EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-l") == 0) {
+            setEffect(LEFT_CHANNEL_ONLY, nullptr, INT32_MAX);
+            EffectsInfo::effectChosen = true;
+        } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-p") == 0) {
+            setEffect(RIGHT_CHANNEL_ONLY, nullptr, INT32_MAX);
+            EffectsInfo::effectChosen = true;
             // checks if the user introduced something unknown that starts with a '-'
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
@@ -177,8 +181,13 @@ int main(int argc, char* argv[]) {
     if (check_wav_file(sfhIn) < 0)
         return 1;
 
+    int channels = sfhIn.channels();
+    if (EffectsInfo::effect == MONO)
+        channels = 1;
+
     SndfileHandle sfhOut{EffectsInfo::outputFileName, SFM_WRITE, sfhIn.format(),
-                         sfhIn.channels(), sfhIn.samplerate()};
+                         channels, sfhIn.samplerate()};
+
     if (sfhOut.error()) {
         cerr << "Error: problem encountered generating file "
              << EffectsInfo::outputFileName << endl;
@@ -226,6 +235,12 @@ int main(int argc, char* argv[]) {
             case MONO:
                 effects.effect_mono(inputSamples, outputSamples);
                 break;
+            case LEFT_CHANNEL_ONLY:
+                effects.effect_merge_left_channel(inputSamples, outputSamples);
+                break;
+            case RIGHT_CHANNEL_ONLY:
+                effects.effect_merge_right_channel(inputSamples, outputSamples);
+                break;
             default:
                 cerr << "The specified effect is not supported.\n";
                 return 1;
@@ -234,8 +249,11 @@ int main(int argc, char* argv[]) {
 
     // Write the modified audio data to the output file
     //  (divide by the number of channels, since they all get mixed up)
-    sfhOut.writef(outputSamples.data(),
-                  outputSamples.size() / sfhIn.channels());
+    if (EffectsInfo::effect == MONO)
+        sfhOut.writef(outputSamples.data(), outputSamples.size());
+    else
+        sfhOut.writef(outputSamples.data(),
+                      outputSamples.size() / sfhIn.channels());
 
     std::cout << "Effect applied and saved to " << EffectsInfo::outputFileName
               << std::endl;

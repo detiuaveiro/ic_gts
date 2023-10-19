@@ -26,7 +26,9 @@ enum Effects {
     SPEED_UP,
     SLOW_DOWN,
     INVERT,
-    MONO
+    MONO,
+    LEFT_CHANNEL_ONLY,
+    RIGHT_CHANNEL_ONLY
 };
 
 namespace EffectsInfo {
@@ -46,14 +48,14 @@ class WAVEffects {
     vector<double> arg;
     long aux = 0;
 
-    static double feedback_lines(const std::vector<short>& inputSamples,
-                                 std::vector<short>& outputSamples,
-                                 uint8_t numLines, double decay,
-                                 int sampleDelay, short sample, int iter) {
+    static int feedback_lines(const std::vector<short>& inputSamples,
+                              std::vector<short>& outputSamples,
+                              uint8_t numLines, double decay, int sampleDelay,
+                              int sample, int iter) {
         if (numLines == 0)
             throw std::invalid_argument(
                 "The number of lines needs to be greater than 0");
-        else if (numLines == (double)1) {
+        else if (numLines == 1) {
             // Single echoe: y[n] = x[n] + decay * y[n - Delay]
             sample += decay * inputSamples[iter - sampleDelay];
         } else {
@@ -74,7 +76,7 @@ class WAVEffects {
         sampleRate = sampleR;
     }
 
-    // CHECK THIS ONE
+    // Maybe check for improvements
     void effect_echo(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
         // arguments
@@ -99,13 +101,13 @@ class WAVEffects {
             delay * this->sampleRate);  // 1 * 44100, 2 * 44100...
 
         for (long i = 0; i < (long)inputSamples.size(); i++) {
-            short echoSample = inputSamples[i];  // x[n]
+            int echoSample = inputSamples[i];  // x[n]
             if (i >= delaySamples) {
                 echoSample = feedback_lines(inputSamples, outputSamples, nLines,
                                             decay, delaySamples, echoSample, i);
                 echoSample /= (1 + decay);
             }
-            outputSamples.push_back(echoSample);
+            outputSamples.push_back((short)echoSample);
         }
     }
 
@@ -189,8 +191,8 @@ class WAVEffects {
 
         double speedUpFactor = speedUp / 100;
 
-        size_t numOutputSamples =
-            static_cast<size_t>(inputSamples.size() / speedUpFactor);
+        //size_t numOutputSamples =
+        //    static_cast<size_t>(inputSamples.size() / speedUpFactor);
 
         for (size_t i = 0; i < inputSamples.size(); ++i) {
             size_t inputIndex = static_cast<size_t>(i * speedUpFactor);
@@ -204,13 +206,6 @@ class WAVEffects {
                           std::vector<double>& outputSamples, double factor) {}
     */
 
-    /*
-    void effect_time_varying_delays(const std::vector<short>& inputSamples,
-                                    std::vector<short>& outputSamples) {
-        
-    }
-    */
-
     void effect_invert(const std::vector<short>& inputSamples,
                        std::vector<short>& outputSamples) {
         for (size_t i = 0; i < inputSamples.size(); i++) {
@@ -218,13 +213,30 @@ class WAVEffects {
         }
     }
 
-    // CHECK THIS ONE
     void effect_mono(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
         for (size_t i = 0; i < inputSamples.size(); i += 2) {
             // Calculate the average of the left and right channels
-            outputSamples.push_back((inputSamples[i] + inputSamples[i + 1]) /
-                                    2);
+            int sample = (inputSamples[i] + inputSamples[i + 1]) / 2;
+            outputSamples.push_back(sample);
+        }
+    }
+
+    void effect_merge_right_channel(const std::vector<short>& inputSamples,
+                                    std::vector<short>& outputSamples) {
+        for (size_t i = 0; i < inputSamples.size(); i += 2) {
+            int sample = int((inputSamples[i] + inputSamples[i + 1]) / 2);
+            outputSamples.push_back(0);
+            outputSamples.push_back(sample);
+        }
+    }
+
+    void effect_merge_left_channel(const std::vector<short>& inputSamples,
+                                   std::vector<short>& outputSamples) {
+        for (size_t i = 0; i < inputSamples.size(); i += 2) {
+            int sample = int((inputSamples[i] + inputSamples[i + 1]) / 2);
+            outputSamples.push_back(sample);
+            outputSamples.push_back(0);
         }
     }
 };
