@@ -58,20 +58,16 @@ class WAVHist {
         for (size_t i = 0; i < channel; i++) {
             switch (i) {
                 case 0:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "Left"
-                              << '\n';
+                    std::cout << "Value" << '\t' << "Left Count" << '\n';
                     break;
                 case 1:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "Right"
-                              << '\n';
+                    std::cout << "Value" << '\t' << "Right Count" << '\n';
                     break;
                 case 2:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "MID"
-                              << '\n';
+                    std::cout << "Value" << '\t' << "Mid Count" << '\n';
                     break;
                 case 3:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "SIDE"
-                              << '\n';
+                    std::cout << "Value" << '\t' << "Side Count" << '\n';
                     break;
                 default:
                     break;
