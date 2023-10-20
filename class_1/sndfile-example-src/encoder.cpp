@@ -3,8 +3,8 @@
 #include "bit_stream.h"
 
 using namespace std;
-// CONVERT TEXT FILE 0s and 1s INTO BINARY EQUIVALENT
-// (each byte binary file represent 8 bits in the text file)
+// CONVERT TEXT FILE WITH 0s and 1s INTO BINARY EQUIVALENT
+// (each byte in the binary file represents 8 bits in the text file)
 int main(int argc, char *argv[])
 {
 	if (argc < 3)
@@ -44,15 +44,11 @@ int main(int argc, char *argv[])
     BitStream outF{'w',outFile};
     outF.writeNBits(longValue,fileBits.length());
     outF.~BitStream();
-
-    // Tests
-    // Check if long value obtained from string is the expected
-    cout << longValue;
-    cout << "\n";
-    // Check if, after the write operation, the bits read back are correct
-    BitStream test{'r',"zerosonesRes.bin"};
-    cout << test.readNBits(fileBits.length()); 
-    cout << "\n";
     
+
+    /* Run test:
+        ../sndfile-example-bin/encoder zeros_ones.txt encoded.bin    
+    */
+
     return 0;
 }

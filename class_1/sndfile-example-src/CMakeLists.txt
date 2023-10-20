@@ -33,3 +33,6 @@ target_link_libraries (wav_effects sndfile fftw3)
 
 add_executable (encoder encoder.cpp)
 target_link_libraries (encoder sndfile)
+
+add_executable (decoder decoder.cpp)
+target_link_libraries (decoder sndfile)

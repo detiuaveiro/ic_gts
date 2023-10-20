@@ -133,7 +133,7 @@ class BitStream {
     std::string readString(int size) {
         std::string string;
 
-        for (size_t i = 0; i < size / 8; i++) {
+        for (int i = 0; i < size / 8; i++) {
             string += readChar();
         }
 
@@ -145,5 +145,15 @@ class BitStream {
             this->file.put(buffer);
             buffer = 0;
         }
+    }
+
+    // Get file size in Bytes
+    int fileSizeBytes(){
+        std::streampos currentPosition = file.tellg();
+        file.seekg(0,std::ios::end);
+        int sizeBytes = static_cast<int>(file.tellg());
+        file.seekg(currentPosition);
+
+        return sizeBytes;
     }
 };
