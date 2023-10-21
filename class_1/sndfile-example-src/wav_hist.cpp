@@ -38,8 +38,8 @@ int main(int argc, char* argv[]) {
     }
 
     size_t bFactor = stoi(argv[3]);
-    if (bFactor == 0) {
-        cerr << "Error: binningFactor needs to be > 0\n";
+    if (bFactor == 0 || (bFactor % 2 != 0 && bFactor != 1)) {
+        cerr << "Error: binningFactor needs to be positive, even or 1\n";
         return 1;
     }
 
