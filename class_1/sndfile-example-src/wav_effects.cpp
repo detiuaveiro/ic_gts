@@ -18,8 +18,8 @@ static void print_usage() {
            "  -f time           --- advance in music, time in seconds "
            "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
-           "  -s x              --- apply speed up effect (default: 10%)\n" // attention, prob remove
-           "  -d x              --- apply slow down effect (default: 10%)\n" // attention, prob remove
+           "  -s x              --- apply speed up effect (default: 10%)\n"  // attention, prob remove
+           "  -b x              --- apply slow down effect (default: 10%)\n"  // attention, prob remove
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
@@ -228,6 +228,9 @@ int main(int argc, char* argv[]) {
                 break;
             case SPEED_UP:
                 effects.effect_speed_up(inputSamples, outputSamples);
+                break;
+            case SLOW_DOWN:
+                effects.effect_slow_down(inputSamples, outputSamples);
                 break;
             case INVERT:
                 effects.effect_invert(inputSamples, outputSamples);
