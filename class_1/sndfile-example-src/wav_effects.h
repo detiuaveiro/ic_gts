@@ -76,7 +76,6 @@ class WAVEffects {
         sampleRate = sampleR;
     }
 
-    // Maybe check for improvements
     void effect_echo(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
         // arguments
