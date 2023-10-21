@@ -162,6 +162,7 @@ int process_arguments(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+    clock_t startTime = clock();
     // Parse command line arguments
     if (argc < 2) {
         cerr << "Usage: " << argv[0] << " [EFFECT] <inputFile>\n";
@@ -261,8 +262,12 @@ int main(int argc, char* argv[]) {
         sfhOut.writef(outputSamples.data(),
                       outputSamples.size() / sfhIn.channels());
 
-    std::cout << "Effect applied and saved to " << EffectsInfo::outputFileName
-              << std::endl;
+    clock_t endTIme = clock();
+
+    std::cout << "Program took "
+              << (double(endTIme - startTime) / CLOCKS_PER_SEC) * 1000
+              << " ms to run. Effect applied and saved to "
+              << EffectsInfo::outputFileName << std::endl;
 
     return 0;
 }
