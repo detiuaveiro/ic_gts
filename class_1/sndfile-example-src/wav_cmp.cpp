@@ -9,45 +9,45 @@ int main(int argc, char *argv[])
 {
 	if (argc < 3)
 	{
-		cerr << "Usage: " << argv[0] << " <audio file> <original file>\n";
+		cerr << "Usage: " << argv[0] << " <input file> <input2 file>\n";
 		return 1;
 	}
 
 	SndfileHandle sndFile1{argv[argc - 2]};
 	if (sndFile1.error())
 	{
-		cerr << "Error: invalid audio input file\n";
+		cerr << "Error: invalid first input file\n";
 		return 1;
 	}
 
 	if ((sndFile1.format() & SF_FORMAT_TYPEMASK) != SF_FORMAT_WAV)
 	{
-		cerr << "Error: file is not in WAV format\n";
+		cerr << "Error: first file is not in WAV format\n";
 		return 1;
 	}
 
 	if ((sndFile1.format() & SF_FORMAT_SUBMASK) != SF_FORMAT_PCM_16)
 	{
-		cerr << "Error: file is not in PCM_16 format\n";
+		cerr << "Error: first file is not in PCM_16 format\n";
 		return 1;
 	}
 
 	SndfileHandle sndFile2{argv[argc - 1]};
 	if (sndFile2.error())
 	{
-		cerr << "Error: invalid original input file\n";
+		cerr << "Error: invalid second input file\n";
 		return 1;
 	}
 
 	if ((sndFile2.format() & SF_FORMAT_TYPEMASK) != SF_FORMAT_WAV)
 	{
-		cerr << "Error: file is not in WAV format\n";
+		cerr << "Error: second file is not in WAV format\n";
 		return 1;
 	}
 
 	if ((sndFile2.format() & SF_FORMAT_SUBMASK) != SF_FORMAT_PCM_16)
 	{
-		cerr << "Error: file is not in PCM_16 format\n";
+		cerr << "Error: second file is not in PCM_16 format\n";
 		return 1;
 	}
 
@@ -89,7 +89,6 @@ int main(int argc, char *argv[])
             energySignal += pow(audio1_samples[i],2);
         }
         
-        // ?? Sqrt está certo?
         channelErrors[channel] = sqrt(channelError / sndFile1.frames());
         channelMaxErrors[channel] = channelMaxError;
         SNRs[channel] = 10*log10(energySignal/channelError); // 10*log10(energySignal/energyNoise) ou 10*log10(potenciaSignal/potenciaNoise)
