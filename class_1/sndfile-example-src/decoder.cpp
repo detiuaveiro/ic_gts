@@ -23,19 +23,16 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-
     int fileSize = inputF.fileSizeBytes();
     for (int i = 0; i < fileSize; i++) {
-        // **Read and conversion to binary string seems alright for now**
-        long longValue = inputF.readNBits(8); 
-        cout << "Long Value: " << longValue << "\n";
+        // **Read and conversion to binary string seem alright**
+        long longValue = (inputF.readNBits(8)); 
         std::string binaryValue = "";
-        if (longValue == 0){
-            binaryValue = "0";
-        }
-        while (longValue > 0){
-            binaryValue = std::to_string(longValue % 2) + binaryValue;
-            longValue /= 2;
+
+        // Convert longValue to a binary string with 8 bits
+        for (int j = 7; j >= 0; j--) {
+            int bit = (longValue >> j) & 1;
+            binaryValue += std::to_string(bit);
         }
         outFile << binaryValue;
     }

@@ -53,7 +53,6 @@ class BitStream {
 
         int bit = (buffer >> buffer_index) & 1;
         buffer_index--;
-
         return bit;
     }
 
@@ -63,14 +62,21 @@ class BitStream {
             writeBit(0);
             return;
         }
+
         short bits_to_represent_value = log2(value) + 1;
-        if (value < 0) {
-            bits_to_represent_value = 32;
+        // Check if we need to fill with zeros (n_bits is greater than the bits needed to represent the value)
+        int bits_to_fill = n_bits - bits_to_represent_value;
+        if (bits_to_fill > 0) {
+            for (int i = 0; i < bits_to_fill; i++) {
+                writeBit(0);  // Fill with zeros in the most significant bits
+            }
         }
-        for (int i = bits_to_represent_value - 1;
-             i >= bits_to_represent_value - n_bits; i--) {
+
+        // Write the remaining bits from the value
+        for (int i = bits_to_represent_value - 1; i >= 0; i--) {
             int x = (value >> i) & 1;
             writeBit(x);
+
         }
     }
 
