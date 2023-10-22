@@ -23,24 +23,22 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    // Read N bits from binary file (obtain long value)
-    // *Need to get file size to get the entire file size*
-    // The file size will be multiplied by 8 because each byte on the binary file represents 8 bits on the text file
+
     int fileSize = inputF.fileSizeBytes();
-    long longValue = inputF.readNBits(fileSize*8);
-
-    // Transform long value to string containing 0s and 1s
-    std::string binaryValue = "";
-    if (longValue == 0){
-        binaryValue = "0";
+    for (int i = 0; i < fileSize; i++) {
+        // **Read and conversion to binary string seems alright for now**
+        long longValue = inputF.readNBits(8); 
+        cout << "Long Value: " << longValue << "\n";
+        std::string binaryValue = "";
+        if (longValue == 0){
+            binaryValue = "0";
+        }
+        while (longValue > 0){
+            binaryValue = std::to_string(longValue % 2) + binaryValue;
+            longValue /= 2;
+        }
+        outFile << binaryValue;
     }
-    while (longValue > 0){
-        binaryValue = std::to_string(longValue % 2) + binaryValue;
-        longValue /= 2;
-    }
-
-    // Write 0s and 1s to the output file
-    outFile << binaryValue; 
 
     outFile.close();
 

@@ -24,7 +24,8 @@ int main(int argc, char *argv[])
     // Get bits from the input file
     std::string fileBits;
     getline(inFile, fileBits);
-
+    cout << "File bits: " << fileBits;
+    cout << "\n";
     // Ensure that the fileBits contain only '0's and '1's
     for (char c : fileBits) {
         if (c != '0' && c != '1') {
@@ -34,15 +35,24 @@ int main(int argc, char *argv[])
         }
     }
 
-    // Convert bits to a long value
+    // Open the binary output file
+    BitStream outF{'w',outFile};
+
+    // Convert chuncks of 8 bits to a long value
+    // Then write each byte
+    // **What if the file has not size multiple of 8? Not working i think**
     long longValue = 0;
+    int bitsWritten = 0;
     for (char c : fileBits) {
         longValue = (longValue << 1) + (c - '0');
+        bitsWritten++;
+        if(bitsWritten == 8){
+            //cout << "Long value: " << longValue << "\n"; CORRECT
+            outF.writeNBits(longValue,8);
+            longValue = 0;
+            bitsWritten = 0;
+        }
     }
-
-    // Write to the binary file
-    BitStream outF{'w',outFile};
-    outF.writeNBits(longValue,fileBits.length());
     outF.~BitStream();
     
 
