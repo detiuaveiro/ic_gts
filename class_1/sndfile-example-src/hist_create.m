@@ -1,17 +1,15 @@
-%fileName = '../sndfile-example-bin/chMid.txt';
 fileName = '../sndfile-example-bin/val.txt';
-name = 'Plot for the left channel';
-yLeg = 'Counter';
-xLeg = 'Value';
 T1 = readtable(fileName,'VariableNamingRule','preserve');
+header = T1.Properties.VariableNames;
+splitString = strsplit(header{2}, ' ');
+name = ['Plot for the ', splitString{1}, ' channel'];
+yLeg = splitString{2};
+xLeg = header{1};
 values = T1{:,1};
 counts = T1{:,2};
 
 figure(1);
 bar(values, counts);
-%plot(values, counts);
-hold on;
 xlabel(xLeg);
 ylabel(yLeg);
 title(name);
-hold off;

@@ -76,7 +76,6 @@ class WAVEffects {
         sampleRate = sampleR;
     }
 
-    // Maybe check for improvements
     void effect_echo(const std::vector<short>& inputSamples,
                      std::vector<short>& outputSamples) {
         // arguments
@@ -177,7 +176,6 @@ class WAVEffects {
             outputSamples.push_back(inputSamples[i]);
     }
 
-    // CHECK THIS ONE
     void effect_speed_up(const std::vector<short>& inputSamples,
                          std::vector<short>& outputSamples) {
         if (arg.size() != 1)
@@ -189,22 +187,38 @@ class WAVEffects {
             throw std::invalid_argument(
                 "Invalid speed up percentage (needs to be x > 0)");
 
-        double speedUpFactor = speedUp / 100;
+        float speedUpFactor = (100 - speedUp) / 100.0;
 
-        //size_t numOutputSamples =
-        //    static_cast<size_t>(inputSamples.size() / speedUpFactor);
+        size_t numOutputSamples =
+            static_cast<size_t>(inputSamples.size() * speedUpFactor);
 
-        for (size_t i = 0; i < inputSamples.size(); ++i) {
-            size_t inputIndex = static_cast<size_t>(i * speedUpFactor);
+        for (size_t i = 0; i < numOutputSamples; ++i) {
+            size_t inputIndex = static_cast<size_t>(i / speedUpFactor);
             outputSamples.push_back(inputSamples[inputIndex]);
         }
     }
 
-    /*
-    // CHECK THIS ONE
-    void effect_slow_down(const std::vector<double>& inputSamples,
-                          std::vector<double>& outputSamples, double factor) {}
-    */
+    void effect_slow_down(const std::vector<short>& inputSamples,
+                          std::vector<short>& outputSamples) {
+        if (arg.size() != 1)
+            throw std::invalid_argument(
+                "Expected 1 argument for speed up effect (percentage)");
+
+        uint speedUp = static_cast<uint>(arg[0]);
+        if (speedUp <= 0)
+            throw std::invalid_argument(
+                "Invalid speed up percentage (needs to be x > 0)");
+
+        float speedUpFactor = (100 + speedUp) / 100.0;
+
+        size_t numOutputSamples =
+            static_cast<size_t>(inputSamples.size() * speedUpFactor);
+
+        for (size_t i = 0; i < numOutputSamples; ++i) {
+            size_t inputIndex = static_cast<size_t>(i / speedUpFactor);
+            outputSamples.push_back(inputSamples[inputIndex]);
+        }
+    }
 
     void effect_invert(const std::vector<short>& inputSamples,
                        std::vector<short>& outputSamples) {

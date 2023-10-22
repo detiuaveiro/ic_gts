@@ -32,9 +32,8 @@ class WAVHist {
     // The vector is in format: LR LR LR...
     void update(const std::vector<short>& samples) {
         /*
-			Constant value of bits to shift by: is (-2^15 - 2^15)/binningFactor ????
-				or max_min + max_max representation
-            
+			Constant value of bits to shift by: is (2^15-(-2^15))/binningFactor
+
             numBins = l = (INT16_MAX - INT16_MIN) / binningFactor
 		*/
 
@@ -55,31 +54,24 @@ class WAVHist {
     }
 
     void dump(const size_t channel) const {
-        for (size_t i = 0; i < channel; i++) {
-            switch (i) {
-                case 0:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "Left"
-                              << '\n';
-                    break;
-                case 1:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "Right"
-                              << '\n';
-                    break;
-                case 2:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "MID"
-                              << '\n';
-                    break;
-                case 3:
-                    std::cout << "Value" << '\t' << "Count" << '\t' << "SIDE"
-                              << '\n';
-                    break;
-                default:
-                    break;
-            }
-            for (auto [value, counter] : counts[i])
-                std::cout << value << '\t' << counter << '\n';
+        switch (channel) {
+            case 0:
+                std::cout << "Value" << '\t' << "Left Count" << '\n';
+                break;
+            case 1:
+                std::cout << "Value" << '\t' << "Right Count" << '\n';
+                break;
+            case 2:
+                std::cout << "Value" << '\t' << "Mid Count" << '\n';
+                break;
+            case 3:
+                std::cout << "Value" << '\t' << "Side Count" << '\n';
+                break;
+            default:
+                break;
         }
+        for (auto [value, counter] : counts[channel])
+            std::cout << value << '\t' << counter << '\n';
     }
 };
-
 #endif

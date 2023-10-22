@@ -18,8 +18,8 @@ static void print_usage() {
            "  -f time           --- advance in music, time in seconds "
            "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
-           "  -s x              --- apply speed up effect (default: 10%)\n" // attention, prob remove
-           "  -d x              --- apply slow down effect (default: 10%)\n" // attention, prob remove
+           "  -s x              --- apply speed up effect (default: 10%)\n"  // attention, prob remove
+           "  -b x              --- apply slow down effect (default: 10%)\n"  // attention, prob remove
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
@@ -81,8 +81,6 @@ int process_arguments(int argc, char* argv[]) {
             }
         } else if (!EffectsInfo::effectChosen && strcmp(argv[i], "-e") == 0) {
             i++;
-            //double delay = 1.0;
-            //double decay = 0.1;  // Adjust this for echo decay/gain strength
             if (i < (argc - 3)) {
                 setEffect(ECHOE, argv[i], atof(argv[i]));
                 setEffect(ECHOE, argv[i + 1], atof(argv[i + 1]));
@@ -164,6 +162,7 @@ int process_arguments(int argc, char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+    clock_t startTime = clock();
     // Parse command line arguments
     if (argc < 2) {
         cerr << "Usage: " << argv[0] << " [EFFECT] <inputFile>\n";
@@ -197,6 +196,7 @@ int main(int argc, char* argv[]) {
     // Create a buffer for reading and writing audio data
     std::vector<short> inputSamples(FRAMES_BUFFER_SIZE * sfhIn.channels());
     std::vector<short> outputSamples;
+    std::vector<short> reverseBuffer;
     size_t nFrames;
 
     // Effects class
@@ -223,14 +223,18 @@ int main(int argc, char* argv[]) {
             case FORWARD:
                 effects.effect_forward(inputSamples, outputSamples);
                 break;
-            case REVERSE:
-                effects.effect_reverse(inputSamples, outputSamples);
-                break;
             case SPEED_UP:
                 effects.effect_speed_up(inputSamples, outputSamples);
                 break;
+            case SLOW_DOWN:
+                effects.effect_slow_down(inputSamples, outputSamples);
+                break;
             case INVERT:
                 effects.effect_invert(inputSamples, outputSamples);
+                break;
+            case REVERSE:
+                reverseBuffer.insert(reverseBuffer.end(), inputSamples.begin(),
+                                     inputSamples.end());
                 break;
             case MONO:
                 effects.effect_mono(inputSamples, outputSamples);
@@ -247,6 +251,9 @@ int main(int argc, char* argv[]) {
         };
     }
 
+    if (EffectsInfo::effect == REVERSE)
+        effects.effect_reverse(reverseBuffer, outputSamples);
+
     // Write the modified audio data to the output file
     //  (divide by the number of channels, since they all get mixed up)
     if (EffectsInfo::effect == MONO)
@@ -255,8 +262,12 @@ int main(int argc, char* argv[]) {
         sfhOut.writef(outputSamples.data(),
                       outputSamples.size() / sfhIn.channels());
 
-    std::cout << "Effect applied and saved to " << EffectsInfo::outputFileName
-              << std::endl;
+    clock_t endTIme = clock();
+
+    std::cout << "Program took "
+              << (double(endTIme - startTime) / CLOCKS_PER_SEC) * 1000
+              << " ms to run. Effect applied and saved to "
+              << EffectsInfo::outputFileName << std::endl;
 
     return 0;
 }
