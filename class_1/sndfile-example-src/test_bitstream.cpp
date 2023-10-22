@@ -36,7 +36,8 @@ int main() {
     std::cout << "Bit1: " << bit1 << " , Bit2: " << bit2 << " , Bit3: " << bit3
               << std::endl;
 
-    long readNums = reader.readNBits(14);
+    // two shift to get the previous representation (14 to 16 bits)
+    long readNums = (reader.readNBits(14) << 2);
     std::cout << "Read Nums: " << readNums << std::endl;
 
     char readCharacter = reader.readChar();
