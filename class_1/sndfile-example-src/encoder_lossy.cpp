@@ -13,6 +13,8 @@ using namespace std;
 namespace Options {
 string musicName = "sample.wav";
 string encodedName = "encodedMusic";
+size_t blockSize = 4096;        // or 2^12 - adjust this
+size_t quantizationLevels = 8;  // or 256 levels
 }  // namespace Options
 
 static void print_usage() {
@@ -81,6 +83,22 @@ int process_arguments(int argc, char* argv[]) {
     return 0;
 }
 
+/* 
+    Because of this "The decoder should rely only on the (binary) file 
+        produced by the encoder in order to reconstruct (an approximate 
+        version of) the audio", we need to include a sort of header in the 
+        file with all the parameters 
+*/
+void create_file_header(std::vector<int>& header) {
+    // total number of blocks
+    // sample rate
+    // total frames number
+    // No need to store number of channels, since mono. right...?
+    // ?
+    // dummy code just to skip warnings
+    cout << header.size() << endl;
+}
+
 void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
 
     std::vector<short> inputSamples(FRAMES_BUFFER_SIZE * sfhIn.channels());
@@ -99,6 +117,32 @@ void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
     sfhOut.writef(outputSamples.data(), outputSamples.size());
 }
 
+// Function to apply DCT to an audio block
+std::vector<double> apply_dct(const std::vector<short>& audioBlock) {
+    // dummy code just to skip warnings
+    cout << audioBlock.size() << endl;
+    std::vector<double> result;
+    return result;
+}
+
+// Function to quantize DCT coefficients
+std::vector<int> quantize_dct_coefficients(
+    const std::vector<double>& dctCoefficients) {
+    // dummy code just to skip warnings
+    cout << dctCoefficients.size() << endl;
+    std::vector<int> result;
+    return result;
+}
+
+// Function to encode a block of audio
+vector<int> encode_block(const vector<short>& inputSamples) {
+    // Apply DCT to the audioBlock
+    vector<double> dctCoefficients = apply_dct(inputSamples);
+
+    // Quantize the DCT coefficients and returns the results
+    return quantize_dct_coefficients(dctCoefficients);
+}
+
 int main(int argc, char* argv[]) {
     int ret = process_arguments(argc, argv);
     if (ret < 0)
@@ -114,8 +158,8 @@ int main(int argc, char* argv[]) {
     int channels = sfhTmp.channels();
     // Check if the music is mono channel and ask the user if we want's to transform it
     if (channels > 1) {
-        cout << "The music isn't mono channel, do you wish to transform it? "
-                "(y/n): ";
+        cout << "This program can only process music in mono channel, do you "
+                "wish to transform it? (y/n): ";
         string input;
         cin >> input;
 
@@ -147,11 +191,41 @@ int main(int argc, char* argv[]) {
         cout << " - Music transformed into mono and saved in " << newMusicName
              << endl;
     }
+    clock_t startTime = clock();
 
     /* Check .wav files */
     SndfileHandle sfhIn{Options::musicName};
     if (check_wav_file(sfhIn) < 0)
         return 1;
+
+    // Code beyond here is experimental
+
+    BitStream outputBitStream{'w', Options::encodedName};
+
+    // Encode information in header here ???
+
+    std::vector<short> inputSamples(Options::blockSize);
+    size_t nFrames;
+
+    while ((nFrames = sfhIn.readf(inputSamples.data(), FRAMES_BUFFER_SIZE))) {
+        // Pad with 0s if the number of frames is smaller than the block size
+        inputSamples.resize(Options::blockSize);
+
+        std::vector<int> encodedBlock = encode_block(inputSamples);
+
+        for (int coefficient : encodedBlock)
+            outputBitStream.writeNBits(coefficient,
+                                       Options::quantizationLevels);
+    }
+
+    outputBitStream.~BitStream();
+
+    clock_t endTime = clock();
+
+    std::cout << "Program took "
+              << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
+              << " ms to run. Music compressed to " << Options::encodedName
+              << std::endl;
 
     return 0;
 }

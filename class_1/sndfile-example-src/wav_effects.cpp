@@ -18,8 +18,8 @@ static void print_usage() {
            "  -f time           --- advance in music, time in seconds "
            "(default: 1)\n"
            "  -r                --- apply reverse effect\n"
-           "  -s x              --- apply speed up effect (default: 10%)\n"  // attention, prob remove
-           "  -b x              --- apply slow down effect (default: 10%)\n"  // attention, prob remove
+           "  -s x              --- apply speed up effect (default: 10%)\n"
+           "  -b x              --- apply slow down effect (default: 10%)\n"
            "  -i                --- apply invert effect\n"
            "  -m                --- apply mono effect (convert all channels to "
            "one)\n"
@@ -262,10 +262,10 @@ int main(int argc, char* argv[]) {
         sfhOut.writef(outputSamples.data(),
                       outputSamples.size() / sfhIn.channels());
 
-    clock_t endTIme = clock();
+    clock_t endTime = clock();
 
     std::cout << "Program took "
-              << (double(endTIme - startTime) / CLOCKS_PER_SEC) * 1000
+              << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
               << " ms to run. Effect applied and saved to "
               << EffectsInfo::outputFileName << std::endl;
 
