@@ -13,8 +13,9 @@ using namespace std;
 namespace Options {
 string musicName = "sample.wav";
 string encodedName = "encodedMusic";
-size_t blockSize = 4096;        // or 2^12 - adjust this
+size_t blockSize = 1024;
 size_t quantizationLevels = 8;  // or 256 levels
+double dctFrac = 0.2;
 }  // namespace Options
 
 static void print_usage() {
@@ -25,6 +26,7 @@ static void print_usage() {
            "  -i, --input       --- set music file name (default: sample.wav)\n"
            "  -o, --output      --- set encoded file name (default: "
            "encodedMusic)\n"
+           "  -b, --blockSize   --- set block size (default: 1024)\n"
         << endl;
 }
 
@@ -89,14 +91,13 @@ int process_arguments(int argc, char* argv[]) {
         version of) the audio", we need to include a sort of header in the 
         file with all the parameters 
 */
-void create_file_header(std::vector<int>& header) {
+void create_file_header(SndfileHandle& sfhIn) {
     // total number of blocks
     // sample rate
     // total frames number
     // No need to store number of channels, since mono. right...?
     // ?
-    // dummy code just to skip warnings
-    cout << header.size() << endl;
+    
 }
 
 void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
@@ -118,26 +119,43 @@ void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
 }
 
 // Function to apply DCT to an audio block
-std::vector<double> apply_dct(const std::vector<short>& audioBlock) {
+vector<vector<double>> apply_dct(const std::vector<short>& audioBlock) {
     // dummy code just to skip warnings
     cout << audioBlock.size() << endl;
-    std::vector<double> result;
+    vector<vector<double>> result;
     return result;
 }
 
 // Function to quantize DCT coefficients
 std::vector<int> quantize_dct_coefficients(
-    const std::vector<double>& dctCoefficients) {
-    // dummy code just to skip warnings
-    cout << dctCoefficients.size() << endl;
-    std::vector<int> result;
-    return result;
+    const vector<vector<double>>& dct_blocks) {
+    double scaleFactor = 100.0;  // Adjust the scale factor
+    int quantizationLevels =
+        pow(2, Options::quantizationLevels);  // Number of quantization levels
+    std::vector<int> quantizedCoefficients;
+    for(const std::vector<double>& dctCoefficients: dct_blocks){
+        for (const double coefficient : dctCoefficients) {
+            // Apply quantization and round to the nearest integer
+            int quantizedCoefficient =
+                static_cast<int>(round(coefficient * scaleFactor));
+
+            // Ensure that the quantized coefficient is within the defined range
+            quantizedCoefficient =
+                std::max(quantizedCoefficient, -quantizationLevels);
+            quantizedCoefficient =
+                std::min(quantizedCoefficient, quantizationLevels);
+
+            quantizedCoefficients.push_back(quantizedCoefficient);
+        }
+    }
+
+    return quantizedCoefficients;
 }
 
 // Function to encode a block of audio
 vector<int> encode_block(const vector<short>& inputSamples) {
     // Apply DCT to the audioBlock
-    vector<double> dctCoefficients = apply_dct(inputSamples);
+    vector<vector<double>> dctCoefficients = apply_dct(inputSamples);
 
     // Quantize the DCT coefficients and returns the results
     return quantize_dct_coefficients(dctCoefficients);
@@ -202,21 +220,48 @@ int main(int argc, char* argv[]) {
 
     BitStream outputBitStream{'w', Options::encodedName};
 
-    // Encode information in header here ???
+    size_t nChannels{static_cast<size_t>(sfhIn.channels())};  // must be 1
+    size_t nFrames{static_cast<size_t>(sfhIn.frames())};
 
-    std::vector<short> inputSamples(Options::blockSize);
-    size_t nFrames;
+    std::vector<short> inputSamples(nChannels * nFrames);
+    sfhIn.readf(inputSamples.data(), nFrames);
 
-    while ((nFrames = sfhIn.readf(inputSamples.data(), FRAMES_BUFFER_SIZE))) {
-        // Pad with 0s if the number of frames is smaller than the block size
-        inputSamples.resize(Options::blockSize);
+    size_t nBlocks{static_cast<size_t>(
+        ceil(static_cast<double>(nFrames) / Options::blockSize))};
 
-        std::vector<int> encodedBlock = encode_block(inputSamples);
+    // Do zero padding, if necessary
+    inputSamples.resize(nBlocks * Options::blockSize * nChannels);
 
-        for (int coefficient : encodedBlock)
-            outputBitStream.writeNBits(coefficient,
-                                       Options::quantizationLevels);
+    create_file_header(sfhIn);
+
+    // Vector for holding all DCT coefficients, channel by channel
+    vector<vector<double>> x_dct(nChannels,
+                                 vector<double>(nBlocks * Options::blockSize));
+
+    // Vector for holding DCT computations
+    vector<double> x(Options::blockSize);
+
+    // Direct DCT
+    fftw_plan plan_d = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
+                                        FFTW_REDFT10, FFTW_ESTIMATE);
+    for (size_t n = 0; n < nBlocks; n++) {
+        for (size_t c = 0; c < nChannels; c++) {
+            for (size_t k = 0; k < Options::blockSize; k++)
+                x[k] =
+                    inputSamples[(n * Options::blockSize + k) * nChannels + c];
+
+            fftw_execute(plan_d);
+            // Keep only "dctFrac" of the "low frequency" coefficients
+            for (size_t k = 0; k < Options::blockSize * Options::dctFrac; k++)
+                x_dct[c][n * Options::blockSize + k] =
+                    x[k] / (Options::blockSize << 1);
+        }
     }
+
+    std::vector<int> quantizedCoefficients = quantize_dct_coefficients(x_dct);
+
+    for(const int sample: quantizedCoefficients)
+        outputBitStream.writeNBits(sample, Options::quantizationLevels);
 
     outputBitStream.~BitStream();
 

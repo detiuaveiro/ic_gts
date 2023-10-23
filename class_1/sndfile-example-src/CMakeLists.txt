@@ -38,4 +38,4 @@ add_executable (decoder decoder.cpp)
 target_link_libraries (decoder sndfile)
 
 add_executable (encoder_lossy encoder_lossy.cpp)
-target_link_libraries (encoder_lossy sndfile)
+target_link_libraries (encoder_lossy sndfile fftw3)
