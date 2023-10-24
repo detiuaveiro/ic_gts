@@ -37,6 +37,7 @@ class BitStream {
         buffer |= (bit & 1) << buffer_index;
         buffer_index--;
 
+        //std::cout << "Bit write: " << bit << std::endl;
         if (buffer_index < 0) {
             file.put(buffer);
             buffer = 0;
@@ -52,6 +53,9 @@ class BitStream {
         }
 
         int bit = (buffer >> buffer_index) & 1;
+
+        //std::cout << "Bit read: " << bit << std::endl;
+
         buffer_index--;
         return bit;
     }
@@ -64,24 +68,25 @@ class BitStream {
         }
 
         short bits_to_represent_value = log2(value) + 1;
-        // Check if we need to fill with zeros (n_bits is greater than the bits needed to represent the value)
-        int bits_to_fill = n_bits - bits_to_represent_value;
-        if (bits_to_fill > 0) {
-            for (int i = 0; i < bits_to_fill; i++) {
-                writeBit(0);  // Fill with zeros in the most significant bits
-            }
-        }
 
+        //If the requested bits to represent value is bigger than the minimum needed
+        if (bits_to_represent_value < n_bits) {
+            bits_to_represent_value = n_bits;
+        }
         // Write the remaining bits from the value
-        for (int i = bits_to_represent_value - 1; i >= 0; i--) {
+        std::cout << bits_to_represent_value - n_bits << std::endl;
+
+        for (int i = bits_to_represent_value - 1;
+             i >= bits_to_represent_value - n_bits; i--) {
             int x = (value >> i) & 1;
             writeBit(x);
-
         }
     }
 
     //Writes an integer to file
     void writeInt(int integer) {
+        if (integer == 0)
+            writeBit(0);
         short bits_to_represent_integer = log2(integer) + 1;
         if (integer < 0) {
             bits_to_represent_integer = 32;
@@ -148,15 +153,17 @@ class BitStream {
 
     ~BitStream() {
         if ((this->mode == 'w' || this->mode == 'W') && buffer_index < 7) {
+            std::cout << "Entered deconstructor " << std::endl;
+
             this->file.put(buffer);
             buffer = 0;
         }
     }
 
     // Get file size in Bytes
-    int fileSizeBytes(){
+    int fileSizeBytes() {
         std::streampos currentPosition = file.tellg();
-        file.seekg(0,std::ios::end);
+        file.seekg(0, std::ios::end);
         int sizeBytes = static_cast<int>(file.tellg());
         file.seekg(currentPosition);
 

@@ -11,19 +11,19 @@ int main() {
     BitStream writer('w', "example.bin");
 
     //writebit ta a pescar bem os bits
-    writer.writeBit(1);
+    writer.writeBit(0);
 
-    writer.writeBit(1);
+    writer.writeBit(0);
 
-    writer.writeBit(1);
+    writer.writeBit(0);
 
-    writer.writeNBits(42944, 14);  //A7C0
+    writer.writeNBits(3, 8);  //A7C0
 
-    writer.writeChar('Z');
+    writer.writeChar('A');
 
-    writer.writeString("Samu T");
+    writer.writeString("Samu Tex");
 
-    writer.writeInt(-1);
+    writer.writeInt(-45);
 
     writer.~BitStream();
 
@@ -37,12 +37,12 @@ int main() {
               << std::endl;
 
     // two shift to get the previous representation (14 to 16 bits)
-    long readNums = (reader.readNBits(14) << 2);
+    long readNums = reader.readNBits(8);
     std::cout << "Read Nums: " << readNums << std::endl;
 
     char readCharacter = reader.readChar();
     std::cout << "Read Character: " << readCharacter << std::endl;
-    std::string readString = reader.readString(48);
+    std::string readString = reader.readString(64);
     std::cout << "Read String: " << readString << std::endl;
     int readInteger = reader.readInt(32);
     std::cout << "Read Int: " << readInteger << std::endl;
