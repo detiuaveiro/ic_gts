@@ -17,7 +17,9 @@ int main() {
 
     writer.writeBit(0);
 
-    writer.writeNBits(3, 8);  //A7C0
+    writer.writeNBits(0xA7C0, 11);  //A7C0
+
+    writer.writeNBits(0, 5);  //A7C0
 
     writer.writeChar('A');
 
@@ -37,8 +39,11 @@ int main() {
               << std::endl;
 
     // two shift to get the previous representation (14 to 16 bits)
-    long readNums = reader.readNBits(8);
+    long readNums = reader.readNBits(11);  // 1342
     std::cout << "Read Nums: " << readNums << std::endl;
+
+    long readZero = reader.readNBits(5);  // 0
+    std::cout << "Read Nums: " << readZero << std::endl;
 
     char readCharacter = reader.readChar();
     std::cout << "Read Character: " << readCharacter << std::endl;

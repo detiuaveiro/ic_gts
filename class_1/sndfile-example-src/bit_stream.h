@@ -62,10 +62,10 @@ class BitStream {
 
     // Writes N bits to file
     void writeNBits(long value, int n_bits) {
-        if (value == 0) {
+        /*if (value == 0) {
             writeBit(0);
             return;
-        }
+        }*/
 
         short bits_to_represent_value = log2(value) + 1;
 

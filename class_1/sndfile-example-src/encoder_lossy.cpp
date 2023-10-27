@@ -191,22 +191,18 @@ vector<vector<double>> apply_dct(const std::vector<short>& audioBlock) {
 // Function to quantize DCT coefficients
 std::vector<int> quantize_dct_coefficients(
     const vector<vector<double>>& dct_blocks) {
-    double scaleFactor = 100.0;  // Adjust the scale factor
-    int quantizationLevels =
-        pow(2, Options::quantizationLevels);  // Number of quantization levels
+    int minValue =
+        -static_cast<int>(std::pow(2, Options::quantizationLevels - 1));
+    int maxValue =
+        static_cast<int>(std::pow(2, Options::quantizationLevels - 1)) - 1;
     std::vector<int> quantizedCoefficients;
     for (const std::vector<double>& dctCoefficients : dct_blocks) {
         for (const double coefficient : dctCoefficients) {
-            // Apply quantization and round to the nearest integer
-            int quantizedCoefficient =
-                static_cast<int>(round(coefficient * scaleFactor));
-
-            // Ensure that the quantized coefficient is within the defined range
-            quantizedCoefficient =
-                std::max(quantizedCoefficient, -quantizationLevels);
-            quantizedCoefficient =
-                std::min(quantizedCoefficient, quantizationLevels);
-
+            int quantizedCoefficient = int(coefficient);
+            if (quantizedCoefficient > maxValue)
+                quantizedCoefficient = maxValue;
+            else if (quantizedCoefficient < minValue)
+                quantizedCoefficient = minValue;
             quantizedCoefficients.push_back(quantizedCoefficient);
         }
     }
