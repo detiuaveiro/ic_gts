@@ -46,7 +46,8 @@ int main() {
     std::cout << "Read String: " << readString << std::endl;
     int readInteger = reader.readInt(32);
     std::cout << "Read Int: " << readInteger << std::endl;
-
+    std::cout << "End of File: " << reader.readInt(32) << std::endl;
+    std::cout << "End of File: " << reader.check_eof() << std::endl;
     reader.~BitStream();
 
     return 0;

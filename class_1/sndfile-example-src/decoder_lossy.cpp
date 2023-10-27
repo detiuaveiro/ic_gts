@@ -108,22 +108,23 @@ void print_processing_information(int nBlocks) {
 */
 void read_file_header(BitStream& inputStream) {
     // Store Block Size (16 bits)
-    Options::blockSize = inputStream.readNBits(16);
+    Options::blockSize = static_cast<size_t>(inputStream.readNBits(16));
 
     // Store Number of channels -> technically should be always 1 (3 bits)
-    Options::nChannels = inputStream.readNBits(3);
+    Options::nChannels = static_cast<size_t>(inputStream.readNBits(3));
 
     // Store SampleRate (16 bits)
-    Options::sampleRate = inputStream.readNBits(16);
+    Options::sampleRate = static_cast<size_t>(inputStream.readNBits(16));
 
     // Store Quantization Levels (16 bits)
-    Options::quantizationLevels = inputStream.readNBits(16);
+    Options::quantizationLevels =
+        static_cast<size_t>(inputStream.readNBits(16));
 
     // Store DCT Fraction (7 bits > max 100)
-    Options::dctFrac = double(inputStream.readNBits(7)) / 100;
+    Options::dctFrac = double(inputStream.readNBits(7)) / 100.0;
 
     // Store Total Number of frames (32 bits)
-    Options::nFrames = inputStream.readNBits(32);
+    Options::nFrames = static_cast<size_t>(inputStream.readNBits(32));
 }
 
 int main(int argc, char* argv[]) {
@@ -144,7 +145,65 @@ int main(int argc, char* argv[]) {
 
     print_processing_information(nBlocks);
 
+    SndfileHandle sfhOut{Options::musicName, SFM_WRITE,
+                         SF_FORMAT_WAV | SF_FORMAT_PCM_16,
+                         static_cast<int>(Options::nChannels),
+                         static_cast<int>(Options::sampleRate)};
+    if (sfhOut.error()) {
+        cerr << "Error: problem generating output .wav file\n";
+        return 1;
+    }
+
+    // Read all the values in the encoded file
+    std::vector<int> quantizedCoefficients;
+    while (!inputBitStream.check_eof())
+        quantizedCoefficients.push_back(
+            inputBitStream.readNBits(Options::quantizationLevels));
+
     inputBitStream.~BitStream();
+
+    // Vector for holding all DCT coefficients, channel by channel
+    vector<vector<double>> x_dct(Options::nChannels,
+                                 vector<double>(nBlocks * Options::blockSize));
+
+    // Divide the coefficients vector into blocks
+    int index = 0;
+    for (size_t n = 0; n < nBlocks; n++) {
+        for (size_t c = 0; c < Options::nChannels; c++) {
+            for (size_t k = 0; k < Options::blockSize; k++) {
+                x_dct[c][n * Options::blockSize + k] =
+                    double(quantizedCoefficients[index++]) / 100.0;
+            }
+        }
+    }
+
+    // Vector for holding DCT computations
+    vector<double> x(Options::blockSize);
+
+    std::vector<short> outputSamples(Options::nChannels * Options::nFrames);
+    // Do zero padding, if necessary
+    outputSamples.resize(nBlocks * Options::blockSize * Options::nChannels);
+
+    // Inverse DCT
+    fftw_plan plan_i = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
+                                        FFTW_REDFT01, FFTW_ESTIMATE);
+    for (size_t n = 0; n < nBlocks; n++)
+        for (size_t c = 0; c < Options::nChannels; c++) {
+            for (size_t k = 0; k < Options::blockSize; k++)
+                x[k] = x_dct[c][n * Options::blockSize + k];
+
+            fftw_execute(plan_i);
+            for (size_t k = 0; k < Options::blockSize; k++)
+                outputSamples[(n * Options::blockSize + k) *
+                                  Options::nChannels +
+                              c] = static_cast<short>(round(x[k]));
+        }
+
+    sfhOut.writef(outputSamples.data(), Options::nFrames);
+
+    // Destroy the allocated data
+    //fftw_destroy_plan(plan_i);
+    //fftw_cleanup();
 
     clock_t endTime = clock();
 

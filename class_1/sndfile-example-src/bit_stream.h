@@ -151,6 +151,8 @@ class BitStream {
         return string;
     }
 
+    bool check_eof() { return file.eof(); }
+
     ~BitStream() {
         if ((this->mode == 'w' || this->mode == 'W') && buffer_index < 7) {
             //std::cout << "Entered deconstructor " << std::endl;

@@ -305,7 +305,6 @@ int main(int argc, char* argv[]) {
     // Vector for holding DCT computations
     vector<double> x(Options::blockSize);
 
-    /*
     // Direct DCT
     fftw_plan plan_d = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
                                         FFTW_REDFT10, FFTW_ESTIMATE);
@@ -331,9 +330,12 @@ int main(int argc, char* argv[]) {
 
     for (const int sample : quantizedCoefficients)
         outputBitStream.writeNBits(sample, Options::quantizationLevels);
-    */
 
     outputBitStream.~BitStream();
+
+    // Destroy the allocated data
+    fftw_destroy_plan(plan_d);
+    fftw_cleanup();
 
     clock_t endTime = clock();
 
