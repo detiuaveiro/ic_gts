@@ -278,8 +278,6 @@ int main(int argc, char* argv[]) {
     if (check_wav_file(sfhIn) < 0)
         return 1;
 
-    // Code beyond here is experimental
-
     BitStream outputBitStream{'w', Options::encodedName};
 
     Options::sampleRate = static_cast<size_t>(sfhIn.samplerate());

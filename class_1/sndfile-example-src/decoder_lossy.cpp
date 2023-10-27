@@ -12,7 +12,7 @@ using namespace std;
 // configurable parameters
 namespace Options {
 string encodedName = "encodedSample";
-string musicName = "sample.wav";
+string musicName = "decodedSample.wav";
 size_t blockSize;
 size_t quantizationLevels;
 double dctFrac;
@@ -28,7 +28,7 @@ static void print_usage() {
             "  -i, --input       --- set encoded file name (default: "
             "encodedSample)\n"
             "  -o, --output      --- set encoded file name (default: "
-            "sample.wav)\n"
+            "decodedSample.wav)\n"
          << endl;
     // COMPLETE WITH THE REMAINING ARGUMENTS
 }
@@ -160,8 +160,11 @@ int main(int argc, char* argv[]) {
         quantizedCoefficients.push_back(
             inputBitStream.readNBits(Options::quantizationLevels));
 
+    std::cout << "coefficients: " << quantizedCoefficients.size() << endl;
+
     inputBitStream.~BitStream();
 
+    /*
     // Vector for holding all DCT coefficients, channel by channel
     vector<vector<double>> x_dct(Options::nChannels,
                                  vector<double>(nBlocks * Options::blockSize));
@@ -177,12 +180,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    cout << "here" << endl;
+
     // Vector for holding DCT computations
     vector<double> x(Options::blockSize);
 
     std::vector<short> outputSamples(Options::nChannels * Options::nFrames);
     // Do zero padding, if necessary
-    outputSamples.resize(nBlocks * Options::blockSize * Options::nChannels);
+    outputSamples.resize(nBlocks * Options::blockSize * Options::nChannels); // not necessary?
 
     // Inverse DCT
     fftw_plan plan_i = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
@@ -204,6 +209,7 @@ int main(int argc, char* argv[]) {
     // Destroy the allocated data
     //fftw_destroy_plan(plan_i);
     //fftw_cleanup();
+    */
 
     clock_t endTime = clock();
 
