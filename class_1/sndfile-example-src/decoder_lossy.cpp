@@ -154,26 +154,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // Get the amount of bits minus the header
-    //long fileSizeBits = (inputBitStream.fileSizeBytes() * 8) - 90;
-
     // Read all the values in the encoded file
     std::vector<int> quantizedCoefficients;
-    //Options::nChannels, int(fileSizeBits / Options::nChannels));
+
     while (!inputBitStream.check_eof())
         quantizedCoefficients.push_back(
             inputBitStream.readNBits(Options::quantizationLevels));
 
-    /*
-    for (long i = 0; i < fileSizeBits; i++)
-        quantizedCoefficients.push_back(
-            inputBitStream.readNBits(Options::quantizationLevels));*/
-
-    std::cout << "coefficients: " << quantizedCoefficients.size() << endl;
+    std::cout << "Number of quantized coefficients: "
+              << quantizedCoefficients.size() << endl;
 
     inputBitStream.~BitStream();
 
-    /*
     // Vector for holding all DCT coefficients, channel by channel
     vector<vector<double>> x_dct(Options::nChannels,
                                  vector<double>(nBlocks * Options::blockSize));
@@ -189,14 +181,13 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    cout << "here" << endl;
-
     // Vector for holding DCT computations
     vector<double> x(Options::blockSize);
 
     std::vector<short> outputSamples(Options::nChannels * Options::nFrames);
     // Do zero padding, if necessary
-    outputSamples.resize(nBlocks * Options::blockSize * Options::nChannels); // not necessary?
+    outputSamples.resize(nBlocks * Options::blockSize *
+                         Options::nChannels);  // not necessary?
 
     // Inverse DCT
     fftw_plan plan_i = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
@@ -216,9 +207,8 @@ int main(int argc, char* argv[]) {
     sfhOut.writef(outputSamples.data(), Options::nFrames);
 
     // Destroy the allocated data
-    //fftw_destroy_plan(plan_i);
-    //fftw_cleanup();
-    */
+    fftw_destroy_plan(plan_i);
+    fftw_cleanup();
 
     clock_t endTime = clock();
 

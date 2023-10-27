@@ -180,14 +180,6 @@ void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
     sfhOut.writef(outputSamples.data(), outputSamples.size());
 }
 
-// Function to apply DCT to an audio block
-vector<vector<double>> apply_dct(const std::vector<short>& audioBlock) {
-    // dummy code just to skip warnings
-    cout << audioBlock.size() << endl;
-    vector<vector<double>> result;
-    return result;
-}
-
 // Function to quantize DCT coefficients
 std::vector<int> quantize_dct_coefficients(
     const vector<vector<double>>& dct_blocks) {
@@ -208,15 +200,6 @@ std::vector<int> quantize_dct_coefficients(
     }
 
     return quantizedCoefficients;
-}
-
-// Function to encode a block of audio
-vector<int> encode_block(const vector<short>& inputSamples) {
-    // Apply DCT to the audioBlock
-    vector<vector<double>> dctCoefficients = apply_dct(inputSamples);
-
-    // Quantize the DCT coefficients and returns the results
-    return quantize_dct_coefficients(dctCoefficients);
 }
 
 int main(int argc, char* argv[]) {
@@ -319,7 +302,7 @@ int main(int argc, char* argv[]) {
 
     std::vector<int> quantizedCoefficients = quantize_dct_coefficients(x_dct);
 
-    std::cout << "Quantized coefficients: " << quantizedCoefficients.size()
+    std::cout << "Number of quantized coefficients: " << quantizedCoefficients.size()
               << std::endl;
 
     for (int sample : quantizedCoefficients)
