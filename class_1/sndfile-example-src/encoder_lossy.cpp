@@ -12,10 +12,13 @@ using namespace std;
 // configurable parameters
 namespace Options {
 string musicName = "sample.wav";
-string encodedName = "encodedMusic";
+string encodedName = "encodedSample";
 size_t blockSize = 1024;
 size_t quantizationLevels = 8;  // or 256 levels
 double dctFrac = 0.2;
+size_t nChannels;  // should be always 1, but will leave it for future upgrades
+size_t nFrames;
+size_t sampleRate;
 }  // namespace Options
 
 static void print_usage() {
@@ -25,9 +28,12 @@ static void print_usage() {
            "  -h, --help        --- print this help\n"
            "  -i, --input       --- set music file name (default: sample.wav)\n"
            "  -o, --output      --- set encoded file name (default: "
-           "encodedMusic)\n"
+           "encodedSample)\n"
            "  -b, --blockSize   --- set block size (default: 1024)\n"
+           "  -l, --levels      --- set Quantization Levels (default: 8)\n"
+           "  -d, --dctFrac     --- set Dct Frac (default: 0.2)\n"
         << endl;
+    // COMPLETE WITH THE REMAINING ARGUMENTS
 }
 
 int check_wav_file(SndfileHandle& musicFile) {
@@ -57,25 +63,56 @@ int process_arguments(int argc, char* argv[]) {
         } else if (strcmp(argv[i], "-i") == 0 ||
                    strcmp(argv[i], "--input") == 0) {
             i++;
-            if (i < (argc - 1)) {
+            if (i < argc) {
                 Options::musicName = argv[i];
             } else {
                 std::cerr << "Error: Missing argument for -i/--input option."
                           << std::endl;
                 return -1;
             }
-
         } else if (strcmp(argv[i], "-o") == 0 ||
                    strcmp(argv[i], "--output") == 0) {
             i++;
-            if (i < (argc - 1)) {
-                Options::musicName = argv[i];
+            if (i < argc) {
+                Options::encodedName = argv[i];
             } else {
                 std::cerr << "Error: Missing argument for -o/--output option."
                           << std::endl;
                 return -1;
             }
-
+        } else if (strcmp(argv[i], "-b") == 0 ||
+                   strcmp(argv[i], "--blockSize") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::blockSize = atoi(argv[i]);
+            } else {
+                std::cerr << "Error: Missing or bad argument for "
+                             "-b/--blockSize option: "
+                          << argv[i] << std::endl;
+                return -1;
+            }
+        } else if (strcmp(argv[i], "-l") == 0 ||
+                   strcmp(argv[i], "--levels") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::quantizationLevels = atoi(argv[i]);
+            } else {
+                std::cerr
+                    << "Error: Missing or bad argument for -l/--levels option."
+                    << argv[i] << std::endl;
+                return -1;
+            }
+        } else if (strcmp(argv[i], "-d") == 0 ||
+                   strcmp(argv[i], "--dctFrac") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::dctFrac = atof(argv[i]);
+            } else {
+                std::cerr
+                    << "Error: Missing or bad argument for -d/--dctFrac option."
+                    << argv[i] << std::endl;
+                return -1;
+            }
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
                       << std::endl;
@@ -85,19 +122,44 @@ int process_arguments(int argc, char* argv[]) {
     return 0;
 }
 
+void print_processing_information(int nBlocks) {
+    cout << "\nMusic Processing information: \n"
+         << " - Music File Name: " << Options::musicName
+         << "\n - Encoded File Name: " << Options::encodedName
+         << "\n - Block Size: " << Options::blockSize
+         << "\n - Number of Channels: " << Options::nChannels
+         << "\n - Sample Rate: " << Options::sampleRate
+         << "\n - Quantization Levels: " << Options::quantizationLevels
+         << "\n - Dct Frac: " << Options::dctFrac
+         << "\n - Total Number of Frames: " << Options::nFrames
+         << "\n - Number of Blocks: " << nBlocks << "\n"
+         << endl;
+}
+
 /* 
     Because of this "The decoder should rely only on the (binary) file 
         produced by the encoder in order to reconstruct (an approximate 
         version of) the audio", we need to include a sort of header in the 
         file with all the parameters 
 */
-void create_file_header(SndfileHandle& sfhIn) {
-    // total number of blocks
-    // sample rate
-    // total frames number
-    // No need to store number of channels, since mono. right...?
-    // ?
-    
+void create_file_header(BitStream& outputStream) {
+    // Store Block Size (16 bits)
+    outputStream.writeNBits(Options::blockSize, 16);
+
+    // Store Number of channels -> technically should be always 1 (3 bits)
+    outputStream.writeNBits(Options::nChannels, 3);
+
+    // Store SampleRate (16 bits)
+    outputStream.writeNBits(Options::sampleRate, 16);
+
+    // Store Quantization Levels (16 bits)
+    outputStream.writeNBits(Options::quantizationLevels, 16);
+
+    // Store DCT Fraction (7 bits > max 100)
+    outputStream.writeNBits(int(Options::dctFrac * 100), 7);
+
+    // Store Total Number of frames (32 bits)
+    outputStream.writeNBits(Options::nFrames, 32);
 }
 
 void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
@@ -133,7 +195,7 @@ std::vector<int> quantize_dct_coefficients(
     int quantizationLevels =
         pow(2, Options::quantizationLevels);  // Number of quantization levels
     std::vector<int> quantizedCoefficients;
-    for(const std::vector<double>& dctCoefficients: dct_blocks){
+    for (const std::vector<double>& dctCoefficients : dct_blocks) {
         for (const double coefficient : dctCoefficients) {
             // Apply quantization and round to the nearest integer
             int quantizedCoefficient =
@@ -220,35 +282,39 @@ int main(int argc, char* argv[]) {
 
     BitStream outputBitStream{'w', Options::encodedName};
 
-    size_t nChannels{static_cast<size_t>(sfhIn.channels())};  // must be 1
-    size_t nFrames{static_cast<size_t>(sfhIn.frames())};
+    Options::sampleRate = static_cast<size_t>(sfhIn.samplerate());
+    Options::nChannels = static_cast<size_t>(sfhIn.channels());  // must be 1
+    Options::nFrames = static_cast<size_t>(sfhIn.frames());
 
-    std::vector<short> inputSamples(nChannels * nFrames);
-    sfhIn.readf(inputSamples.data(), nFrames);
+    std::vector<short> inputSamples(Options::nChannels * Options::nFrames);
+    sfhIn.readf(inputSamples.data(), Options::nFrames);
 
     size_t nBlocks{static_cast<size_t>(
-        ceil(static_cast<double>(nFrames) / Options::blockSize))};
+        ceil(static_cast<double>(Options::nFrames) / Options::blockSize))};
 
     // Do zero padding, if necessary
-    inputSamples.resize(nBlocks * Options::blockSize * nChannels);
+    inputSamples.resize(nBlocks * Options::blockSize * Options::nChannels);
 
-    create_file_header(sfhIn);
+    print_processing_information(nBlocks);
+    create_file_header(outputBitStream);
 
     // Vector for holding all DCT coefficients, channel by channel
-    vector<vector<double>> x_dct(nChannels,
+    vector<vector<double>> x_dct(Options::nChannels,
                                  vector<double>(nBlocks * Options::blockSize));
 
     // Vector for holding DCT computations
     vector<double> x(Options::blockSize);
 
+    /*
     // Direct DCT
     fftw_plan plan_d = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
                                         FFTW_REDFT10, FFTW_ESTIMATE);
     for (size_t n = 0; n < nBlocks; n++) {
-        for (size_t c = 0; c < nChannels; c++) {
+        for (size_t c = 0; c < Options::nChannels; c++) {
             for (size_t k = 0; k < Options::blockSize; k++)
-                x[k] =
-                    inputSamples[(n * Options::blockSize + k) * nChannels + c];
+                x[k] = inputSamples[(n * Options::blockSize + k) *
+                                        Options::nChannels +
+                                    c];
 
             fftw_execute(plan_d);
             // Keep only "dctFrac" of the "low frequency" coefficients
@@ -260,8 +326,12 @@ int main(int argc, char* argv[]) {
 
     std::vector<int> quantizedCoefficients = quantize_dct_coefficients(x_dct);
 
-    for(const int sample: quantizedCoefficients)
+    std::cout << "Quantized coefficients: " << quantizedCoefficients.size()
+              << std::endl;
+
+    for (const int sample : quantizedCoefficients)
         outputBitStream.writeNBits(sample, Options::quantizationLevels);
+    */
 
     outputBitStream.~BitStream();
 

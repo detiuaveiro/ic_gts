@@ -74,7 +74,7 @@ class BitStream {
             bits_to_represent_value = n_bits;
         }
         // Write the remaining bits from the value
-        std::cout << bits_to_represent_value - n_bits << std::endl;
+        //std::cout << bits_to_represent_value - n_bits << std::endl;
 
         for (int i = bits_to_represent_value - 1;
              i >= bits_to_represent_value - n_bits; i--) {
@@ -153,7 +153,7 @@ class BitStream {
 
     ~BitStream() {
         if ((this->mode == 'w' || this->mode == 'W') && buffer_index < 7) {
-            std::cout << "Entered deconstructor " << std::endl;
+            //std::cout << "Entered deconstructor " << std::endl;
 
             this->file.put(buffer);
             buffer = 0;
