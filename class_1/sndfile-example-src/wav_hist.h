@@ -44,7 +44,7 @@ class WAVHist {
         for (size_t i = 0; i < samples.size(); i++) {
             short index = samples[i] >> binSize;
             counts[n++ % nChannels][index]++;
-            if (i > 0 && i % 2 != 0) {
+            if ((i > 0 && i % 2 != 0) && (nChannels > 1)) {
                 short left = samples[i - 1] >> binSize;
                 short right = samples[i] >> binSize;
                 counts[2][(left - right) / 2]++;  // Side
@@ -54,21 +54,25 @@ class WAVHist {
     }
 
     void dump(const size_t channel) const {
-        switch (channel) {
-            case 0:
-                std::cout << "Value" << '\t' << "Left Count" << '\n';
-                break;
-            case 1:
-                std::cout << "Value" << '\t' << "Right Count" << '\n';
-                break;
-            case 2:
-                std::cout << "Value" << '\t' << "Mid Count" << '\n';
-                break;
-            case 3:
-                std::cout << "Value" << '\t' << "Side Count" << '\n';
-                break;
-            default:
-                break;
+        if (nChannels == 1)
+            std::cout << "Value" << '\t' << "Mono Count" << '\n';
+        else {
+            switch (channel) {
+                case 0:
+                    std::cout << "Value" << '\t' << "Left Count" << '\n';
+                    break;
+                case 1:
+                    std::cout << "Value" << '\t' << "Right Count" << '\n';
+                    break;
+                case 2:
+                    std::cout << "Value" << '\t' << "Mid Count" << '\n';
+                    break;
+                case 3:
+                    std::cout << "Value" << '\t' << "Side Count" << '\n';
+                    break;
+                default:
+                    break;
+            }
         }
         for (auto [value, counter] : counts[channel])
             std::cout << value << '\t' << counter << '\n';

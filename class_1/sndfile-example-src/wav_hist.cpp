@@ -32,7 +32,10 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Number of channels: " << sndFile.channels() << '\n';
     int channel{stoi(argv[2])};
-    if (channel == 1 && channel >= sndFile.channels() + 2) {
+    if (channel == 1 && channel != 0) {
+        cerr << "Error: invalid channel requested\n";
+        return 1;
+    } else if (channel >= sndFile.channels() + 2) {
         cerr << "Error: invalid channel requested\n";
         return 1;
     }
