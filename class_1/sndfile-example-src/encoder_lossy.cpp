@@ -326,7 +326,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Quantized coefficients: " << quantizedCoefficients.size()
               << std::endl;
 
-    for (const int sample : quantizedCoefficients)
+    for (int sample : quantizedCoefficients)
         outputBitStream.writeNBits(sample, Options::quantizationLevels);
 
     outputBitStream.~BitStream();

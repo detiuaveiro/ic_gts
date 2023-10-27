@@ -154,11 +154,20 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Get the amount of bits minus the header
+    //long fileSizeBits = (inputBitStream.fileSizeBytes() * 8) - 90;
+
     // Read all the values in the encoded file
     std::vector<int> quantizedCoefficients;
+    //Options::nChannels, int(fileSizeBits / Options::nChannels));
     while (!inputBitStream.check_eof())
         quantizedCoefficients.push_back(
             inputBitStream.readNBits(Options::quantizationLevels));
+
+    /*
+    for (long i = 0; i < fileSizeBits; i++)
+        quantizedCoefficients.push_back(
+            inputBitStream.readNBits(Options::quantizationLevels));*/
 
     std::cout << "coefficients: " << quantizedCoefficients.size() << endl;
 
