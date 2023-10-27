@@ -33,7 +33,6 @@ static void print_usage() {
            "  -l, --levels      --- set Quantization Levels (default: 8)\n"
            "  -d, --dctFrac     --- set Dct Frac (default: 0.2)\n"
         << endl;
-    // COMPLETE WITH THE REMAINING ARGUMENTS
 }
 
 int check_wav_file(SndfileHandle& musicFile) {
@@ -183,18 +182,19 @@ void transform_music_mono(SndfileHandle& sfhIn, SndfileHandle& sfhOut) {
 // Function to quantize DCT coefficients
 std::vector<int> quantize_dct_coefficients(
     const vector<vector<double>>& dct_blocks) {
-    int minValue =
-        -static_cast<int>(std::pow(2, Options::quantizationLevels - 1));
-    int maxValue =
-        static_cast<int>(std::pow(2, Options::quantizationLevels - 1)) - 1;
+
+    uint cutBits;
+    if (Options::quantizationLevels <= 16)
+        cutBits = 16 - Options::quantizationLevels;
+    else
+        cutBits = 32 - Options::quantizationLevels;
     std::vector<int> quantizedCoefficients;
     for (const std::vector<double>& dctCoefficients : dct_blocks) {
         for (const double coefficient : dctCoefficients) {
             int quantizedCoefficient = int(coefficient);
-            if (quantizedCoefficient > maxValue)
-                quantizedCoefficient = maxValue;
-            else if (quantizedCoefficient < minValue)
-                quantizedCoefficient = minValue;
+            quantizedCoefficient >>= cutBits;  // LSB at 0
+            quantizedCoefficient = quantizedCoefficient
+                                   << cutBits;  // Revert the position change
             quantizedCoefficients.push_back(quantizedCoefficient);
         }
     }
@@ -302,8 +302,8 @@ int main(int argc, char* argv[]) {
 
     std::vector<int> quantizedCoefficients = quantize_dct_coefficients(x_dct);
 
-    std::cout << "Number of quantized coefficients: " << quantizedCoefficients.size()
-              << std::endl;
+    std::cout << "Number of quantized coefficients: "
+              << quantizedCoefficients.size() << std::endl;
 
     for (int sample : quantizedCoefficients)
         outputBitStream.writeNBits(sample, Options::quantizationLevels);
@@ -318,7 +318,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Program took "
               << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Music compressed to " << Options::encodedName
+              << " ms to run. Music compressed to " << Options::musicName
               << std::endl;
 
     return 0;

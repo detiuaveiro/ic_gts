@@ -30,7 +30,6 @@ static void print_usage() {
             "  -o, --output      --- set encoded file name (default: "
             "decodedSample.wav)\n"
          << endl;
-    // COMPLETE WITH THE REMAINING ARGUMENTS
 }
 
 int check_wav_file(SndfileHandle& musicFile) {
@@ -214,7 +213,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Program took "
               << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Music compressed to " << Options::encodedName
+              << " ms to run. Music decompressed to " << Options::encodedName
               << std::endl;
 
     return 0;
