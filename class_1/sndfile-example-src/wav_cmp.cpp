@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
         // Norma L² = sqrt(x1² + x2² + ... + xN²)/n
         // Sendo x1 a xN as diferenças entre a data do ficheiro posterior e do original
         // n -> Nº frames gerados
-        vector<double> audio1_samples(sndFile1.frames());
-        vector<double> audio2_samples(sndFile2.frames());
+        vector<short> audio1_samples(sndFile1.frames());
+        vector<short> audio2_samples(sndFile2.frames());
 
         sndFile1.read(audio1_samples.data(), sndFile1.frames());
         sndFile2.read(audio2_samples.data(), sndFile2.frames());
@@ -80,13 +80,13 @@ int main(int argc, char *argv[])
 
         for (long unsigned int i = 0; i < audio1_samples.size(); ++i)
         {
-            double diff = audio1_samples[i] - audio2_samples[i];
+            double diff = abs(audio1_samples[i] - audio2_samples[i]);
             channelError += pow(diff,2);
             // L∞ norm
             if(diff > channelMaxError){
                 channelMaxError = diff;
             }
-            energySignal += pow(audio1_samples[i],2);
+            energySignal += pow(abs(audio1_samples[i]),2);
         }
         
         channelErrors[channel] = sqrt(channelError / sndFile1.frames());

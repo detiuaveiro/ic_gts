@@ -57,14 +57,13 @@ int main(int argc, char *argv[])
 
     size_t nFrames;
     vector<short> samples(FRAMES_BUFFER_SIZE * sfhIn.channels());
-    WAVQuant quant {};
+    WAVQuant quant {quantBits};
     while((nFrames = sfhIn.readf(samples.data(), FRAMES_BUFFER_SIZE))) 
     {
         samples.resize(nFrames * sfhIn.channels());
-        quant.quantize(samples, quantBits);
+        quant.quantize(samples);
+        //quant.saveQuantizedSamples("quantized_samples.txt");
     }
 
     quant.toFile(sfhOut);
-
-    return 0;
 }
