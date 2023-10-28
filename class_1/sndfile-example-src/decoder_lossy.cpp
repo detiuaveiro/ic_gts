@@ -186,7 +186,7 @@ int main(int argc, char* argv[]) {
     std::vector<short> outputSamples(Options::nChannels * Options::nFrames);
     // Do zero padding, if necessary
     outputSamples.resize(nBlocks * Options::blockSize *
-                         Options::nChannels);  // not necessary?
+                         Options::nChannels);
 
     // Inverse DCT
     fftw_plan plan_i = fftw_plan_r2r_1d(Options::blockSize, x.data(), x.data(),
