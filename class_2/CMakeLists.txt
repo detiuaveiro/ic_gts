@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++17")
 SET (CMAKE_CXX_FLAGS_RELEASE "-O3")
-SET (CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address")
+#SET (CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address")
 
 # Get Google test
 #find_package(GTest REQUIRED)
@@ -31,6 +31,7 @@ FetchContent_MakeAvailable(googletest)
 
 SET (BASE_DIR ${CMAKE_SOURCE_DIR} )
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIR}/bin)
+# Source Code Folder
 SET (SOURCE_FOLDER ${BASE_DIR}/src)
 
 # Header folder
