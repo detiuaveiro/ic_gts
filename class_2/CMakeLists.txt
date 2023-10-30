@@ -16,7 +16,7 @@ SET (CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address")
 #find_package(GTest REQUIRED)
 #include_directories(${GTEST_INCLUDE_DIRS})
 
-
+# Use the usually pre-installed one
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
@@ -31,6 +31,7 @@ FetchContent_MakeAvailable(googletest)
 
 SET (BASE_DIR ${CMAKE_SOURCE_DIR} )
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIR}/bin)
+SET (SOURCE_FOLDER ${BASE_DIR}/src)
 
 # Header folder
 include_directories(
@@ -39,13 +40,9 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )
 
-# Source code files
-set(SOURCES
-		#${CMAKE_CURRENT_SOURCE_DIR}/src/
-    )
 
-add_executable(image_processing ${SOURCES})
-target_link_libraries( image_processing ${OpenCV_LIBS} )
+add_executable(system_test ${SOURCE_FOLDER}/systemCheck.cpp)
+target_link_libraries( system_test ${OpenCV_LIBS} )
 
 #    PRIVATE
 #        GTest::GTest
