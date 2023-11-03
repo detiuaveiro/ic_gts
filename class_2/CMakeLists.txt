@@ -50,6 +50,9 @@ target_link_libraries( extract_image ${OpenCV_LIBS} )
 
 add_executable(negative_image ${SOURCE_FOLDER}/negative_image.cpp)
 target_link_libraries( negative_image ${OpenCV_LIBS} )
+
+add_executable(mirrored_image ${SOURCE_FOLDER}/mirrored_image.cpp)
+target_link_libraries( mirrored_image ${OpenCV_LIBS} )
 #    PRIVATE
 #        GTest::GTest
 #        GTest::Main
