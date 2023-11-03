@@ -45,6 +45,9 @@ include_directories(
 add_executable(system_test ${SOURCE_FOLDER}/systemCheck.cpp)
 target_link_libraries( system_test ${OpenCV_LIBS} )
 
+add_executable(extract_image ${SOURCE_FOLDER}/extract_image.cpp)
+target_link_libraries( extract_image ${OpenCV_LIBS} )
+
 #    PRIVATE
 #        GTest::GTest
 #        GTest::Main
