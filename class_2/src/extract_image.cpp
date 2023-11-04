@@ -10,9 +10,7 @@ String inputFile = "../images/airplane.ppm";
 String outputFile = "extractedColor.ppm";
 uint8_t channel = 1;
 bool showNewImage = false;
-}  // namespace Options
-
-enum COLORS { RED, GREEN, BLUE };
+}
 
 static void print_usage() {
     cerr << "Usage: %s [OPTIONS]\n"
@@ -22,7 +20,8 @@ static void print_usage() {
             "../images/airplane.ppm)\n"
             "  -o, --output      --- set extracted image file name (default: "
             "extractedColor.ppm)\n"
-            "  -c, --channel     --- set channel number (1-3) (default: 1)\n"
+            "  -c, --channel     --- set channel number, [default] 1 (Blue), 2 "
+                "(Green), or 3 (Red)\n"
             "  -s, --show        --- flag to show extracted image\n"
          << endl;
 }
@@ -100,7 +99,6 @@ int parse_args(int argc, char* argv[]) {
 }
 
 // Extract a color channel from an image, creating a single channel image with the result
-// File names and channel number passed as command line args
 int main(int argc, char** argv) {
     clock_t startTime = clock();
 
@@ -152,7 +150,7 @@ int main(int argc, char** argv) {
               << " save image as " << Options::outputFile << std::endl;
 
     imshow("Extracted Color Channel", extractedChannel);
-    waitKey(0);
+    waitKey(0); // wait for any key to be pressed
 
     return 0;
 }
