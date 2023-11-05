@@ -14,7 +14,7 @@ class Golomb {
         int m;
 
         // Representar r de forma binária
-        std::string getRemainderBinary(int r, int num)
+        std::string getRemainderBinary(int r)
         {
             std::string s = "";
             
@@ -65,7 +65,7 @@ class Golomb {
             s += "0"; // separar q de r
 
             // representar r de forma binária
-            s += getRemainderBinary(r, i);
+            s += getRemainderBinary(r);
 
             return s;
         }
