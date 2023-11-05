@@ -20,8 +20,10 @@ class Golomb {
             
             if ((m & (m - 1)) == 0) // m é potência de 2
             {
-                for (int i = 0; i < log2(m); i++){
-                    s += std::to_string(r % 2);
+                //std::cout << "m : " << m << std::endl;
+                //std::cout << "log2(m) : " << log2(m) << std::endl;
+                for (int i = 0; i < log2(m); i++){ // log2(m) = nº bits para representar r
+                    s = std::to_string(r % 2) + s;
                     r /= 2;
                 }
             }
@@ -31,13 +33,13 @@ class Golomb {
                 // encode primeiros 2^b - m valores de r usando b - 1 bits
                 if (r < pow(2, b) - m){
                     for (int i = 0; i < b - 1; i++){
-                        s += std::to_string(r % 2);
+                        s = std::to_string(r % 2) + s;
                         r /= 2;
                     }
                 }else{ // encode os restantes valores de r usando b bits
                     r += pow(2, b) - m;
                     for (int i = 0; i < b; i++){
-                        s += std::to_string(r % 2);
+                        s = std::to_string(r % 2) + s;
                         r /= 2;
                     }
                 }
@@ -57,13 +59,13 @@ class Golomb {
         std::string encode(int i)
         {
             std::string s = "";
-            int q = i / m;
+            int q = floor(i / m);
             int r = i % m;
 
             for (int j = 0; j < q; j++)
                 s += "1"; // representar q de forma unária
             s += "0"; // separar q de r
-
+            
             // representar r de forma binária
             s += getRemainderBinary(r);
 
