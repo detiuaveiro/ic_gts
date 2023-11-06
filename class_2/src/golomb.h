@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include "../../class_1/sndfile-example-src/bit_stream.h"
 
 // Functions for:
 // - Encoding an integer (generating the corresponding sequence of bits)
@@ -13,6 +14,9 @@ class Golomb {
     private:
         int m;
         int approach; // (1) sign magnitude (2) positive/negative value interleaving
+        //FALTA BITSTREAM -> construtor golomb receber bitstream já aberta 
+        BitStream& bitStream;
+
 
         // Representar r de forma binária
         std::string getRemainderBinary(int r)
@@ -50,14 +54,14 @@ class Golomb {
         }
 
     public:
-        Golomb(int m, int approach = 1){
+        Golomb(int m, BitStream& bitStream, int approach = 1): bitStream(bitStream) {
             this->m = m;
             this->approach = approach;
-
             if (approach != 1 && approach != 2){
                 throw std::invalid_argument("Approach must be 1 - sign magnitude or 2 - positive/negative value interleaving");
             }
         }
+
 
         // Inteiro i é representado por 2 números: q e r
         // q é a parte inteira da divisão de n por m (parte unária)
@@ -86,15 +90,22 @@ class Golomb {
                 // representar r de forma binária
                 s += getRemainderBinary(r);
 
-                if (isNegative)
-                    s = "1" + s;
-                else
-                    s = "0" + s;
+                if (i != 0){
+                    if (isNegative)
+                        s = s + "1";
+                    else
+                        s = s + "0";
+                }
             }
             else
                 // POSITIVE/NEGATIVE VALUE INTERLEAVING
                 return "";
+
+            
+
             return s;
+
+            // ESCREVER NO FICHEIRO DE SAIDA, USANDO WRITE N BITS
         }
 
         // Decode a sequence of bits
