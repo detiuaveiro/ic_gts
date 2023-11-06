@@ -23,7 +23,12 @@ int main(){
         cout << i << " -> " << s << endl;
     }
 
-
+    cout << "------------------------" << endl;
+    cout << "m=5, números negativos" << endl;
+    for (int i = 0; i >= -15; i--){
+        string s = golomb2.encode(i);
+        cout << i << " -> " << s << endl;
+    }
 
     return 0;
 }

@@ -12,6 +12,7 @@
 class Golomb {
     private:
         int m;
+        int approach; // (1) sign magnitude (2) positive/negative value interleaving
 
         // Representar r de forma binária
         std::string getRemainderBinary(int r)
@@ -49,8 +50,13 @@ class Golomb {
         }
 
     public:
-        Golomb(int m){
+        Golomb(int m, int approach = 1){
             this->m = m;
+            this->approach = approach;
+
+            if (approach != 1 && approach != 2){
+                throw std::invalid_argument("Approach must be 1 - sign magnitude or 2 - positive/negative value interleaving");
+            }
         }
 
         // Inteiro i é representado por 2 números: q e r
@@ -59,16 +65,35 @@ class Golomb {
         std::string encode(int i)
         {
             std::string s = "";
-            int q = floor(i / m);
-            int r = i % m;
+            int q = 0;
+            int r = 0;
+            if (approach == 1){
+                // SIGN AND MAGNITUDE -> MSB = 0 -> positive, MSB = 1 -> negative
+                
+                bool isNegative = false;
+                if (i < 0){
+                    isNegative = true;
+                    i = -i; // Encode the positive value of i
+                }
 
-            for (int j = 0; j < q; j++)
-                s += "1"; // representar q de forma unária
-            s += "0"; // separar q de r
-            
-            // representar r de forma binária
-            s += getRemainderBinary(r);
+                q = floor(i / m);
+                r = i % m;
 
+                for (int j = 0; j < q; j++)
+                    s += "1"; // representar q de forma unária
+                s += "0"; // separar q de r
+                
+                // representar r de forma binária
+                s += getRemainderBinary(r);
+
+                if (isNegative)
+                    s = "1" + s;
+                else
+                    s = "0" + s;
+            }
+            else
+                // POSITIVE/NEGATIVE VALUE INTERLEAVING
+                return "";
             return s;
         }
 
@@ -76,6 +101,4 @@ class Golomb {
         int decode(std::string s){
             return 0;
         }
-
-        
 };
