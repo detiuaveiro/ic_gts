@@ -10,7 +10,7 @@ String inputFile = "../images/airplane.ppm";
 String outputFile = "extractedColor.ppm";
 uint8_t channel = 1;
 bool showNewImage = false;
-}
+}  // namespace Options
 
 static void print_usage() {
     cerr << "Usage: %s [OPTIONS]\n"
@@ -21,7 +21,7 @@ static void print_usage() {
             "  -o, --output      --- set extracted image file name (default: "
             "extractedColor.ppm)\n"
             "  -c, --channel     --- set channel number, [default] 1 (Blue), 2 "
-                "(Green), or 3 (Red)\n"
+            "(Green), or 3 (Red)\n"
             "  -s, --show        --- flag to show extracted image\n"
          << endl;
 }
@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
     }
 
     // Create a "empty" image
-    cv::Mat extractedChannel = cv::Mat::zeros(img.size(), CV_8UC3);
+    cv::Mat extractedChannel = cv::Mat::zeros(img.size(), CV_8UC1);
 
     // Split the image into individual channels
     std::vector<cv::Mat> channels;
@@ -130,17 +130,17 @@ int main(int argc, char** argv) {
 
     // Set the extracted channel and leave the others as zeros
     // 1 line for all values of a given channel
-    std::vector<cv::Mat> newChannels(
-        3, cv::Mat(img.size(), CV_8UC1, cv::Scalar(0)));
+    //std::vector<cv::Mat> newChannels(
+    //    3, cv::Mat(img.size(), CV_8UC1, cv::Scalar(0)));
 
     // only assign values to the selected channel
-    newChannels[Options::channel] = channels[Options::channel];
+    //newChannels[Options::channel] = channels[Options::channel];
 
     // merge the channels back into a single image
-    cv::merge(newChannels, extractedChannel);
+    //cv::merge(newChannels, extractedChannel);
 
     // Save the result to the specified output file (obligatory .ppm)
-    cv::imwrite(Options::outputFile, extractedChannel);
+    cv::imwrite(Options::outputFile, channels[Options::channel]);
 
     clock_t endTime = clock();
 
@@ -149,8 +149,10 @@ int main(int argc, char** argv) {
               << " ms to extract Color channel " << Options::channel
               << " save image as " << Options::outputFile << std::endl;
 
-    imshow("Extracted Color Channel", extractedChannel);
-    waitKey(0); // wait for any key to be pressed
+    if (Options::showNewImage) {
+        imshow("Extracted Color Channel", channels[Options::channel]);
+        waitKey(0);
+    }
 
     return 0;
 }
