@@ -6,7 +6,7 @@ using namespace cv;
 using namespace std;
 
 namespace Options {
-String inputFile = "../images/airplane.ppm";
+String inputFile = "../images/peppers.ppm";
 String outputFile = "extractedColor.ppm";
 uint8_t channel = 1;
 bool showNewImage = false;
@@ -17,7 +17,7 @@ static void print_usage() {
             "  OPTIONS:\n"
             "  -h, --help        --- print this help\n"
             "  -i, --input       --- set image file name (default: "
-            "../images/airplane.ppm)\n"
+            "../images/peppers.ppm)\n"
             "  -o, --output      --- set extracted image file name (default: "
             "extractedColor.ppm)\n"
             "  -c, --channel     --- set channel number, [default] 1 (Blue), 2 "
@@ -26,15 +26,26 @@ static void print_usage() {
          << endl;
 }
 
-bool check_ppm_extension(const std::string& str) {
-    size_t found = str.find(".ppm");
+bool check_image_extension(const std::string& filename) {
+    // List of supported image extensions
+    std::vector<std::string> supportedExtensions = {".png", ".jpg",  ".jpeg",
+                                                    ".bmp", ".tiff", ".ppm"};
 
-    if (found != std::string::npos) {  // ".ppm" is found
-        // Check if it's at the end of the string or if it's a file extension
-        if (found == str.length() - 4) {
+    // Convert the filename to lowercase for case-insensitive comparison
+    std::string lowercaseFilename = filename;
+    std::transform(lowercaseFilename.begin(), lowercaseFilename.end(),
+                   lowercaseFilename.begin(), ::tolower);
+
+    // Check if the filename has any of the supported extensions
+    for (const std::string& extension : supportedExtensions) {
+        if (lowercaseFilename.length() >= extension.length() &&
+            lowercaseFilename.compare(
+                lowercaseFilename.length() - extension.length(),
+                extension.length(), extension) == 0) {
             return true;
         }
     }
+
     return false;
 }
 
@@ -47,7 +58,7 @@ int parse_args(int argc, char* argv[]) {
                    strcmp(argv[i], "--input") == 0) {
             i++;
             if (i < argc) {
-                if (!check_ppm_extension(argv[i])) {
+                if (!check_image_extension(argv[i])) {
                     std::cerr
                         << "Error: .ppm file extension needed for input option"
                         << std::endl;
@@ -63,7 +74,7 @@ int parse_args(int argc, char* argv[]) {
                    strcmp(argv[i], "--output") == 0) {
             i++;
             if (i < argc) {
-                if (!check_ppm_extension(argv[i])) {
+                if (!check_image_extension(argv[i])) {
                     std::cerr
                         << "Error: .ppm file extension needed for output option"
                         << std::endl;
@@ -121,26 +132,23 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Create a "empty" image
-    cv::Mat extractedChannel = cv::Mat::zeros(img.size(), CV_8UC1);
+    // Create a single-channel image with the specified channel
+    cv::Mat outputImage = cv::Mat::zeros(img.rows, img.cols, CV_8UC1);
 
-    // Split the image into individual channels
-    std::vector<cv::Mat> channels;
-    cv::split(img, channels);
+    for (int i = 0; i < img.rows; ++i) {
+        for (int j = 0; j < img.cols; ++j) {
+            /* Since outputImage is single-channel, each pixel is represented 
+                by an unsigned char. However, considering that the input image 
+                is a 3-channel image, we use the Vec3b vector class that already 
+                holds the 3 channels, with each being an 8-bit unsigned char that's
+                why we use [] to index the correct channel */
+            outputImage.at<uchar>(i, j) =
+                img.at<cv::Vec3b>(i, j)[Options::channel];
+        }
+    }
 
-    // Set the extracted channel and leave the others as zeros
-    // 1 line for all values of a given channel
-    //std::vector<cv::Mat> newChannels(
-    //    3, cv::Mat(img.size(), CV_8UC1, cv::Scalar(0)));
-
-    // only assign values to the selected channel
-    //newChannels[Options::channel] = channels[Options::channel];
-
-    // merge the channels back into a single image
-    //cv::merge(newChannels, extractedChannel);
-
-    // Save the result to the specified output file (obligatory .ppm)
-    cv::imwrite(Options::outputFile, channels[Options::channel]);
+    // Save the result to the output file
+    cv::imwrite(Options::outputFile, outputImage);
 
     clock_t endTime = clock();
 
@@ -150,7 +158,7 @@ int main(int argc, char** argv) {
               << " save image as " << Options::outputFile << std::endl;
 
     if (Options::showNewImage) {
-        imshow("Extracted Color Channel", channels[Options::channel]);
+        imshow("Extracted Color Channel", outputImage);
         waitKey(0);
     }
 
