@@ -147,8 +147,13 @@ int main(int argc, char** argv) {
         }
     }
 
+    // Since it's expected a image with one channel, will have to convert it to
+    //  grayscale
+    cv::Mat outputGray;
+    cv::cvtColor(outputImage, outputGray, cv::COLOR_GRAY2BGR);
+
     // Save the result to the output file
-    cv::imwrite(Options::outputFile, outputImage);
+    cv::imwrite(Options::outputFile, outputGray);
 
     clock_t endTime = clock();
 
