@@ -62,6 +62,7 @@ target_link_libraries( mirrored_image ${OpenCV_LIBS} )
 
 # Tests
 set(TEST_SOURCES
+    ${SOURCE_FOLDER}/golomb.cpp
     ${TEST_FOLDER}/test_golomb.cpp
     )
 
