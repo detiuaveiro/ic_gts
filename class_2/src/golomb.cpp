@@ -49,21 +49,23 @@ std::string Golomb::getRemainderBinary(int r) {
 // Inteiro i é representado por 2 números: q e r
 // q é a parte inteira da divisão de n por m (parte unária)
 // r é o resto da divisão de n por m (parte binária)
-void Golomb::encode(int i) {
+void Golomb::encode(int value) {
     std::string s = "";
     int q = 0;
     int r = 0;
-    if (approach == 1) {
-        // SIGN AND MAGNITUDE -> MSB = 0 -> positive, MSB = 1 -> negative
+    if (approach ==
+        1) {  // SIGN AND MAGNITUDE -> MSB = 0 -> positive, MSB = 1 -> negative
 
         bool isNegative = false;
-        if (i < 0) {
+        if (value < 0) {
             isNegative = true;
-            i = -i;  // Encode the positive value of i
+            value = -value;  // Encode the positive value of i
         }
 
-        q = floor(i / m);
-        r = i % m;
+        q = floor(value / m);
+        r = value % m;
+
+        std::cout << "Unary: " << q << ", remainder: " << r << std::endl;
 
         for (int j = 0; j < q; j++)
             s += "1";  // representar q de forma unária
@@ -72,7 +74,7 @@ void Golomb::encode(int i) {
         // representar r de forma binária
         s += getRemainderBinary(r);
 
-        if (i != 0) {
+        if (value != 0) {
             if (isNegative)
                 s = s + "1";
             else
@@ -82,21 +84,19 @@ void Golomb::encode(int i) {
         long int_binary_val = 0;
         for (char c : s) {
             int_binary_val = (int_binary_val << 1) + (c - '0');
+            std::cout << "writing: " << c << std::endl;
         }
         bitStream.writeNBits(int_binary_val, s.length());
-        bitStream.~BitStream();
-    } else {
-        // VALUE INTERLEAVING
+    } else {  // VALUE INTERLEAVING
 
         // if number is negative, multiply by 2 and subtract 1
-        if (i < 0) {
-            i = -i;
-            i = 2 * i - 1;
-        } else {
-            i = 2 * i;
-        }
-        int q = floor(i / m);
-        int r = i % m;
+        if (value < 0)
+            value = 2 * -value - 1;
+        else
+            value = 2 * value;
+
+        int q = floor(value / m);  // unary part
+        int r = value % m;
 
         for (int j = 0; j < q; j++)
             s += "1";  // representar q de forma unária
@@ -136,8 +136,7 @@ int Golomb::decode() {
             break;
         }
     }
-    if (approach == 1) {
-        // SIGN AND MAGNITUDE
+    if (approach == 1) {  // SIGN AND MAGNITUDE
 
         // get the binary remainder
         for (unsigned long i = q + 1; i < s.length() - 1; i++) {
@@ -148,8 +147,7 @@ int Golomb::decode() {
         if (s[s.length() - 1] == '1')
             value = -value;
         return value;
-    } else {
-        // VALUE INTERLEAVING
+    } else {  // VALUE INTERLEAVING
 
         // get the binary remainder
         for (unsigned long i = q + 1; i < s.length(); i++) {

@@ -12,7 +12,7 @@
 
 class Golomb {
    private:
-    int m;
+    int m;         // distribution
     int approach;  // (1) sign magnitude (2) positive/negative value interleaving
     BitStream& bitStream;
 

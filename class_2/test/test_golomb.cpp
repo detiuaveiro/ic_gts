@@ -17,7 +17,7 @@ TEST(Golomb, txSmallValues) {
     EXPECT_NE(3, 2);
 
     BitStream writer('w', "test_golomb.bin");
-    Golomb golomb(5, writer);
+    Golomb golomb(5, writer, 1);
     std::list<int> values;
     for (int i = 0; i <= 15; i++) {
         golomb.encode(i);
@@ -30,6 +30,9 @@ TEST(Golomb, txSmallValues) {
         values.pop_front();
         EXPECT_EQ(decoded, original);
     }
+
+    // Remove test_golomb.bin
+    remove("test_golomb.bin");
 };
 
 TEST(Golomb, txNegativeValues) {
