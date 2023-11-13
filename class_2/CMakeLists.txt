@@ -31,6 +31,7 @@ FetchContent_MakeAvailable(googletest)
 
 SET (BASE_DIR ${CMAKE_SOURCE_DIR} )
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIR}/bin)
+SET (TEST_FOLDER ${BASE_DIR}/test)
 # Source Code Folder
 SET (SOURCE_FOLDER ${BASE_DIR}/src)
 
@@ -58,6 +59,14 @@ target_link_libraries( mirrored_image ${OpenCV_LIBS} )
 #        GTest::Main
 #        # add any necessary libraries here
 #)
-#add_test(<library> <file_name>)
-#target_link_libraries(<executable> gtest)
-#target_link_libraries(<executable> gtest_main)
+
+# Tests
+set(TEST_SOURCES
+    ${TEST_FOLDER}/test_golomb.cpp
+    )
+
+add_executable(tests ${TEST_SOURCES})
+target_link_libraries(tests gtest)
+target_link_libraries(tests gtest_main)
+target_link_libraries(tests ${OpenCV_LIBS})
+add_test(tests tests)

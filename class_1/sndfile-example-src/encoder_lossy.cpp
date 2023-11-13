@@ -191,7 +191,8 @@ std::vector<int> quantize_dct_coefficients(
     std::vector<int> quantizedCoefficients;
     for (const std::vector<double>& dctCoefficients : dct_blocks) {
         for (const double coefficient : dctCoefficients) {
-            int quantizedCoefficient = int(coefficient);
+            int quantizedCoefficient =
+                int(coefficient);  // Multiplicar estes valores com base na dct
             quantizedCoefficient >>= cutBits;  // LSB at 0
             quantizedCoefficient = quantizedCoefficient
                                    << cutBits;  // Revert the position change
