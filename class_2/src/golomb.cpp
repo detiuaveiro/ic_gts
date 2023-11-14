@@ -22,7 +22,6 @@ std::string Golomb::getRemainderBinary(int r) {
             s = std::to_string(r % 2) + s;
             r /= 2;
         }
-        //remainder_bits.push_back(ceil(log2(m)));
     } else  // truncar o código binário (m não é potência de 2)
     {
         int b = ceil(log2(m));
@@ -32,14 +31,12 @@ std::string Golomb::getRemainderBinary(int r) {
                 s = std::to_string(r % 2) + s;
                 r /= 2;
             }
-            //remainder_bits.push_back(b - 1);
         } else {  // encode os restantes valores de r usando b bits
             r += pow(2, b) - m;
             for (int i = 0; i < b; i++) {
                 s = std::to_string(r % 2) + s;
                 r /= 2;
             }
-            //remainder_bits.push_back(b);
         }
     }
 
@@ -127,10 +124,8 @@ int Golomb::decode() {
         int bit = bitStream.readBit();
         if(bit == 0)
             break;
-        std::cout << "bit Reading Quoficient: " << bit << std::endl;
         q++;
     }
-    std::cout << "q obtained: " << q << std::endl;
 
     int b = ceil(log2(m));
     int first_values = pow(2, b) - m;
@@ -138,44 +133,36 @@ int Golomb::decode() {
     // read the binary part
     std::string binary = "";
     int auxReminder = 0;
-    int bit = 0;
     for(int i = 0; i < b - 1; i++){
         int bit = bitStream.readBit();
-        std::cout << "bit Reading Remainder: " << bit << std::endl;
-        //binary_part += char(bit + '0');
         auxReminder = (auxReminder << 1) + bit;
         binary += char(bit + '0');
     }
-    std::cout << "auxReminder: " << auxReminder << std::endl;
 
-    int extraBit = 0;
+    int extraBit = 10;
     if (auxReminder >= first_values) {
         extraBit = bitStream.readBit();
-        
-        //binary += char(bit + '0');
+        binary += char(extraBit + '0');
     }
-    std::cout << "BINARY: " << binary << std::endl;
+
     // transform binary string to int, this is the remainder
     for (char ch : binary) {
         r = (r << 1) + (ch - '0'); 
     }
-    // DOESNT WORK FOR HIGHER M's
-    if (extraBit == 1){
-        r++;
-    }
 
-    std::cout << "bit Reading Remainder(extra bit): " << extraBit << std::endl;
-    std::cout << "r obtained: " << r << std::endl;
+    if (extraBit != 10){
+        int lowestValToSubstract = pow(2, b) - m;
+        r = r - lowestValToSubstract;
+    }
 
     value = q * m + r;
 
-    if (value == 0)
+    if (value == 0) {
         return value;
-    if (approach == 1) { 
+    } else if (approach == 1) { 
         // SIGN AND MAGNITUDE
         
         int sign = bitStream.readBit(); // Last bit is the sign
-        std::cout << "sign: " << sign << std::endl;
         if (sign == 1)
             value = -value;
         return value;
