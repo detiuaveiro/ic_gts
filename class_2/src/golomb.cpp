@@ -1,4 +1,4 @@
-#include <golomb.h>
+#include "golomb.h"
 
 Golomb::Golomb(int m, BitStream& bitStream, int approach)
     : bitStream(bitStream) {
@@ -84,7 +84,7 @@ void Golomb::encode(int i) {
             int_binary_val = (int_binary_val << 1) + (c - '0');
         }
         bitStream.writeNBits(int_binary_val, s.length());
-        bitStream.~BitStream();
+
     } else {
         // VALUE INTERLEAVING
 
@@ -117,47 +117,73 @@ void Golomb::encode(int i) {
 // Decode a sequence of bits
 int Golomb::decode() {
 
-    int ISTO_ESTA_MT_MAU = 6;    // mudar
-    int ISTO_ESTA_MT_MAU_2 = 6;  // mudar
-    long int_binary_val = bitStream.readNBits(ISTO_ESTA_MT_MAU);
-    std::string s = "";
-    for (int i = ISTO_ESTA_MT_MAU_2 - 1; i >= 0; i--) {
-        int bit = (int_binary_val >> i) & 1;
-        s += std::to_string(bit);
-    }
-
-    // Now that i have the string s, i can decode it
     int value = 0;
     int q = 0;
     int r = 0;
-    for (unsigned long i = 0; i < s.length(); i++) {
-        if (s[i] == '0') {
-            q = i;
-            break;
-        }
-    }
-    if (approach == 1) {
-        // SIGN AND MAGNITUDE
 
-        // get the binary remainder
-        for (unsigned long i = q + 1; i < s.length() - 1; i++) {
-            r = (r << 1) + (s[i] - '0');
-        }
-        value = q * m + r;
-        // last bit is the sign
-        if (s[s.length() - 1] == '1')
+    // read the unary part until a 0 is found
+    std::string unary = "";
+    while(true){
+        int bit = bitStream.readBit();
+        if(bit == 0)
+            break;
+        std::cout << "bit Reading Quoficient: " << bit << std::endl;
+        q++;
+    }
+    std::cout << "q obtained: " << q << std::endl;
+
+    int b = ceil(log2(m));
+    int first_values = pow(2, b) - m;
+
+    // read the binary part
+    std::string binary = "";
+    int auxReminder = 0;
+    int bit = 0;
+    for(int i = 0; i < b - 1; i++){
+        int bit = bitStream.readBit();
+        std::cout << "bit Reading Remainder: " << bit << std::endl;
+        //binary_part += char(bit + '0');
+        auxReminder = (auxReminder << 1) + bit;
+        binary += char(bit + '0');
+    }
+    std::cout << "auxReminder: " << auxReminder << std::endl;
+
+    int extraBit = 0;
+    if (auxReminder >= first_values) {
+        extraBit = bitStream.readBit();
+        
+        //binary += char(bit + '0');
+    }
+    std::cout << "BINARY: " << binary << std::endl;
+    // transform binary string to int, this is the remainder
+    for (char ch : binary) {
+        r = (r << 1) + (ch - '0'); 
+    }
+    // DOESNT WORK FOR HIGHER M's
+    if (extraBit == 1){
+        r++;
+    }
+
+    std::cout << "bit Reading Remainder(extra bit): " << extraBit << std::endl;
+    std::cout << "r obtained: " << r << std::endl;
+
+    value = q * m + r;
+
+    if (value == 0)
+        return value;
+    if (approach == 1) { 
+        // SIGN AND MAGNITUDE
+        
+        int sign = bitStream.readBit(); // Last bit is the sign
+        std::cout << "sign: " << sign << std::endl;
+        if (sign == 1)
             value = -value;
         return value;
+
     } else {
         // VALUE INTERLEAVING
 
-        // get the binary remainder
-        for (unsigned long i = q + 1; i < s.length(); i++) {
-            r = (r << 1) + (s[i] - '0');
-        }
-        value = q * m + r;
-        // if number is odd, add 1 and divide by 2
-        if (value % 2 == 1) {
+        if (value % 2 == 1) { // if number is odd, add 1 and divide by 2
             value++;
             value /= 2;
             value = -value;
