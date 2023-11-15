@@ -17,3 +17,6 @@ make
 ```
 
 The remainder of the instructions and analysis can be found in the **trab1_report.pdf** file.
+
+----
+* Grade: 19

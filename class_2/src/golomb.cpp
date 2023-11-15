@@ -1,4 +1,4 @@
-#include <golomb.h>
+#include "golomb.h"
 
 Golomb::Golomb(int m, BitStream& bitStream, int approach)
     : bitStream(bitStream) {
@@ -22,7 +22,6 @@ std::string Golomb::getRemainderBinary(int r) {
             s = std::to_string(r % 2) + s;
             r /= 2;
         }
-        //remainder_bits.push_back(ceil(log2(m)));
     } else  // truncar o código binário (m não é potência de 2)
     {
         int b = ceil(log2(m));
@@ -32,14 +31,12 @@ std::string Golomb::getRemainderBinary(int r) {
                 s = std::to_string(r % 2) + s;
                 r /= 2;
             }
-            //remainder_bits.push_back(b - 1);
         } else {  // encode os restantes valores de r usando b bits
             r += pow(2, b) - m;
             for (int i = 0; i < b; i++) {
                 s = std::to_string(r % 2) + s;
                 r /= 2;
             }
-            //remainder_bits.push_back(b);
         }
     }
 
@@ -87,7 +84,9 @@ void Golomb::encode(int value) {
             std::cout << "writing: " << c << std::endl;
         }
         bitStream.writeNBits(int_binary_val, s.length());
-    } else {  // VALUE INTERLEAVING
+
+    } else {
+        // VALUE INTERLEAVING
 
         // if number is negative, multiply by 2 and subtract 1
         if (value < 0)
@@ -117,45 +116,63 @@ void Golomb::encode(int value) {
 // Decode a sequence of bits
 int Golomb::decode() {
 
-    int ISTO_ESTA_MT_MAU = 6;    // mudar
-    int ISTO_ESTA_MT_MAU_2 = 6;  // mudar
-    long int_binary_val = bitStream.readNBits(ISTO_ESTA_MT_MAU);
-    std::string s = "";
-    for (int i = ISTO_ESTA_MT_MAU_2 - 1; i >= 0; i--) {
-        int bit = (int_binary_val >> i) & 1;
-        s += std::to_string(bit);
-    }
-
-    // Now that i have the string s, i can decode it
     int value = 0;
     int q = 0;
     int r = 0;
-    for (unsigned long i = 0; i < s.length(); i++) {
-        if (s[i] == '0') {
-            q = i;
-            break;
-        }
-    }
-    if (approach == 1) {  // SIGN AND MAGNITUDE
 
-        // get the binary remainder
-        for (unsigned long i = q + 1; i < s.length() - 1; i++) {
-            r = (r << 1) + (s[i] - '0');
-        }
-        value = q * m + r;
-        // last bit is the sign
-        if (s[s.length() - 1] == '1')
+    // read the unary part until a 0 is found
+    std::string unary = "";
+    while(true){
+        int bit = bitStream.readBit();
+        if(bit == 0)
+            break;
+        q++;
+    }
+
+    int b = ceil(log2(m));
+    int first_values = pow(2, b) - m;
+
+    // read the binary part
+    std::string binary = "";
+    int auxReminder = 0;
+    for(int i = 0; i < b - 1; i++){
+        int bit = bitStream.readBit();
+        auxReminder = (auxReminder << 1) + bit;
+        binary += char(bit + '0');
+    }
+
+    int extraBit = 10;
+    if (auxReminder >= first_values) {
+        extraBit = bitStream.readBit();
+        binary += char(extraBit + '0');
+    }
+
+    // transform binary string to int, this is the remainder
+    for (char ch : binary) {
+        r = (r << 1) + (ch - '0'); 
+    }
+
+    if (extraBit != 10){
+        int lowestValToSubstract = pow(2, b) - m;
+        r = r - lowestValToSubstract;
+    }
+
+    value = q * m + r;
+
+    if (value == 0) {
+        return value;
+    } else if (approach == 1) { 
+        // SIGN AND MAGNITUDE
+        
+        int sign = bitStream.readBit(); // Last bit is the sign
+        if (sign == 1)
             value = -value;
         return value;
-    } else {  // VALUE INTERLEAVING
 
-        // get the binary remainder
-        for (unsigned long i = q + 1; i < s.length(); i++) {
-            r = (r << 1) + (s[i] - '0');
-        }
-        value = q * m + r;
-        // if number is odd, add 1 and divide by 2
-        if (value % 2 == 1) {
+    } else {
+        // VALUE INTERLEAVING
+
+        if (value % 2 == 1) { // if number is odd, add 1 and divide by 2
             value++;
             value /= 2;
             value = -value;
