@@ -62,7 +62,7 @@ void Golomb::encode(int value) {
         q = floor(value / m);
         r = value % m;
 
-        std::cout << "Unary: " << q << ", remainder: " << r << std::endl;
+        //std::cout << "Unary: " << q << ", remainder: " << r << std::endl;
 
         for (int j = 0; j < q; j++)
             s += "1";  // representar q de forma unária
@@ -81,7 +81,7 @@ void Golomb::encode(int value) {
         long int_binary_val = 0;
         for (char c : s) {
             int_binary_val = (int_binary_val << 1) + (c - '0');
-            std::cout << "writing: " << c << std::endl;
+            //std::cout << "writing: " << c << std::endl;
         }
         bitStream.writeNBits(int_binary_val, s.length());
 
@@ -122,9 +122,9 @@ int Golomb::decode() {
 
     // read the unary part until a 0 is found
     std::string unary = "";
-    while(true){
+    while (true) {
         int bit = bitStream.readBit();
-        if(bit == 0)
+        if (bit == 0)
             break;
         q++;
     }
@@ -135,7 +135,7 @@ int Golomb::decode() {
     // read the binary part
     std::string binary = "";
     int auxReminder = 0;
-    for(int i = 0; i < b - 1; i++){
+    for (int i = 0; i < b - 1; i++) {
         int bit = bitStream.readBit();
         auxReminder = (auxReminder << 1) + bit;
         binary += char(bit + '0');
@@ -149,10 +149,10 @@ int Golomb::decode() {
 
     // transform binary string to int, this is the remainder
     for (char ch : binary) {
-        r = (r << 1) + (ch - '0'); 
+        r = (r << 1) + (ch - '0');
     }
 
-    if (extraBit != 10){
+    if (extraBit != 10) {
         int lowestValToSubstract = pow(2, b) - m;
         r = r - lowestValToSubstract;
     }
@@ -161,10 +161,10 @@ int Golomb::decode() {
 
     if (value == 0) {
         return value;
-    } else if (approach == 1) { 
+    } else if (approach == 1) {
         // SIGN AND MAGNITUDE
-        
-        int sign = bitStream.readBit(); // Last bit is the sign
+
+        int sign = bitStream.readBit();  // Last bit is the sign
         if (sign == 1)
             value = -value;
         return value;
@@ -172,7 +172,7 @@ int Golomb::decode() {
     } else {
         // VALUE INTERLEAVING
 
-        if (value % 2 == 1) { // if number is odd, add 1 and divide by 2
+        if (value % 2 == 1) {  // if number is odd, add 1 and divide by 2
             value++;
             value /= 2;
             value = -value;
