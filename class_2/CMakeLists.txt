@@ -1,24 +1,27 @@
 cmake_minimum_required(VERSION 3.16)
 project(image_processing)
+enable_testing()
+
+##############################################################################
+###################           Compilation Flags            ###################
+##############################################################################
 
 #SET (CMAKE_BUILD_TYPE "Release")
 SET (CMAKE_BUILD_TYPE "Debug")
-
-enable_testing()
-
 set(CMAKE_CXX_STANDARD 17)
+
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -std=c++17")
 SET (CMAKE_CXX_FLAGS_RELEASE "-O3")
 #SET (CMAKE_CXX_FLAGS_DEBUG "-g3 -fsanitize=address")
 
+##############################################################################
+###################     Get Google Test automatically      ###################
+##############################################################################
+
 # Get Google test
 #find_package(GTest REQUIRED)
 #include_directories(${GTEST_INCLUDE_DIRS})
-
-# Use the usually pre-installed one
-find_package( OpenCV REQUIRED )
-include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 # Get Google test automatically
 include(FetchContent)
@@ -28,6 +31,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 
+##############################################################################
+###################            Other Packages              ###################
+##############################################################################
+
+# Use the usually pre-installed one
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+find_library(sndfile libsndfile)
+
+##############################################################################
+###################          Variables and DIRS            ###################
+##############################################################################
 
 SET (BASE_DIR ${CMAKE_SOURCE_DIR} )
 SET (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BASE_DIR}/bin)
@@ -42,6 +58,9 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/lib
 )
 
+##############################################################################
+###################           Executable files             ###################
+##############################################################################
 
 add_executable(system_test ${SOURCE_FOLDER}/systemCheck.cpp)
 target_link_libraries( system_test ${OpenCV_LIBS} )
@@ -54,13 +73,14 @@ target_link_libraries( negative_image ${OpenCV_LIBS} )
 
 add_executable(mirrored_image ${SOURCE_FOLDER}/mirrored_image.cpp)
 target_link_libraries( mirrored_image ${OpenCV_LIBS} )
-#    PRIVATE
-#        GTest::GTest
-#        GTest::Main
-#        # add any necessary libraries here
-#)
 
-# Tests
+add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb_encoder.cpp ${SOURCE_FOLDER}/golomb_codec.cpp)
+target_link_libraries( golomb_encoder ${OpenCV_LIBS} sndfile )
+
+##############################################################################
+###################                 Tests                  ###################
+##############################################################################
+
 set(TEST_SOURCES
     ${SOURCE_FOLDER}/golomb.cpp
     ${TEST_FOLDER}/test_golomb.cpp
