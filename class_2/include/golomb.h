@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cmath>
 #include <iostream>
 #include <string>
@@ -20,11 +22,17 @@ class Golomb {
     std::string getRemainderBinary(int r);
 
    public:
-    Golomb(int m, BitStream& bitStream, int approach = 1);
+    Golomb(int m = 4, BitStream& bitStream, int approach = 1);
 
     ~Golomb() { flush(); }
 
     void flush() { bitStream.~BitStream(); }
+
+    void setM(int newM) { this->m = newM; }
+    int getM() { return m; }
+
+    void setApproach(int newApproach) { this->approach = newApproach; }
+    int getApproach() { return approach; }
 
     // Inteiro i é representado por 2 números: q e r
     // q é a parte inteira da divisão de n por m (parte unária)

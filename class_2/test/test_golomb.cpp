@@ -6,6 +6,8 @@
 // Import of local libraries
 #include <golomb.h>
 
+#define TEST_FILE_NAME "test_golomb.bin"
+
 using namespace std;
 
 TEST(Golomb, txSmallValues_mPowerOf2) {
@@ -16,7 +18,7 @@ TEST(Golomb, txSmallValues_mPowerOf2) {
     // Check if the number of exit ports is correct
     EXPECT_NE(3, 2);
 
-    BitStream writer('w', "test_golomb.bin");
+    BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(4, writer);
     std::list<int> values;
     for (int i = 0; i <= 20; i++) {
@@ -25,7 +27,7 @@ TEST(Golomb, txSmallValues_mPowerOf2) {
     }
     golomb.~Golomb();
 
-    BitStream reader('r', "test_golomb.bin");
+    BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(4, reader);
     for (int i = 0; i <= 20; i++) {
         int decoded = golomb2.decode();
@@ -37,6 +39,8 @@ TEST(Golomb, txSmallValues_mPowerOf2) {
         EXPECT_EQ(decoded, original);
     }
     golomb2.~Golomb();
+
+    remove(TEST_FILE_NAME);
 };
 
 TEST(Golomb, txSmallValues_mNotPowerOf2) {
@@ -47,7 +51,7 @@ TEST(Golomb, txSmallValues_mNotPowerOf2) {
     // Check if the number of exit ports is correct
     EXPECT_NE(3, 2);
 
-    BitStream writer('w', "test_golomb.bin");
+    BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(5, writer, 1);
     std::list<int> values;
     for (int i = 0; i <= 15; i++) {
@@ -56,7 +60,7 @@ TEST(Golomb, txSmallValues_mNotPowerOf2) {
     }
     golomb.~Golomb();
 
-    BitStream reader('r', "test_golomb.bin");
+    BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(5, reader);
     for (int i = 0; i <= 15; i++) {
         int decoded = golomb2.decode();
@@ -68,6 +72,8 @@ TEST(Golomb, txSmallValues_mNotPowerOf2) {
         EXPECT_EQ(decoded, original);
     }
     golomb2.~Golomb();
+
+    remove(TEST_FILE_NAME);
 };
 
 TEST(Golomb, txNegativeSignMagnitude) {
@@ -75,7 +81,7 @@ TEST(Golomb, txNegativeSignMagnitude) {
     // Check if the number of core blocks is correct
     EXPECT_EQ(2, 2);
 
-    BitStream writer('w', "test_golomb.bin");
+    BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(11, writer);
     std::list<int> values;
     for (int i = 0; i >= -15; i--) {
@@ -84,7 +90,7 @@ TEST(Golomb, txNegativeSignMagnitude) {
     }
     golomb.~Golomb();
 
-    BitStream reader('r', "test_golomb.bin");
+    BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(11, reader);
     for (int i = 0; i >= -15; i--) {
         int decoded = golomb2.decode();
@@ -96,6 +102,8 @@ TEST(Golomb, txNegativeSignMagnitude) {
         EXPECT_EQ(decoded, original);
     }
     golomb2.~Golomb();
+
+    remove(TEST_FILE_NAME);
 };
 
 TEST(Golomb, txNegativeValueInterleaving) {
@@ -103,7 +111,7 @@ TEST(Golomb, txNegativeValueInterleaving) {
     // Check if the number of core blocks is correct
     EXPECT_EQ(2, 2);
 
-    BitStream writer('w', "test_golomb.bin");
+    BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(5, writer, 2);
     std::list<int> values;
     for (int i = 0; i >= -15; i--) {
@@ -112,7 +120,7 @@ TEST(Golomb, txNegativeValueInterleaving) {
     }
     golomb.~Golomb();
 
-    BitStream reader('r', "test_golomb.bin");
+    BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(5, reader, 2);
     for (int i = 0; i >= -15; i--) {
         int decoded = golomb2.decode();
@@ -124,4 +132,6 @@ TEST(Golomb, txNegativeValueInterleaving) {
         EXPECT_EQ(decoded, original);
     }
     golomb2.~Golomb();
+
+    remove(TEST_FILE_NAME);
 };

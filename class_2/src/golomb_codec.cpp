@@ -6,7 +6,8 @@
 ##############################################################################
 */
 
-GEncoder::GEncoder(/* args */) {}
+GEncoder::GEncoder(/* args */)
+    : writer('w', WRITER_FILE_NAME), golomb(DEFAULT_GOLOMB_M, writer) {}
 
 GEncoder::~GEncoder() {}
 

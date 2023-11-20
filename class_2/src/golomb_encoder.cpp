@@ -136,6 +136,8 @@ int main(int argc, char* argv[]) {
     // Create Golomb Encoder class
     GEncoder gEncoder;
 
+
+
     clock_t endTime = clock();
     std::cout << "Program took "
               << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000

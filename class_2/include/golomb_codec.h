@@ -1,4 +1,11 @@
 #pragma once
+#include <golomb.h>
+#include <string>
+
+#define WRITER_FILE_NAME "outputStream.bin"
+#define DEFAULT_GOLOMB_M 4
+
+enum PREDICTOR {DEFAULT, AUTOMATIC };
 
 /*
 ##############################################################################
@@ -8,9 +15,12 @@
 
 class GEncoder {
    private:
-    /* data */
+    Golomb golomb;
+    BitStream writer;
+    PREDICTOR predictor;
+
    public:
-    GEncoder(/* args */);
+    GEncoder();
     ~GEncoder();
 };
 
