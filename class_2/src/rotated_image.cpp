@@ -20,19 +20,23 @@ int main(int argc, char** argv )
 
     int angle = atoi(argv[2]) * 90;
 
+    int rowsLength = angle % 180 ? img.rows: img.cols;
+    int colsLength = angle % 180 ? img.cols: img.rows;
+
+    Mat rotated = Mat::zeros(rowsLength, colsLength, img.type());
+
     if(angle % 360 == 0){
         //input image == output image so it does nothing mk
     }
     else if(angle % 270 == 0){
         // Espelhar verticalmente -> Troca valores das linhas
-        for (int i = 0; i < img.rows / 2; i++)
+        for (int i = 0; i < img.rows-1; i++)
         {
-            for (int j = 0; j < img.cols; j++)
+            for (int j = 0; j < img.cols-1; j++)
             {
-                Vec3b aux = img.at<Vec3b>(i, j);
-                img.at<Vec3b>(i, j) = img.at<Vec3b>(i, img.cols - j - 1);
-                img.at<Vec3b>(img.rows - i - 1, j) = aux;
+                rotated.at<Vec3b>(img.rows - j - 1,i) = img.at<Vec3b>(i, j);
             }
+            
         }
     }
     else if (angle % 180 == 0){
@@ -42,16 +46,24 @@ int main(int argc, char** argv )
             for (int j = 0; j < img.cols; j++)
             {
                 //The first rows are equal to the inverse of the original last rows (i.e. row[0] = -(row[n]) )
-                img.at<Vec3b>(i, j) = img.at<Vec3b>(img.rows-i-1, img.cols - j - 1);
+                rotated.at<Vec3b>(img.rows - i - 1, img.cols - j - 1) = img.at<Vec3b>(i,j);
             }
         }
     }
     else{
+        for (int i = 0; i < img.rows; i++)
+        {
+            for (int j = 0; j < img.cols; j++)
+            {
+                rotated.at<Vec3b>(j, img.rows - i -1) = img.at<Vec3b>(i, j);
+            }
+            
+        }
         
     }
 
 
-    imwrite(argv[3], img);
+    imwrite(argv[3], rotated);
 
     return 0;
 }
