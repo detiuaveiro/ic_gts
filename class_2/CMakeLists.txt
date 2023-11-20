@@ -74,6 +74,9 @@ target_link_libraries( negative_image ${OpenCV_LIBS} )
 add_executable(mirrored_image ${SOURCE_FOLDER}/mirrored_image.cpp)
 target_link_libraries( mirrored_image ${OpenCV_LIBS} )
 
+add_executable(rotated_image ${SOURCE_FOLDER}/rotated_image.cpp)
+target_link_libraries( rotated_image ${OpenCV_LIBS} )
+
 add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb_encoder.cpp ${SOURCE_FOLDER}/golomb_codec.cpp)
 target_link_libraries( golomb_encoder ${OpenCV_LIBS} sndfile )
 
