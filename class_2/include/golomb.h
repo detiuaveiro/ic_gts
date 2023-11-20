@@ -22,7 +22,7 @@ class Golomb {
     std::string getRemainderBinary(int r);
 
    public:
-    Golomb(int m = 4, BitStream& bitStream, int approach = 1);
+    Golomb(int m, BitStream& bitStream, int approach = 1);
 
     ~Golomb() { flush(); }
 
