@@ -27,6 +27,7 @@ struct File {
     uint16_t sampleRate;
     uint32_t nFrames;
     uint16_t quantizationBits;
+    bool lossy;  // true if lossy, false if lossless
     /* Data */
     vector<Block> blocks;
 };
@@ -69,8 +70,18 @@ class GEncoder {
 
 class GDecoder {
    private:
-    /* data */
+    BitStream reader;
+    Golomb golomb;
+
+    std::string inputFileName;
+    File fileStruct;
+
+    std::vector<short> decode_block(Block block);
+
    public:
-    GDecoder(/* args */);
+    GDecoder(std::string inFileName);
     ~GDecoder();
+
+    File read_file();
+    std::vector<short> decode_file(File& f);
 };

@@ -13,6 +13,7 @@ string musicName = "../songs/sample01.wav";
 string encodedName = "encodedSample";
 size_t blockSize = 1024;
 size_t quantizationBits = 8;  // bits to be discarded
+int m = -1;                   // automatic
 bool lossy = false;
 size_t nChannels;
 size_t nFrames;
@@ -86,6 +87,17 @@ int process_arguments(int argc, char* argv[]) {
         } else if (strcmp(argv[i], "-l") == 0 ||
                    strcmp(argv[i], "--lossy") == 0) {
             Options::lossy = true;
+        } else if (strcmp(argv[i], "-m") == 0 ||
+                   strcmp(argv[i], "--modulus") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::m = atoi(argv[i]);
+            } else {
+                std::cerr
+                    << "Error: Missing or bad argument for -m/--modulus option."
+                    << argv[i] << std::endl;
+                return -1;
+            }
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
                       << std::endl;
@@ -158,7 +170,7 @@ int main(int argc, char* argv[]) {
     print_processing_information(nBlocks);
 
     // Create Golomb Encoder class
-    GEncoder gEncoder(Options::encodedName, -1, AUTOMATIC);
+    GEncoder gEncoder(Options::encodedName, Options::m, AUTOMATIC);
 
     // Create file struct
     File f;
@@ -167,6 +179,8 @@ int main(int argc, char* argv[]) {
     f.nChannels = Options::nChannels;
     f.nFrames = Options::nFrames;
     f.blocks = std::vector<Block>();
+    f.quantizationBits = Options::quantizationBits;
+    f.lossy = Options::lossy;
 
     gEncoder.encode_file(f, inputSamples, nBlocks);
 

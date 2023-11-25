@@ -83,6 +83,9 @@ target_link_libraries( bright_image ${OpenCV_LIBS} )
 add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/golomb_codec.cpp ${SOURCE_FOLDER}/golomb_encoder.cpp)
 target_link_libraries( golomb_encoder ${OpenCV_LIBS} sndfile )
 
+add_executable(golomb_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/golomb_codec.cpp ${SOURCE_FOLDER}/golomb_decoder.cpp)
+target_link_libraries( golomb_decoder ${OpenCV_LIBS} sndfile )
+
 ##############################################################################
 ###################                 Tests                  ###################
 ##############################################################################
@@ -90,6 +93,7 @@ target_link_libraries( golomb_encoder ${OpenCV_LIBS} sndfile )
 set(TEST_SOURCES
     ${SOURCE_FOLDER}/golomb.cpp
     ${TEST_FOLDER}/test_golomb.cpp
+    ${TEST_FOLDER}/test_bitStream.cpp
     )
 
 add_executable(tests ${TEST_SOURCES})

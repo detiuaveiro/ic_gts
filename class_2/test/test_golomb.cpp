@@ -12,12 +12,6 @@ using namespace std;
 
 TEST(Golomb, txSmallValues_mPowerOf2) {
 
-    // Check if the number of core blocks is correct
-    EXPECT_EQ(2, 2);
-
-    // Check if the number of exit ports is correct
-    EXPECT_NE(3, 2);
-
     BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(4, writer);
     std::list<int> values;
@@ -44,12 +38,6 @@ TEST(Golomb, txSmallValues_mPowerOf2) {
 };
 
 TEST(Golomb, txSmallValues_mNotPowerOf2) {
-
-    // Check if the number of core blocks is correct
-    EXPECT_EQ(2, 2);
-
-    // Check if the number of exit ports is correct
-    EXPECT_NE(3, 2);
 
     BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(5, writer, 1);
@@ -78,9 +66,6 @@ TEST(Golomb, txSmallValues_mNotPowerOf2) {
 
 TEST(Golomb, txNegativeSignMagnitude) {
 
-    // Check if the number of core blocks is correct
-    EXPECT_EQ(2, 2);
-
     BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(11, writer);
     std::list<int> values;
@@ -107,9 +92,6 @@ TEST(Golomb, txNegativeSignMagnitude) {
 };
 
 TEST(Golomb, txNegativeValueInterleaving) {
-
-    // Check if the number of core blocks is correct
-    EXPECT_EQ(2, 2);
 
     BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(5, writer, 2);
