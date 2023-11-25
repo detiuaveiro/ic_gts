@@ -114,6 +114,19 @@ int check_wav_file(SndfileHandle& musicFile) {
     return 0;
 }
 
+void print_processing_information(int nBlocks) {
+    cout << "\nMusic Processing information: \n"
+         << " - Music File Name: " << Options::musicName
+         << "\n - Encoded File Name: " << Options::encodedName
+         << "\n - Block Size: " << Options::blockSize
+         << "\n - Number of Channels: " << Options::nChannels
+         << "\n - Sample Rate: " << Options::sampleRate
+         << "\n - Total Number of Frames: " << Options::nFrames
+         << "\n - Number of Blocks: " << nBlocks
+         << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless")
+         << "\n"
+         << endl;
+}
 int main(int argc, char* argv[]) {
     int ret = process_arguments(argc, argv);
     if (ret < 0)
@@ -133,10 +146,19 @@ int main(int argc, char* argv[]) {
     Options::nChannels = static_cast<size_t>(sfhIn.channels());
     Options::nFrames = static_cast<size_t>(sfhIn.frames());
 
+    std::vector<short> inputSamples(Options::nChannels * Options::nFrames);
+    sfhIn.readf(inputSamples.data(), Options::nFrames);
+
+    size_t nBlocks{static_cast<size_t>(
+        ceil(static_cast<double>(Options::nFrames) / Options::blockSize))};
+
+    // Do zero padding, if necessary
+    inputSamples.resize(nBlocks * Options::blockSize * Options::nChannels);
+
+    print_processing_information(nBlocks);
+
     // Create Golomb Encoder class
-    GEncoder gEncoder;
-
-
+    GEncoder gEncoder(-1, AUTOMATIC);
 
     clock_t endTime = clock();
     std::cout << "Program took "

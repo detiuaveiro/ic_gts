@@ -80,7 +80,7 @@ target_link_libraries( rotated_image ${OpenCV_LIBS} )
 add_executable(bright_image ${SOURCE_FOLDER}/bright_image.cpp)
 target_link_libraries( bright_image ${OpenCV_LIBS} )
 
-add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb_encoder.cpp ${SOURCE_FOLDER}/golomb_codec.cpp)
+add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/golomb_codec.cpp ${SOURCE_FOLDER}/golomb_encoder.cpp)
 target_link_libraries( golomb_encoder ${OpenCV_LIBS} sndfile )
 
 ##############################################################################
