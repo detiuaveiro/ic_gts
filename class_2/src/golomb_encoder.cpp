@@ -158,7 +158,17 @@ int main(int argc, char* argv[]) {
     print_processing_information(nBlocks);
 
     // Create Golomb Encoder class
-    GEncoder gEncoder(-1, AUTOMATIC);
+    GEncoder gEncoder(Options::encodedName, -1, AUTOMATIC);
+
+    // Create file struct
+    File f;
+    f.sampleRate = Options::sampleRate;
+    f.blockSize = Options::blockSize;
+    f.nChannels = Options::nChannels;
+    f.nFrames = Options::nFrames;
+    f.blocks = std::vector<Block>();
+
+    gEncoder.encode_file(f, inputSamples, nBlocks);
 
     clock_t endTime = clock();
     std::cout << "Program took "
