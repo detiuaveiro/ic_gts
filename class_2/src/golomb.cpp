@@ -11,79 +11,73 @@ Golomb::Golomb(int m, BitStream& bitStream, int approach)
     }
 }
 
-// Representar r de forma binária
+// Represent remainder as binary
 std::string Golomb::getRemainderBinary(int r) {
-    std::string s = "";
+    std::string golomb_remainder = "";
 
-    if ((m & (m - 1)) == 0)  // m é potência de 2
+    if ((m & (m - 1)) == 0)  // m is power of 2
     {
         for (int i = 0; i < ceil(log2(m));
-             i++) {  // log2(m) = nº bits para representar r
-            s = std::to_string(r % 2) + s;
+             i++) {  // log2(m) = number of bits to represent m
+            golomb_remainder = std::to_string(r % 2) + golomb_remainder;
             r /= 2;
         }
-    } else  // truncar o código binário (m não é potência de 2)
+    } else  // truncate when m is not power of 2
     {
         int b = ceil(log2(m));
-        // encode primeiros 2^b - m valores de r usando b - 1 bits
+        // encode first 2^b - m values of r using b - 1 bits
         if (r < pow(2, b) - m) {
             for (int i = 0; i < b - 1; i++) {
-                s = std::to_string(r % 2) + s;
+                golomb_remainder = std::to_string(r % 2) + golomb_remainder;
                 r /= 2;
             }
-        } else {  // encode os restantes valores de r usando b bits
+        } else {  // encode the remaining values of r using b bits
             r += pow(2, b) - m;
             for (int i = 0; i < b; i++) {
-                s = std::to_string(r % 2) + s;
+                golomb_remainder = std::to_string(r % 2) + golomb_remainder;
                 r /= 2;
             }
         }
     }
 
-    return s;
+    return golomb_remainder;
 }
 
-// Inteiro i é representado por 2 números: q e r
-// q é a parte inteira da divisão de n por m (parte unária)
-// r é o resto da divisão de n por m (parte binária)
 void Golomb::encode(int value) {
-    std::string s = "";
-    int q = 0;
-    int r = 0;
+    std::string golomb_code = "";
+    int quocient = 0;
+    int remainder = 0;
     if (approach ==
-        1) {  // SIGN AND MAGNITUDE -> MSB = 0 -> positive, MSB = 1 -> negative
+        1) {  // SIGN AND MAGNITUDE
 
         bool isNegative = false;
         if (value < 0) {
             isNegative = true;
-            value = -value;  // Encode the positive value of i
+            value = -value;  // Encode the positive value, the sign will be added later
         }
 
-        q = floor(value / m);
-        r = value % m;
+        quocient = floor(value / m);
+        remainder = value % m;
 
-        //std::cout << "Unary: " << q << ", remainder: " << r << std::endl;
+        for (int j = 0; j < quocient; j++)
+            golomb_code += "1";  // represent quocient as unary
+        golomb_code += "0";      // separate quocient from remainder
 
-        for (int j = 0; j < q; j++)
-            s += "1";  // representar q de forma unária
-        s += "0";      // separar q de r
-
-        // representar r de forma binária
-        s += getRemainderBinary(r);
+        // represent remainder as binary
+        golomb_code += getRemainderBinary(remainder);
 
         if (value != 0) {
             if (isNegative)
-                s = s + "1";
+                golomb_code = golomb_code + "1";
             else
-                s = s + "0";
+                golomb_code = golomb_code + "0";
         }
-        // converter s (binario) em inteiro
-        long int_binary_val = 0;
-        for (char c : s) {
-            int_binary_val = (int_binary_val << 1) + (c - '0');
-            //std::cout << "writing: " << c << std::endl;
+        // convert golomb_code (binary) to long int
+        long long_val = 0;
+        for (char c : golomb_code) {
+            long_val = (long_val << 1) + (c - '0');
         }
-        bitStream.writeNBits(int_binary_val, s.length());
+        bitStream.writeNBits(long_val, golomb_code.length());
 
     } else {
         // VALUE INTERLEAVING
@@ -94,22 +88,20 @@ void Golomb::encode(int value) {
         else
             value = 2 * value;
 
-        int q = floor(value / m);  // unary part
-        int r = value % m;
+        quocient = floor(value / m);  
+        remainder = value % m;
 
-        for (int j = 0; j < q; j++)
-            s += "1";  // representar q de forma unária
-        s += "0";      // separar q de r
+        for (int j = 0; j < quocient; j++)
+            golomb_code += "1";  
+        golomb_code += "0";      
 
-        // representar r de forma binária
-        s += getRemainderBinary(r);
+        golomb_code += getRemainderBinary(remainder);
 
-        // converter s (binario) em inteiro
-        long int_binary_val = 0;
-        for (char c : s) {
-            int_binary_val = (int_binary_val << 1) + (c - '0');
+        long long_val = 0;
+        for (char c : golomb_code) {
+            long_val = (long_val << 1) + (c - '0');
         }
-        bitStream.writeNBits(int_binary_val, s.length());
+        bitStream.writeNBits(long_val, golomb_code.length());
     }
 }
 
@@ -117,8 +109,8 @@ void Golomb::encode(int value) {
 int Golomb::decode() {
 
     int value = 0;
-    int q = 0;
-    int r = 0;
+    int quocient = 0;
+    int remainder = 0;
 
     // read the unary part until a 0 is found
     std::string unary = "";
@@ -126,7 +118,7 @@ int Golomb::decode() {
         int bit = bitStream.readBit();
         if (bit == 0)
             break;
-        q++;
+        quocient++;
     }
 
     int b = ceil(log2(m));
@@ -142,22 +134,22 @@ int Golomb::decode() {
     }
 
     int extraBit = 10;
-    if (auxReminder >= first_values) {
+    if (auxReminder >= first_values) { 
         extraBit = bitStream.readBit();
         binary += char(extraBit + '0');
     }
 
     // transform binary string to int, this is the remainder
     for (char ch : binary) {
-        r = (r << 1) + (ch - '0');
+        remainder = (remainder << 1) + (ch - '0');
     }
 
     if (extraBit != 10) {
         int lowestValToSubstract = pow(2, b) - m;
-        r = r - lowestValToSubstract;
+        remainder = remainder - lowestValToSubstract;
     }
 
-    value = q * m + r;
+    value = quocient * m + remainder;
 
     if (value == 0) {
         return value;
