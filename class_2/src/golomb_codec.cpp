@@ -27,7 +27,7 @@ int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples) {
         int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
         int a2 = (size - 2) < 0 ? 0 : samples.at(size - 2);
         return predict2(a1, a2);
-    } else if (type == PREDICT3) {
+    } else {
         int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
         int a2 = (size - 2) < 0 ? 0 : samples.at(size - 2);
         int a3 = (size - 3) < 0 ? 0 : samples.at(size - 3);
@@ -225,6 +225,14 @@ File& GDecoder::read_file() {
         cout << " - Reading Block " << unsigned(bId)
              << " with m = " << unsigned(block.m)
              << " and predictor = " << unsigned(block.predictor) << endl;
+
+        // check m
+        if (block.m < 1) {
+            cerr << "Error: Encountered invalid m = " << unsigned(block.m)
+                 << endl;
+            exit(2);
+        }
+
         for (uint16_t i = 0; i < fileStruct.blockSize; i++)
             block.data.push_back((short)golomb.decode());
 
