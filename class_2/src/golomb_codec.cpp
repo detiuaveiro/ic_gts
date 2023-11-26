@@ -1,8 +1,57 @@
 #include "golomb_codec.h"
 
-int predict1(int a, int b, int c) {
-    return 3 * a - 3 * b + c;
-};
+/*
+##############################################################################
+###################           Predictor Class              ###################
+##############################################################################
+*/
+
+Predictor::Predictor() {}
+
+Predictor::~Predictor() {}
+
+PREDICTOR_TYPE Predictor::benchmark(std::vector<short> samples) {}
+
+int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples) {
+    if (!check_type(type)) {
+        cerr << "Error: Unknown Predictor " << unsigned(type)
+             << " encountered while decoding Block" << endl;
+        exit(2);
+    }
+
+    int size = (int)samples.size();
+    if (type == PREDICT1) {
+        int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
+        return predict1(a1);
+    } else if (type == PREDICT2) {
+        int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
+        int a2 = (size - 2) < 0 ? 0 : samples.at(size - 2);
+        return predict2(a1, a2);
+    } else if (type == PREDICT3) {
+        int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
+        int a2 = (size - 2) < 0 ? 0 : samples.at(size - 2);
+        int a3 = (size - 3) < 0 ? 0 : samples.at(size - 3);
+        return predict3(a1, a2, a3);
+    }
+}
+
+int Predictor::predict1(int a1) {
+    return a1;
+}
+
+int Predictor::predict2(int a1, int a2) {
+    return (2 * a1) - a2;
+}
+
+int Predictor::predict3(int a1, int a2, int a3) {
+    return (3 * a1) - (3 * a2) + a3;
+}
+
+bool Predictor::check_type(PREDICTOR_TYPE type) {
+    if (type == PREDICT1 || type == PREDICT2 || type == PREDICT3)
+        return true;
+    return false;
+}
 
 /*
 ##############################################################################
@@ -11,18 +60,27 @@ int predict1(int a, int b, int c) {
 */
 
 GEncoder::GEncoder(std::string outFileName, int m = -1,
-                   PREDICTOR pred = AUTOMATIC)
+                   PREDICTOR_TYPE pred = AUTOMATIC)
     : writer('w', outFileName), golomb(DEFAULT_GOLOMB_M, writer) {
 
     this->m = m;
     this->outputFileName = outFileName;
+
+    if (!predictorClass.check_type(pred)) {
+        cerr << "Error: Unknown Predictor " << unsigned(pred)
+             << " encountered while decoding Block" << endl;
+        exit(2);
+    }
     this->predictor = pred;
 }
 
 GEncoder::~GEncoder() {
-    golomb.flush();
     golomb.~Golomb();
     writer.~BitStream();
+}
+
+int GEncoder::test_calculate_m(std::vector<short>& values, int blockSize) {
+    return calculate_m(values, blockSize);
 }
 
 int GEncoder::calculate_m(std::vector<short>& values, int blockSize) {
@@ -77,22 +135,21 @@ void GEncoder::write_file() {
 }
 
 Block GEncoder::process_block(std::vector<short>& block) {
-    // change this to benchmark the various predictors in automatic
-    PREDICTOR pred = PREDICT1;
+
+    PREDICTOR_TYPE pred = predictor;
+    if (pred == AUTOMATIC)
+        pred = predictorClass.benchmark(block);
 
     Block encodedBlock;
     encodedBlock.predictor = pred;
 
-    // Mono treatment
+    // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
-        // take into account that when starting, arr index < 0 are 0
-        int a = (i - 1) < 0 ? 0 : block.at(i - 1);
-        int b = (i - 2) < 0 ? 0 : block.at(i - 2);
-        int c = (i - 3) < 0 ? 0 : block.at(i - 3);
-        encodedBlock.data.push_back(predict1(a, b, c));
+        int prediction = predictorClass.predict(pred, block);
+        encodedBlock.data.push_back(prediction);
     }
 
-    // Use attributed m or calculate one
+    // Use attributed m or calculate one (improve this part)
     int bM = m;
     if (bM < 1)
         bM = calculate_m((block), fileStruct.blockSize);
@@ -104,6 +161,9 @@ Block GEncoder::process_block(std::vector<short>& block) {
 void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
+
+    // Probably add quantization
+
     // Divide in blocks and process each one
     for (int i = 0; i < (int)nBlocks; i++) {
         std::vector<short> block;
@@ -134,7 +194,6 @@ GDecoder::GDecoder(std::string inFileName)
 }
 
 GDecoder::~GDecoder() {
-    golomb.flush();
     golomb.~Golomb();
     reader.~BitStream();
 }
@@ -159,7 +218,7 @@ File& GDecoder::read_file() {
         Block block;
         // Read Block header
         block.m = reader.readNBits(8);
-        block.predictor = static_cast<PREDICTOR>(reader.readNBits(4));
+        block.predictor = static_cast<PREDICTOR_TYPE>(reader.readNBits(4));
 
         // Read Block data
         this->golomb.setM(block.m);
@@ -177,21 +236,10 @@ File& GDecoder::read_file() {
 
 std::vector<short> GDecoder::decode_block(Block& block) {
     std::vector<short> samples;
-    PREDICTOR pred = static_cast<PREDICTOR>(block.predictor);
+    PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
 
-    for (int i = 0; i < (int)block.data.size(); i++) {
-        // take into account that when starting, arr index < 0 are 0
-        int a = (i - 1) < 0 ? 0 : block.data.at(i - 1);
-        int b = (i - 2) < 0 ? 0 : block.data.at(i - 2);
-        int c = (i - 3) < 0 ? 0 : block.data.at(i - 3);
-        if (pred == PREDICT1)
-            samples.push_back(predict1(a, b, c));
-        else {
-            cerr << "Error: Unknown Predictor " << unsigned(pred)
-                 << " encountered while decoding Block" << endl;
-            exit(2);
-        }
-    }
+    for (int i = 0; i < (int)block.data.size(); i++)
+        samples.push_back(predictorClass.predict(pred, block.data));
 
     return samples;
 }

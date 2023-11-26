@@ -94,6 +94,9 @@ set(TEST_SOURCES
     ${SOURCE_FOLDER}/golomb.cpp
     ${TEST_FOLDER}/test_golomb.cpp
     ${TEST_FOLDER}/test_bitStream.cpp
+    ${SOURCE_FOLDER}/golomb_codec.cpp
+    ${TEST_FOLDER}/test_predictor.cpp
+    ${TEST_FOLDER}/test_gencoder.cpp
     )
 
 add_executable(tests ${TEST_SOURCES})

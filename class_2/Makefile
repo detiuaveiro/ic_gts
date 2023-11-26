@@ -3,4 +3,4 @@ all:
 	  if [ ! -d bin ]; then mkdir bin; fi; cmake ..; make)
 
 clean:
-	rm -rf build ../bin
+	rm -rf build bin

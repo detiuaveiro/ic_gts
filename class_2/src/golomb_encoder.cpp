@@ -18,6 +18,7 @@ bool lossy = false;
 size_t nChannels;
 size_t nFrames;
 size_t sampleRate;
+PREDICTOR_TYPE predictor = PREDICT1;
 }  // namespace Options
 
 static void print_usage() {
@@ -31,9 +32,10 @@ static void print_usage() {
             "  -b, --blockSize   --- set block size (default: 1024)\n"
             "  -q, --quant       --- set Quantization Levels (default: "
             "8)\n"
-            "  -l, --lossy       --- set lossy compression (default: off)"
+            "  -l, --lossy       --- set lossy compression (default: off)\n"
             "  -m, --modulus     --- set m number (default: automatic "
-            "calculation)"
+            "calculation)\n"
+            "  -p, --predict     --- set predictor [0,3] (default: PREDICT1)"
          << endl;
 }
 
@@ -95,6 +97,17 @@ int process_arguments(int argc, char* argv[]) {
             } else {
                 std::cerr
                     << "Error: Missing or bad argument for -m/--modulus option."
+                    << argv[i] << std::endl;
+                return -1;
+            }
+        } else if (strcmp(argv[i], "-p") == 0 ||
+                   strcmp(argv[i], "--predict") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::predictor = static_cast<PREDICTOR_TYPE>(atoi(argv[i]));
+            } else {
+                std::cerr
+                    << "Error: Missing or bad argument for -p/--predict option."
                     << argv[i] << std::endl;
                 return -1;
             }
@@ -170,7 +183,7 @@ int main(int argc, char* argv[]) {
     print_processing_information(nBlocks);
 
     // Create Golomb Encoder class
-    GEncoder gEncoder(Options::encodedName, Options::m, AUTOMATIC);
+    GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
     // Create file struct
     File f;
