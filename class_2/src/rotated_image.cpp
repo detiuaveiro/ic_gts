@@ -18,7 +18,7 @@ int main(int argc, char** argv )
         return 1;
     }
 
-    int angle = atoi(argv[2]) * 90;
+    int angle = atoi(argv[2]);
 
     int rowsLength = angle % 180 ? img.rows: img.cols;
     int colsLength = angle % 180 ? img.cols: img.rows;
