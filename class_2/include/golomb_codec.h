@@ -92,7 +92,7 @@ class GEncoder {
     File fileStruct;
 
     int calculate_m(std::vector<short>& values);
-    Block process_block(std::vector<short>& block);
+    Block process_block(std::vector<short>& block, int blockId);
     void write_file();
     void quantize_samples(std::vector<short>& inSamples);
 

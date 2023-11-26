@@ -193,11 +193,13 @@ void GEncoder::write_file() {
     }
 }
 
-Block GEncoder::process_block(std::vector<short>& block) {
+Block GEncoder::process_block(std::vector<short>& block, int blockId) {
 
     PREDICTOR_TYPE pred = predictor;
-    if (pred == AUTOMATIC)
+    if (pred == AUTOMATIC) {
+        cout << " - Benchmarking best predictor for Block " << blockId << endl;
         pred = predictorClass.benchmark(block);
+    }
 
     Block encodedBlock;
     encodedBlock.predictor = pred;
@@ -229,7 +231,7 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
         for (int j = 0; j < file.blockSize; j++) {
             block.push_back(inSamples[i * file.blockSize + j]);
         }
-        Block encodedBlock = process_block(block);
+        Block encodedBlock = process_block(block, i);
 
         // Add encoded block to file
         fileStruct.blocks.push_back(encodedBlock);

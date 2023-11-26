@@ -18,7 +18,7 @@ bool lossy = false;
 size_t nChannels;
 size_t nFrames;
 size_t sampleRate;
-PREDICTOR_TYPE predictor = PREDICT1;
+PREDICTOR_TYPE predictor = AUTOMATIC;
 }  // namespace Options
 
 static void print_usage() {
