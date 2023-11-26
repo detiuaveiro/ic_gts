@@ -174,30 +174,35 @@ void GEncoder::write_file() {
     writer.writeNBits(fileStruct.lossy, 2);
 
     // Write Blocks (data)
-    cout << "Writing Blocks to file..." << endl;
+    cout << "\nWriting data to file..." << endl;
 
-    int count = 0;
+    int count = 1;
     for (auto& block : fileStruct.blocks) {
         // Write Block header
         writer.writeNBits(block.m, 8);
         writer.writeNBits(block.predictor, 4);
 
         // Write Block data
-        cout << " - Writing Block " << count++
-             << " to file with m = " << unsigned(block.m)
-             << " and predictor = " << block.predictor << endl;
-        this->golomb.setM(block.m);
+        cout << " - Writing Block " << std::setw(3) << count++ << "/"
+             << std::setw(3) << fileStruct.blocks.size()
+             << " to file with m = " << std::setw(3) << unsigned(block.m)
+             << ", p = " << std::setw(3) << unsigned(block.predictor) << "\r"
+             << std::flush;
         for (auto sample : block.data) {
             golomb.encode(sample);
         }
     }
+    std::cout << "\n\n";
 }
 
-Block GEncoder::process_block(std::vector<short>& block, int blockId) {
+Block GEncoder::process_block(std::vector<short>& block, int blockId,
+                              int nBlocks) {
 
     PREDICTOR_TYPE pred = predictor;
     if (pred == AUTOMATIC) {
-        cout << " - Benchmarking best predictor for Block " << blockId << endl;
+        std::cout << " - "
+                  << "Benchmarking predictor for Block " << std::setw(3)
+                  << blockId + 1 << "/" << nBlocks << "\r" << std::flush;
         pred = predictorClass.benchmark(block);
     }
 
@@ -225,17 +230,20 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
 
     // Probably add quantization
 
+    std::cout << "Entering encoding phase" << std::endl;
     // Divide in blocks and process each one
     for (int i = 0; i < (int)nBlocks; i++) {
         std::vector<short> block;
         for (int j = 0; j < file.blockSize; j++) {
             block.push_back(inSamples[i * file.blockSize + j]);
         }
-        Block encodedBlock = process_block(block, i);
+        Block encodedBlock = process_block(block, i, nBlocks);
 
         // Add encoded block to file
         fileStruct.blocks.push_back(encodedBlock);
     }
+    if (predictor == AUTOMATIC)
+        std::cout << "\n";
 
     cout << "All blocks encoded. Writing to file" << endl;
 

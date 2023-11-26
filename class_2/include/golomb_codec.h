@@ -1,6 +1,7 @@
 #pragma once
 
 #include <golomb.h>
+#include <iostream>
 #include <string>
 
 #define WRITER_FILE_NAME "outputStream.bin"
@@ -92,7 +93,7 @@ class GEncoder {
     File fileStruct;
 
     int calculate_m(std::vector<short>& values);
-    Block process_block(std::vector<short>& block, int blockId);
+    Block process_block(std::vector<short>& block, int blockId, int nBlocks);
     void write_file();
     void quantize_samples(std::vector<short>& inSamples);
 
