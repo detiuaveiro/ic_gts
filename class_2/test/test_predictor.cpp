@@ -11,46 +11,46 @@ using namespace std;
 TEST(Predictor, testPredictor1) {
     Predictor predictor;
     std::vector<short> a = {1};
-    int res = predictor.predict(PREDICT1, a);
+    int res = predictor.predict(PREDICT1, a, 1);
     EXPECT_EQ(res, 1);
 
     a = {};
-    res = predictor.predict(PREDICT1, a);
+    res = predictor.predict(PREDICT1, a, 0);
     EXPECT_EQ(res, 0);
 };
 
 TEST(Predictor, testPredictor2) {
     Predictor predictor;
     std::vector<short> a = {1, 2};
-    int res = predictor.predict(PREDICT2, a);
+    int res = predictor.predict(PREDICT2, a, 2);
     EXPECT_EQ(res, 3);
 
     a = {};
-    res = predictor.predict(PREDICT2, a);
+    res = predictor.predict(PREDICT2, a, 0);
     EXPECT_EQ(res, 0);
 
     a = {1};
-    res = predictor.predict(PREDICT2, a);
+    res = predictor.predict(PREDICT2, a, 1);
     EXPECT_EQ(res, 2);
 };
 
 TEST(Predictor, testPredictor3) {
     Predictor predictor;
     std::vector<short> a = {1, 2, 3};
-    int res = predictor.predict(PREDICT3, a);
+    int res = predictor.predict(PREDICT3, a, 3);
 
     EXPECT_EQ(res, 4);
 
     a = {};
-    res = predictor.predict(PREDICT3, a);
+    res = predictor.predict(PREDICT3, a, 0);
     EXPECT_EQ(res, 0);
 
     a = {1};
-    res = predictor.predict(PREDICT3, a);
+    res = predictor.predict(PREDICT3, a, 1);
     EXPECT_EQ(res, 3);
 
     a = {1, 2};
-    res = predictor.predict(PREDICT3, a);
+    res = predictor.predict(PREDICT3, a, 2);
     EXPECT_EQ(res, 3);
 };
 
@@ -70,7 +70,7 @@ TEST(Predictor, testBadPredict) {
     std::vector<short> a = {1, 2, 3};
     int invalidOption = 15;
     EXPECT_EXIT(
-        predictor.predict(static_cast<PREDICTOR_TYPE>(invalidOption), a),
+        predictor.predict(static_cast<PREDICTOR_TYPE>(invalidOption), a, 3),
         ::testing::ExitedWithCode(2), "");
 };
 

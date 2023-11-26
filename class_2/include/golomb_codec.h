@@ -24,13 +24,16 @@ class Predictor {
    private:
     /*! a1, a2 and a3 represent, a(n-1) a(n-2) and a(n-3) respectively
             where n is the index of the predicted sample */
-    static int predict1(int a1);
-    static int predict2(int a1, int a2);
-    static int predict3(int a1, int a2, int a3);
+    int predict1(int a1);
+    int predict2(int a1, int a2);
+    int predict3(int a1, int a2, int a3);
 
     double calculateEntropy(PREDICTOR_TYPE type, std::vector<short>& samples);
 
+    int nChannels = 1;
+
    public:
+    Predictor(int nChannels);
     Predictor();
     ~Predictor();
 
@@ -44,9 +47,12 @@ class Predictor {
         Predict the next sample based on the type of the predictor and the
             previous samples
     */
-    int predict(PREDICTOR_TYPE type, std::vector<short> samples);
+    int predict(PREDICTOR_TYPE type, std::vector<short> samples, int index);
 
     bool check_type(PREDICTOR_TYPE type);
+
+    void set_nChannels(int nChannels);
+    int get_nChannels();
 };
 
 /*

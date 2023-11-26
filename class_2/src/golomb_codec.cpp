@@ -6,9 +6,20 @@
 ##############################################################################
 */
 
+Predictor::Predictor(int nChannels) {
+    this->nChannels = nChannels;
+}
+
 Predictor::Predictor() {}
 
 Predictor::~Predictor() {}
+
+void Predictor::set_nChannels(int nChannels) {
+    this->nChannels = nChannels;
+}
+int Predictor::get_nChannels() {
+    return this->nChannels;
+}
 
 int Predictor::predict1(int a1) {
     return a1;
@@ -31,12 +42,12 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
     for (size_t i = 3; i < samples.size(); ++i) {
         int prediction;
         if (type == PREDICT1) {
-            prediction = predict(type, {samples[i - 1]});
+            prediction = predict(type, {samples[i - 1]}, i);
         } else if (type == PREDICT2) {
-            prediction = predict(type, {samples[i - 1], samples[i - 2]});
+            prediction = predict(type, {samples[i - 1], samples[i - 2]}, i);
         } else {
-            prediction =
-                predict(type, {samples[i - 1], samples[i - 2], samples[i - 3]});
+            prediction = predict(
+                type, {samples[i - 1], samples[i - 2], samples[i - 3]}, i);
         }
         predictions.push_back(prediction);
         total_predictions++;
@@ -54,12 +65,16 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
     return entropy;
 }
 
-int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples) {
+int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
+                       int index) {
     if (!check_type(type)) {
         cerr << "Error: Unknown Predictor " << unsigned(type)
              << " encountered while decoding Block" << endl;
         exit(2);
     }
+
+    // index and nChannels will be used to interact only with left or right channels
+    index = index % nChannels;  // dummy calculation for compiler warnings
 
     int size = (int)samples.size();
     if (type == PREDICT1) {
@@ -188,9 +203,10 @@ void GEncoder::write_file() {
              << " to file with m = " << std::setw(3) << unsigned(block.m)
              << ", p = " << std::setw(3) << unsigned(block.predictor) << "\r"
              << std::flush;
-        for (auto sample : block.data) {
-            golomb.encode(sample);
-        }
+        //for (auto sample : block.data)
+        //golomb.encode(sample);
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
+            golomb.encode(block.data.at(i));
     }
     std::cout << "\nAll data written to file\n\n";
 }
@@ -211,7 +227,7 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 
     // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
-        int prediction = predictorClass.predict(pred, block);
+        int prediction = predictorClass.predict(pred, block, i);
         encodedBlock.data.push_back(prediction);
     }
 
@@ -227,6 +243,7 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
+    this->predictorClass.set_nChannels(file.nChannels);
 
     // Probably add quantization
 
@@ -291,8 +308,10 @@ File& GDecoder::read_file() {
 
         // Read Block data
         this->golomb.setM(block.m);
-        cout << " - Reading Block " << bId << " with m = " << unsigned(block.m)
-             << " and predictor = " << unsigned(block.predictor) << endl;
+        cout << " - Reading Block " << std::setw(3) << bId + 1
+             << " with m = " << std::setw(3) << unsigned(block.m)
+             << " and predictor = " << std::setw(3) << unsigned(block.predictor)
+             << endl;
 
         // check m
         if (block.m < 1) {
@@ -315,7 +334,7 @@ std::vector<short> GDecoder::decode_block(Block& block) {
     PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
 
     for (int i = 0; i < (int)block.data.size(); i++)
-        samples.push_back(predictorClass.predict(pred, block.data));
+        samples.push_back(predictorClass.predict(pred, block.data, i));
 
     return samples;
 }
