@@ -59,15 +59,16 @@ void GEncoder::write_file() {
     // Write Blocks (data)
     cout << "Writing Blocks to file..." << endl;
 
-    //int count = 0;
+    int count = 0;
     for (auto& block : fileStruct.blocks) {
         // Write Block header
         writer.writeNBits(block.m, 8);
         writer.writeNBits(block.predictor, 4);
 
         // Write Block data
-        //cout << " - Writing Block " << count++
-        //<< " to file with m = " << unsigned(block.m) << endl;
+        cout << " - Writing Block " << count++
+             << " to file with m = " << unsigned(block.m)
+             << " and predictor = " << block.predictor << endl;
         this->golomb.setM(block.m);
         for (auto sample : block.data) {
             golomb.encode(sample);
@@ -154,7 +155,7 @@ File& GDecoder::read_file() {
         ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
 
     cout << " with " << unsigned(nBlocks) << " blocks" << endl;
-    for (unsigned long bId; bId < nBlocks; bId++) {
+    for (unsigned long bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
         block.m = reader.readNBits(8);
@@ -162,8 +163,9 @@ File& GDecoder::read_file() {
 
         // Read Block data
         this->golomb.setM(block.m);
-        //cout << " - Reading Block " << unsigned(bId)
-        //     << " with m = " << unsigned(block.m) << endl;
+        cout << " - Reading Block " << unsigned(bId)
+             << " with m = " << unsigned(block.m)
+             << " and predictor = " << unsigned(block.predictor) << endl;
         for (uint16_t i = 0; i < fileStruct.blockSize; i++)
             block.data.push_back((short)golomb.decode());
 
@@ -184,8 +186,11 @@ std::vector<short> GDecoder::decode_block(Block& block) {
         int c = (i - 3) < 0 ? 0 : block.data.at(i - 3);
         if (pred == PREDICT1)
             samples.push_back(predict1(a, b, c));
-        else
-            cerr << "Unknown Predictor" << endl;
+        else {
+            cerr << "Error: Unknown Predictor " << unsigned(pred)
+                 << " encountered while decoding Block" << endl;
+            exit(2);
+        }
     }
 
     return samples;
@@ -193,7 +198,11 @@ std::vector<short> GDecoder::decode_block(Block& block) {
 
 std::vector<short> GDecoder::decode_file() {
     std::vector<short> outSamples;
+    cout << "Decoding file with " << unsigned(fileStruct.blocks.size())
+         << " Blocks" << endl;
+    int count = 0;
     for (Block& block : fileStruct.blocks) {
+        cout << " - Decoding Block: " << count++ << endl;
         std::vector<short> blockSamples = decode_block(block);
         outSamples.insert(outSamples.end(), blockSamples.begin(),
                           blockSamples.end());
