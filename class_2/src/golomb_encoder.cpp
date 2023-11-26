@@ -9,7 +9,7 @@ using namespace std;
 
 // configurable parameters
 namespace Options {
-string musicName = "../songs/sample01.wav";
+string musicName = "../songs/sample_mono.wav";
 string encodedName = "encodedSample";
 size_t blockSize = 1024;
 size_t quantizationBits = 8;  // bits to be discarded
@@ -198,9 +198,9 @@ int main(int argc, char* argv[]) {
     gEncoder.encode_file(f, inputSamples, nBlocks);
 
     clock_t endTime = clock();
-    std::cout << "Program took "
-              << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Music compressed to " << Options::encodedName
+    std::cout << "Program took " << std::fixed << std::setprecision(2)
+              << (double(endTime - startTime) / CLOCKS_PER_SEC)
+              << " seconds to run. Music compressed to " << Options::encodedName
               << std::endl;
 
     return 0;

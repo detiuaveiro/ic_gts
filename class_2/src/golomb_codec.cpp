@@ -149,7 +149,7 @@ int GEncoder::calculate_m(std::vector<short>& values) {
         alpha = exp(-1.0 / mean);  // Calculate alpha using mean
     }
     // Calculate 'm' based on the formula
-    double aux = static_cast<int>(-1 / log(alpha));
+    double aux = (-1 / log(alpha));
     int m = std::ceil(aux);
 
     // guarantee that minimum value is 1
@@ -192,7 +192,7 @@ void GEncoder::write_file() {
             golomb.encode(sample);
         }
     }
-    std::cout << "\n\n";
+    std::cout << "\nAll data written to file\n\n";
 }
 
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
@@ -279,11 +279,11 @@ File& GDecoder::read_file() {
     fileStruct.lossy = reader.readNBits(2);
 
     // Write Blocks (data)
-    size_t nBlocks{static_cast<size_t>(
+    int nBlocks{static_cast<int>(
         ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
 
     cout << " with " << unsigned(nBlocks) << " blocks" << endl;
-    for (unsigned long bId = 0; bId < nBlocks; bId++) {
+    for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
         block.m = reader.readNBits(8);
@@ -291,8 +291,7 @@ File& GDecoder::read_file() {
 
         // Read Block data
         this->golomb.setM(block.m);
-        cout << " - Reading Block " << unsigned(bId)
-             << " with m = " << unsigned(block.m)
+        cout << " - Reading Block " << bId << " with m = " << unsigned(block.m)
              << " and predictor = " << unsigned(block.predictor) << endl;
 
         // check m
