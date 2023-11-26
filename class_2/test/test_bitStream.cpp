@@ -93,6 +93,10 @@ TEST(BitStream, testWGolomb) {
         golomb.encode(i);
         values.push_back(i);
     }
+    int blockM = 4;
+    int sequence = 7;
+    writer.writeNBits(blockM, 8);
+    writer.writeNBits(sequence, 4);
 
     golomb.~Golomb();
 
@@ -122,6 +126,9 @@ TEST(BitStream, testWGolomb) {
         values.pop_front();
         EXPECT_EQ(decoded, original);
     }
+
+    EXPECT_EQ(blockM, reader.readNBits(8));
+    EXPECT_EQ(sequence, reader.readNBits(4));
 
     golomb2.~Golomb();
 
