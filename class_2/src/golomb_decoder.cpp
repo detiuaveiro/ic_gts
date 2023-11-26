@@ -102,14 +102,14 @@ int main(int argc, char* argv[]) {
 
     print_processing_information(f);
 
-    std::vector<short> decodedSamples = gDecoder.decode_file(f);
+    std::vector<short> decodedSamples = gDecoder.decode_file();
 
-    //save_decoded_music(f, decodedSamples);
+    save_decoded_music(f, decodedSamples);
 
     clock_t endTime = clock();
     std::cout << "Program took "
               << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Music compressed to " << Options::musicName
+              << " ms to run. Music decompressed to " << Options::musicName
               << std::endl;
 
     return 0;

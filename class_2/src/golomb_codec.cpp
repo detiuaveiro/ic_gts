@@ -52,20 +52,22 @@ void GEncoder::write_file() {
     writer.writeNBits(fileStruct.blockSize, 16);
     writer.writeNBits(fileStruct.sampleRate, 16);
     writer.writeNBits(fileStruct.nFrames, 32);
-    writer.writeNBits(fileStruct.nChannels, 8);
+    writer.writeNBits(fileStruct.nChannels, 4);
     writer.writeNBits(fileStruct.quantizationBits, 8);
     writer.writeNBits(fileStruct.lossy, 2);
 
     // Write Blocks (data)
-    int count = 0;
+    cout << "Writing Blocks to file..." << endl;
+
+    //int count = 0;
     for (auto& block : fileStruct.blocks) {
         // Write Block header
         writer.writeNBits(block.m, 8);
         writer.writeNBits(block.predictor, 4);
 
         // Write Block data
-        cout << " - Writing Block " << count++
-             << " to file with m = " << unsigned(block.m) << endl;
+        //cout << " - Writing Block " << count++
+        //<< " to file with m = " << unsigned(block.m) << endl;
         this->golomb.setM(block.m);
         for (auto sample : block.data) {
             golomb.encode(sample);
@@ -136,21 +138,20 @@ GDecoder::~GDecoder() {
     reader.~BitStream();
 }
 
-File GDecoder::read_file() {
+File& GDecoder::read_file() {
     cout << "Reading file " << inputFileName;
 
-    File f;
     // Read file header
-    f.blockSize = reader.readNBits(16);
-    f.sampleRate = reader.readNBits(16);
-    f.nFrames = reader.readNBits(32);
-    f.nChannels = reader.readNBits(8);
-    f.quantizationBits = reader.readNBits(8);
-    f.lossy = reader.readNBits(2);
+    fileStruct.blockSize = reader.readNBits(16);
+    fileStruct.sampleRate = reader.readNBits(16);
+    fileStruct.nFrames = reader.readNBits(32);
+    fileStruct.nChannels = reader.readNBits(4);
+    fileStruct.quantizationBits = reader.readNBits(8);
+    fileStruct.lossy = reader.readNBits(2);
 
     // Write Blocks (data)
     size_t nBlocks{static_cast<size_t>(
-        ceil(static_cast<double>(f.nFrames) / f.blockSize))};
+        ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
 
     cout << " with " << unsigned(nBlocks) << " blocks" << endl;
     for (unsigned long bId; bId < nBlocks; bId++) {
@@ -163,13 +164,40 @@ File GDecoder::read_file() {
         this->golomb.setM(block.m);
         //cout << " - Reading Block " << unsigned(bId)
         //     << " with m = " << unsigned(block.m) << endl;
-        for (uint16_t i = 0; i < f.blockSize; i++)
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
             block.data.push_back((short)golomb.decode());
+
+        fileStruct.blocks.push_back(block);
     }
 
-    return f;
+    return fileStruct;
 }
 
-std::vector<short> GDecoder::decode_block(Block block) {}
+std::vector<short> GDecoder::decode_block(Block& block) {
+    std::vector<short> samples;
+    PREDICTOR pred = static_cast<PREDICTOR>(block.predictor);
 
-std::vector<short> GDecoder::decode_file(File& f) {}
+    for (int i = 0; i < (int)block.data.size(); i++) {
+        // take into account that when starting, arr index < 0 are 0
+        int a = (i - 1) < 0 ? 0 : block.data.at(i - 1);
+        int b = (i - 2) < 0 ? 0 : block.data.at(i - 2);
+        int c = (i - 3) < 0 ? 0 : block.data.at(i - 3);
+        if (pred == PREDICT1)
+            samples.push_back(predict1(a, b, c));
+        else
+            cerr << "Unknown Predictor" << endl;
+    }
+
+    return samples;
+}
+
+std::vector<short> GDecoder::decode_file() {
+    std::vector<short> outSamples;
+    for (Block& block : fileStruct.blocks) {
+        std::vector<short> blockSamples = decode_block(block);
+        outSamples.insert(outSamples.end(), blockSamples.begin(),
+                          blockSamples.end());
+    }
+
+    return outSamples;
+}

@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
     clock_t endTime = clock();
     std::cout << "Program took "
               << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Music compressed to " << Options::musicName
+              << " ms to run. Music compressed to " << Options::encodedName
               << std::endl;
 
     return 0;
