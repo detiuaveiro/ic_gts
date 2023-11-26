@@ -27,6 +27,8 @@ class Predictor {
     static int predict2(int a1, int a2);
     static int predict3(int a1, int a2, int a3);
 
+    double calculateEntropy(PREDICTOR_TYPE type, std::vector<short>& samples);
+
    public:
     Predictor();
     ~Predictor();
@@ -89,7 +91,7 @@ class GEncoder {
     std::string outputFileName;
     File fileStruct;
 
-    int calculate_m(std::vector<short>& values, int blockSize);
+    int calculate_m(std::vector<short>& values);
     Block process_block(std::vector<short>& block);
     void write_file();
     void quantize_samples(std::vector<short>& inSamples);
@@ -101,7 +103,7 @@ class GEncoder {
     void encode_file(File file, std::vector<short>& inSamples, size_t nBlocks);
 
     // Stuff used for testing private members
-    int test_calculate_m(std::vector<short>& values, int blockSize);
+    int test_calculate_m(std::vector<short>& values);
 };
 
 /*

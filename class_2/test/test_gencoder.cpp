@@ -14,7 +14,7 @@ TEST(GEncoder, testCalculateM) {
     GEncoder gEncoder(TEST_FILE_NAME, 5, AUTOMATIC);
 
     std::vector<short> samples = {1, 2, 3, 4, 5};
-    int m = gEncoder.test_calculate_m(samples, samples.size());
+    int m = gEncoder.test_calculate_m(samples);
 
-    // complete this
+    EXPECT_EQ(m, 3);
 };

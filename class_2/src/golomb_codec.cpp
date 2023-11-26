@@ -10,7 +10,49 @@ Predictor::Predictor() {}
 
 Predictor::~Predictor() {}
 
-PREDICTOR_TYPE Predictor::benchmark(std::vector<short> samples) {}
+int Predictor::predict1(int a1) {
+    return a1;
+}
+
+int Predictor::predict2(int a1, int a2) {
+    return (2 * a1) - a2;
+}
+
+int Predictor::predict3(int a1, int a2, int a3) {
+    return (3 * a1) - (3 * a2) + a3;
+}
+
+double Predictor::calculateEntropy(PREDICTOR_TYPE type,
+                                   std::vector<short>& samples) {
+    int total_predictions = 0;
+    std::vector<int> predictions;
+
+    // Predict based on the given type and count occurrences of predictions
+    for (size_t i = 3; i < samples.size(); ++i) {
+        int prediction;
+        if (type == PREDICT1) {
+            prediction = predict(type, {samples[i - 1]});
+        } else if (type == PREDICT2) {
+            prediction = predict(type, {samples[i - 1], samples[i - 2]});
+        } else {
+            prediction =
+                predict(type, {samples[i - 1], samples[i - 2], samples[i - 3]});
+        }
+        predictions.push_back(prediction);
+        total_predictions++;
+    }
+
+    // Calculate probability distribution and entropy
+    double entropy = 0.0;
+    for (int value : predictions) {
+        double probability =
+            std::count(predictions.begin(), predictions.end(), value) /
+            static_cast<double>(total_predictions);
+        entropy -= probability * std::log2(probability);
+    }
+
+    return entropy;
+}
 
 int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples) {
     if (!check_type(type)) {
@@ -35,22 +77,36 @@ int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples) {
     }
 }
 
-int Predictor::predict1(int a1) {
-    return a1;
-}
-
-int Predictor::predict2(int a1, int a2) {
-    return (2 * a1) - a2;
-}
-
-int Predictor::predict3(int a1, int a2, int a3) {
-    return (3 * a1) - (3 * a2) + a3;
-}
-
 bool Predictor::check_type(PREDICTOR_TYPE type) {
-    if (type == PREDICT1 || type == PREDICT2 || type == PREDICT3)
+    if (type == AUTOMATIC || type == PREDICT1 || type == PREDICT2 ||
+        type == PREDICT3)
         return true;
     return false;
+}
+
+PREDICTOR_TYPE Predictor::benchmark(std::vector<short> samples) {
+    double min_entropy = std::numeric_limits<double>::max();
+    PREDICTOR_TYPE best_predictor = AUTOMATIC;
+
+    double entropy1 = calculateEntropy(PREDICT1, samples);
+    if (entropy1 < min_entropy) {
+        min_entropy = entropy1;
+        best_predictor = PREDICT1;
+    }
+
+    double entropy2 = calculateEntropy(PREDICT2, samples);
+    if (entropy2 < min_entropy) {
+        min_entropy = entropy2;
+        best_predictor = PREDICT2;
+    }
+
+    double entropy3 = calculateEntropy(PREDICT3, samples);
+    if (entropy3 < min_entropy) {
+        min_entropy = entropy3;
+        best_predictor = PREDICT3;
+    }
+
+    return best_predictor;
 }
 
 /*
@@ -79,24 +135,27 @@ GEncoder::~GEncoder() {
     writer.~BitStream();
 }
 
-int GEncoder::test_calculate_m(std::vector<short>& values, int blockSize) {
-    return calculate_m(values, blockSize);
+int GEncoder::test_calculate_m(std::vector<short>& values) {
+    return calculate_m(values);
 }
 
-int GEncoder::calculate_m(std::vector<short>& values, int blockSize) {
-    // Combine all values
-    int sum = 0;
-    for (auto& value : values)
-        sum += abs(value);
-
-    // Transform the sum in [0,1]
-    double p = (double)sum / (double)blockSize;
-
-    // Calculate m using the formula: m = ceil(1 - log(1 + p) / log(p))
-    double aux = (log((1 + p)) / log(p));
+int GEncoder::calculate_m(std::vector<short>& values) {
+    /* Calculate alpha */
+    double alpha = 1.0;
+    if (!values.empty()) {
+        double mean = static_cast<double>(
+                          std::accumulate(values.begin(), values.end(), 0)) /
+                      values.size();
+        alpha = exp(-1.0 / mean);  // Calculate alpha using mean
+    }
+    // Calculate 'm' based on the formula
+    double aux = static_cast<int>(-1 / log(alpha));
     int m = std::ceil(aux);
+
     // guarantee that minimum value is 1
-    return std::max(1, m);
+    m = std::max(1, m);
+
+    return std::min(m, 255);  // cap golomb max size
 }
 
 void GEncoder::quantize_samples(std::vector<short>& inSamples) {
@@ -149,10 +208,10 @@ Block GEncoder::process_block(std::vector<short>& block) {
         encodedBlock.data.push_back(prediction);
     }
 
-    // Use attributed m or calculate one (improve this part)
+    // Use attributed m or calculate one
     int bM = m;
     if (bM < 1)
-        bM = calculate_m((block), fileStruct.blockSize);
+        bM = calculate_m((encodedBlock.data));
     encodedBlock.m = bM;
 
     return encodedBlock;
