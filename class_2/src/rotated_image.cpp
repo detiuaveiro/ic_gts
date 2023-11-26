@@ -27,6 +27,7 @@ int main(int argc, char** argv )
 
     if(angle % 360 == 0){
         //input image == output image so it does nothing mk
+        rotated = img;
     }
     else if(angle % 270 == 0){
         // Espelhar verticalmente -> Troca valores das linhas
