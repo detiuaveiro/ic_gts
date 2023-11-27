@@ -56,7 +56,7 @@ void Golomb::encode(int value) {
             value = -value;  // Encode the positive value, the sign will be added later
         }
 
-        quocient = floor(value / m);
+        quocient = value / m;
         remainder = value % m;
 
         for (int j = 0; j < quocient; j++)
@@ -88,7 +88,7 @@ void Golomb::encode(int value) {
         else
             value = 2 * value;
 
-        quocient = floor(value / m);  
+        quocient = value / m;  
         remainder = value % m;
 
         for (int j = 0; j < quocient; j++)

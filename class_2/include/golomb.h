@@ -5,6 +5,7 @@
 #include <string>
 #include "bit_stream.h"
 
+
 // Functions for:
 // - Encoding an integer (generating the corresponding sequence of bits)
 // - Decoding a sequence of bits (generating the corresponding integer)

@@ -63,7 +63,7 @@ class Predictor {
 
 struct Block {
     /* Header */
-    uint8_t m;
+    uint8_t m;  // increase this size
     PREDICTOR_TYPE predictor;
     /* Data */
     vector<short> data;
@@ -98,6 +98,7 @@ class GEncoder {
     std::string outputFileName;
     File fileStruct;
 
+    std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
     int calculate_m(std::vector<short>& values);
     Block process_block(std::vector<short>& block, int blockId, int nBlocks);
     void write_file();
@@ -111,6 +112,8 @@ class GEncoder {
 
     // Stuff used for testing private members
     int test_calculate_m(std::vector<short>& values);
+    std::vector<unsigned short> test_abs_value_vector(
+        std::vector<short>& values);
 };
 
 /*

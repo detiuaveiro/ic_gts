@@ -76,6 +76,9 @@ int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
     // index and nChannels will be used to interact only with left or right channels
     index = index % nChannels;  // dummy calculation for compiler warnings
 
+    // with more than one channel use correlation (with MID and SIDE channels) or
+    //  or encode each one separately (only save the difference)
+
     int size = (int)samples.size();
     if (type == PREDICT1) {
         int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
@@ -154,13 +157,31 @@ int GEncoder::test_calculate_m(std::vector<short>& values) {
     return calculate_m(values);
 }
 
+std::vector<unsigned short> GEncoder::test_abs_value_vector(
+    std::vector<short>& values) {
+    return abs_value_vector(values);
+}
+
+std::vector<unsigned short> GEncoder::abs_value_vector(
+    std::vector<short>& values) {
+    std::vector<unsigned short> result;
+    result.reserve(values.size());
+
+    for (const auto& elem : values) {
+        result.push_back(std::abs(elem));
+    }
+
+    return result;
+}
+
 int GEncoder::calculate_m(std::vector<short>& values) {
     /* Calculate alpha */
     double alpha = 1.0;
     if (!values.empty()) {
-        double mean = static_cast<double>(
-                          std::accumulate(values.begin(), values.end(), 0)) /
-                      values.size();
+        std::vector<unsigned short> abs_values = abs_value_vector(values);
+        double mean = static_cast<double>(std::accumulate(
+                          abs_values.begin(), abs_values.end(), 0)) /
+                      abs_values.size();
         alpha = exp(-1.0 / mean);  // Calculate alpha using mean
     }
     // Calculate 'm' based on the formula
@@ -180,7 +201,7 @@ void GEncoder::quantize_samples(std::vector<short>& inSamples) {
 }
 
 void GEncoder::write_file() {
-    // Write file header
+    // Write file headerabs_values
     writer.writeNBits(fileStruct.blockSize, 16);
     writer.writeNBits(fileStruct.sampleRate, 16);
     writer.writeNBits(fileStruct.nFrames, 32);
@@ -227,8 +248,9 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 
     // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
-        int prediction = predictorClass.predict(pred, block, i);
-        encodedBlock.data.push_back(prediction);
+        int prediction = predictorClass.predict(pred, (encodedBlock.data), i);
+        int difference = block.at(i) - prediction;
+        encodedBlock.data.push_back(difference);
     }
 
     // Use attributed m or calculate one
