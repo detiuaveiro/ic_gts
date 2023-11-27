@@ -5,6 +5,7 @@
 #include <string>
 #include "bit_stream.h"
 
+enum APPROACH { SIGN_MAGNITUDE, VALUE_INTERLEAVING };
 
 // Functions for:
 // - Encoding an integer (generating the corresponding sequence of bits)
@@ -15,15 +16,16 @@
 
 class Golomb {
    private:
-    int m;         // distribution
-    int approach;  // (1) sign magnitude (2) positive/negative value interleaving
+    int m;  // distribution
+    APPROACH approach = SIGN_MAGNITUDE;
     BitStream& bitStream;
 
-    // Representar r de forma binária
-    std::string getRemainderBinary(int r);
+    int calculate_remainder(int r);
+    int encode_sign_magnitude(int value);
+    int encode_value_interleaving(int value);
 
    public:
-    Golomb(int m, BitStream& bitStream, int approach = 1);
+    Golomb(int m, BitStream& bitStream, APPROACH approach = SIGN_MAGNITUDE);
 
     ~Golomb() { flush(); }
 

@@ -76,6 +76,7 @@ struct File {
     uint16_t sampleRate;
     uint32_t nFrames;
     uint16_t quantizationBits;
+    // also add the approach of golomb
     bool lossy;  // true if lossy, false if lossless
     /* Data */
     vector<Block> blocks;
