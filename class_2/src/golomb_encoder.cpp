@@ -35,7 +35,9 @@ static void print_usage() {
             "  -l, --lossy       --- set lossy compression (default: off)\n"
             "  -m, --modulus     --- set m number (default: automatic "
             "calculation)\n"
-            "  -p, --predict     --- set predictor [0,3] (default: PREDICT1)"
+            "  -p, --predict     --- set predictor [0,3] (default: PREDICT1)\n"
+            "  -a, --approach    --- set approach [0,1] (default: "
+            "SIGN_MAGNITUDE)"
          << endl;
 }
 
@@ -97,6 +99,17 @@ int process_arguments(int argc, char* argv[]) {
             } else {
                 std::cerr
                     << "Error: Missing or bad argument for -m/--modulus option."
+                    << argv[i] << std::endl;
+                return -1;
+            }
+        } else if (strcmp(argv[i], "-p") == 0 ||
+                   strcmp(argv[i], "--predict") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::predictor = static_cast<PREDICTOR_TYPE>(atoi(argv[i]));
+            } else {
+                std::cerr
+                    << "Error: Missing or bad argument for -p/--predict option."
                     << argv[i] << std::endl;
                 return -1;
             }

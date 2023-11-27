@@ -34,7 +34,7 @@ class Golomb {
     void setM(int newM) { this->m = newM; }
     int getM() { return m; }
 
-    void setApproach(int newApproach) { this->approach = newApproach; }
+    void setApproach(APPROACH newApproach) { this->approach = newApproach; }
     int getApproach() { return approach; }
 
     // Inteiro i é representado por 2 números: q e r

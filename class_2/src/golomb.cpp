@@ -46,9 +46,12 @@ int Golomb::encode_sign_magnitude(int value) {
     else
         result <<= 1;  // add 0 to end
 
-    return result
+    return result;
 }
+
 int Golomb::encode_value_interleaving(int value) {
+    int quotient = value / m;
+    int remainder = value % m;
 
     // if number is negative, multiply by 2 and subtract 1
     if (value < 0)
@@ -56,16 +59,15 @@ int Golomb::encode_value_interleaving(int value) {
     else
         value = 2 * value;
 
-    for (int j = 0; j < quotient; j++)
-        golomb_code += "1";
-    golomb_code += "0";
+    // creating the unary with as many 1s as the quotient
+    unsigned int result = (1 << quotient) - 1;
 
-    int result calculate_remainder(remainder);
+    // Insert 0 to separate the quotient from the remainder
+    result <<= 1;
 
-    long long_val = 0;
-    for (char c : golomb_code) {
-        long_val = (long_val << 1) + (c - '0');
-    }
+    result += calculate_remainder(remainder);
+
+    return result;
 }
 
 void Golomb::encode(int value) {
