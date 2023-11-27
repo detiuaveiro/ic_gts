@@ -1,43 +1,48 @@
 #include "golomb.h"
 
-Golomb::Golomb(int m, BitStream& bitStream, APPROACH approach = SIGN_MAGNITUDE)
+Golomb::Golomb(int m, BitStream& bitStream, APPROACH approach)
     : bitStream(bitStream) {
     this->m = m;
     this->approach = approach;
 }
 
 // Represent remainder as binary
-int Golomb::calculate_remainder(int r) {
-
-    // log2(m) = number of bits to represent m
-    int b = ceil(log2(m));
-
-    // m is power of 2
-    if ((m & (m - 1)) == 0)
-        return r;
-
-    // m is not power of 2
-    if (r < pow(2, b) - m)
-        return r;  // truncate
-    else
-        return (r + pow(2, b) - m) % 2;
-}
+// int Golomb::calculate_remainder(int r) {
+//     // log2(m) = number of bits to represent m
+    
+    
+// }
 
 int Golomb::encode_sign_magnitude(int value) {
     int quotient = value / m;
     int remainder = value % m;
-
+    
     bool isNegative = (value < 0) ? true : false;
     value = abs(value);
 
     // creating the unary with as many 1s as the quotient
     unsigned int result = (1 << quotient) - 1;
-
     // Insert 0 to separate the quotient from the remainder
     result <<= 1;
 
-    result += calculate_remainder(remainder);
+    int b = ceil(log2(m));
 
+    // m is power of 2
+    if ((m & (m - 1)) == 0){
+        result <<= b;  // add b - 1 zeros to the end
+        result += remainder;  // add remainder
+    }
+    // m is not power of 2
+    if (remainder < (pow(2, b) - m)){
+        result  <<= b - 1;  // add b - 1 zeros to the end
+        result += remainder;  // add remainder
+    }else{
+        remainder += pow(2, b) - m;  
+        result <<= b;  // add b zeros to the end
+        result += remainder;  // add remainder
+    }
+
+    //result += calculate_remainder(remainder);
     if (value == 0)
         return 0;  // dont add signal
 
@@ -51,7 +56,7 @@ int Golomb::encode_sign_magnitude(int value) {
 
 int Golomb::encode_value_interleaving(int value) {
     int quotient = value / m;
-    int remainder = value % m;
+    //int remainder = value % m;
 
     // if number is negative, multiply by 2 and subtract 1
     if (value < 0)
@@ -65,7 +70,7 @@ int Golomb::encode_value_interleaving(int value) {
     // Insert 0 to separate the quotient from the remainder
     result <<= 1;
 
-    result += calculate_remainder(remainder);
+    //result += calculate_remainder(remainder);
 
     return result;
 }
@@ -73,6 +78,9 @@ int Golomb::encode_value_interleaving(int value) {
 void Golomb::encode(int value) {
     if (m <= 0)
         throw std::invalid_argument("m must be positive");
+
+    int quotient = value / m;
+    std::cout << "input value: " << value << std::endl;
 
     int result = 0;
     if (approach == SIGN_MAGNITUDE)
@@ -82,7 +90,21 @@ void Golomb::encode(int value) {
     else
         throw std::invalid_argument("Invalid approach");
 
-    bitStream.writeNBits(result, (int)(log2(value) + 1));
+    std::cout << "golomb result: " << result << std::endl;
+    
+    int bits_to_represent = 0;
+    int aux = result;
+    do {
+        aux >>= 1;
+        bits_to_represent++;
+    } while (aux != 0);
+    if (quotient == 0){
+        bits_to_represent++;
+    }
+
+    std::cout << "NUMBER OF BITS TO REPRESENT: " << bits_to_represent << std::endl;
+    std::cout << std::endl;
+    bitStream.writeNBits(result, bits_to_represent);
 }
 
 // Decode a sequence of bits
@@ -93,7 +115,6 @@ int Golomb::decode() {
     int remainder = 0;
 
     // read the unary part until a 0 is found
-    std::string unary = "";
     while (true) {
         int bit = bitStream.readBit();
         if (bit == 0)
@@ -102,31 +123,21 @@ int Golomb::decode() {
     }
 
     int b = ceil(log2(m));
-    int first_values = pow(2, b) - m;
+    int values_divider = pow(2, b) - m;
 
     // read the binary part
-    std::string binary = "";
-    int auxReminder = 0;
     for (int i = 0; i < b - 1; i++) {
         int bit = bitStream.readBit();
-        auxReminder = (auxReminder << 1) + bit;
-        binary += char(bit + '0');
+        remainder = (remainder << 1) + bit;
     }
 
     int extraBit = 10;
-    if (auxReminder >= first_values) {
-        extraBit = bitStream.readBit();
-        binary += char(extraBit + '0');
-    }
-
-    // transform binary string to int, this is the remainder
-    for (char ch : binary) {
-        remainder = (remainder << 1) + (ch - '0');
+    if (remainder >= values_divider) {
+        remainder = (remainder << 1) + bitStream.readBit();
     }
 
     if (extraBit != 10) {
-        int lowestValToSubstract = pow(2, b) - m;
-        remainder = remainder - lowestValToSubstract;
+        remainder = remainder - values_divider;
     }
 
     value = quotient * m + remainder;
