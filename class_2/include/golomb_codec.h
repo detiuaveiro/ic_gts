@@ -20,6 +20,8 @@ using namespace std;
 
 enum PREDICTOR_TYPE { AUTOMATIC, PREDICT1, PREDICT2, PREDICT3 };
 
+std::string get_type_string(PREDICTOR_TYPE type);
+
 class Predictor {
    private:
     /*! a1, a2 and a3 represent, a(n-1) a(n-2) and a(n-3) respectively
@@ -76,7 +78,7 @@ struct File {
     uint16_t sampleRate;
     uint32_t nFrames;
     uint16_t quantizationBits;
-    // also add the approach of golomb
+    APPROACH approach;
     bool lossy;  // true if lossy, false if lossless
     /* Data */
     vector<Block> blocks;

@@ -19,6 +19,7 @@ size_t nChannels;
 size_t nFrames;
 size_t sampleRate;
 PREDICTOR_TYPE predictor = AUTOMATIC;
+APPROACH approach = SIGN_MAGNITUDE;
 }  // namespace Options
 
 static void print_usage() {
@@ -113,11 +114,11 @@ int process_arguments(int argc, char* argv[]) {
                     << argv[i] << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-p") == 0 ||
-                   strcmp(argv[i], "--predict") == 0) {
+        } else if (strcmp(argv[i], "-a") == 0 ||
+                   strcmp(argv[i], "--approach") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
-                Options::predictor = static_cast<PREDICTOR_TYPE>(atoi(argv[i]));
+                Options::approach = static_cast<APPROACH>(atoi(argv[i]));
             } else {
                 std::cerr
                     << "Error: Missing or bad argument for -p/--predict option."
@@ -161,6 +162,8 @@ void print_processing_information(int nBlocks) {
          << "\n - Sample Rate: " << Options::sampleRate
          << "\n - Total Number of Frames: " << Options::nFrames
          << "\n - Number of Blocks: " << nBlocks
+         << "\n - Predictor: " << get_type_string(Options::predictor)
+         << "\n - Golomb Approach: " << approach_to_string(Options::approach)
          << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless")
          << "\n"
          << endl;
@@ -178,6 +181,11 @@ int main(int argc, char* argv[]) {
     SndfileHandle sfhIn{Options::musicName};
     if (check_wav_file(sfhIn) < 0)
         return 1;
+
+    if(!check_approach(Options::approach)){
+        cerr << "Error: Invalid approach type " << Options::approach << endl;
+        return 1;
+    }
 
     // Set Options variables
     Options::sampleRate = static_cast<size_t>(sfhIn.samplerate());
@@ -207,6 +215,7 @@ int main(int argc, char* argv[]) {
     f.blocks = std::vector<Block>();
     f.quantizationBits = Options::quantizationBits;
     f.lossy = Options::lossy;
+    f.approach = Options::approach;
 
     gEncoder.encode_file(f, inputSamples, nBlocks);
 

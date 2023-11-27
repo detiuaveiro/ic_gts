@@ -7,6 +7,10 @@
 
 enum APPROACH { SIGN_MAGNITUDE, VALUE_INTERLEAVING };
 
+bool check_approach(APPROACH approach);
+
+std::string approach_to_string(APPROACH approach);
+
 // Functions for:
 // - Encoding an integer (generating the corresponding sequence of bits)
 // - Decoding a sequence of bits (generating the corresponding integer)

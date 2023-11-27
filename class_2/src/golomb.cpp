@@ -6,6 +6,21 @@ Golomb::Golomb(int m, BitStream& bitStream, APPROACH approach)
     this->approach = approach;
 }
 
+bool check_approach(APPROACH approach){
+    if(approach != SIGN_MAGNITUDE && approach != VALUE_INTERLEAVING)
+        return false;
+    return true; 
+}
+
+std::string approach_to_string(APPROACH approach){
+    if(approach == SIGN_MAGNITUDE)
+        return "SIGN_MAGNITUDE (0)";
+    else if(approach == VALUE_INTERLEAVING)
+        return "VALUE_INTERLEAVING (1)";
+    else
+        return "UNKNOWN";
+}
+
 // Represent remainder as binary
 // int Golomb::calculate_remainder(int r) {
 //     // log2(m) = number of bits to represent m
