@@ -206,7 +206,7 @@ int GEncoder::calculate_m(std::vector<short>& values) {
     // guarantee that minimum value is 1
     m = std::max(1, m);
 
-    return std::min(m, 255);  // cap golomb max size
+    return std::min(m, 16383);  // cap golomb max size (14 bits)
 }
 
 void GEncoder::quantize_samples(std::vector<short>& inSamples) {
@@ -233,7 +233,7 @@ void GEncoder::write_file() {
     int count = 1;
     for (auto& block : fileStruct.blocks) {
         // Write Block header
-        writer.writeNBits(block.m, 8);
+        writer.writeNBits(block.m, 14);
         writer.writeNBits(block.predictor, 4);
 
         // Write Block data
@@ -360,7 +360,7 @@ File& GDecoder::read_file() {
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
-        block.m = reader.readNBits(8);
+        block.m = reader.readNBits(14);
         block.predictor = static_cast<PREDICTOR_TYPE>(reader.readNBits(4));
 
         // Read Block data

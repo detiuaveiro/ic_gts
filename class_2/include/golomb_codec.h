@@ -65,7 +65,7 @@ class Predictor {
 
 struct Block {
     /* Header */
-    uint8_t m;  // increase this size
+    uint16_t m;  // increase this size
     PREDICTOR_TYPE predictor;
     /* Data */
     vector<short> data;
