@@ -26,12 +26,12 @@ std::string approach_to_string(APPROACH approach){
 //     // log2(m) = number of bits to represent m
 // }
 
-int Golomb::encode_sign_magnitude(int value) {    
+int Golomb::encode_sign_magnitude(int value) {
     bool isNegative = (value < 0) ? true : false;
     value = abs(value);
-
+    
     int quotient = value / m;
-    int remainder = value % m;
+    int remainder = value % m;    
 
     // creating the unary with as many 1s as the quotient
     //unsigned int result = (1 << quotient) - 1;
@@ -39,7 +39,6 @@ int Golomb::encode_sign_magnitude(int value) {
         bitStream.writeBit(1);
 
     // Insert 0 to separate the quotient from the remainder
-    //result <<= 1;
     bitStream.writeBit(0);
 
     int b = ceil(log2(m));
@@ -73,22 +72,43 @@ int Golomb::encode_sign_magnitude(int value) {
 }
 
 int Golomb::encode_value_interleaving(int value) {
-    int quotient = value / m;
-    //int remainder = value % m;
-
     // if number is negative, multiply by 2 and subtract 1
     if (value < 0)
         value = 2 * abs(value) - 1;
     else
         value = 2 * value;
 
+    //std::cout << "input value: " << value << std::endl;
+    int quotient = value / m;
+    int remainder = value % m;
+    //std::cout << "remainder: " << remainder << std::endl;
+
     // creating the unary with as many 1s as the quotient
-    unsigned int result = (1 << quotient) - 1;
-
+    //unsigned int result = (1 << quotient) - 1;
+    for(int i = 0; i < quotient; i++)
+        bitStream.writeBit(1);
+    
     // Insert 0 to separate the quotient from the remainder
-    result <<= 1;
+    bitStream.writeBit(0);
 
-    //result += calculate_remainder(remainder);
+    int b = ceil(log2(m));
+
+    unsigned int result = 0;
+
+    // m is power of 2
+    if ((m & (m - 1)) == 0){
+        result += remainder;  // add remainder
+    }else{
+    // m is not power of 2
+        if (remainder < (pow(2, b) - m)){
+            result  <<= b - 1;  // add b - 1 zeros to the end
+            result += remainder;  // add remainder
+        }else{
+            remainder += pow(2, b) - m;
+            result <<= b;  // add b zeros to the end
+            result += remainder;  // add remainder
+        }
+    }
 
     return result;
 }
@@ -97,7 +117,6 @@ void Golomb::encode(int value) {
     if (m <= 0)
         throw std::invalid_argument("m must be positive");
 
-    
     //std::cout << "input value: " << value << std::endl;
 
     int result = 0;
@@ -109,14 +128,44 @@ void Golomb::encode(int value) {
         throw std::invalid_argument("Invalid approach");
 
     //std::cout << "golomb result: " << result << std::endl;
-    
+    int remainder = abs(value) % m;    
     int b = ceil(log2(m));
     int bits_to_represent = 0;
-    if(value == 0)
-        bits_to_represent = b; // 0 doesn't have signal
-    else   
-        bits_to_represent = b + 1; // include signal
-
+    if(approach == SIGN_MAGNITUDE){
+        if ((m & (m - 1)) == 0){
+            if(value == 0)
+                bits_to_represent = b; // 0 doesn't have signal
+            else   
+                bits_to_represent = b + 1; // include signal
+        }else{ // se nao for potencia de 2
+            if(value == 0){
+                bits_to_represent = b - 1; // 0 doesn't have signal
+            }else{
+                if (remainder < (pow(2, b) - m)){
+                    bits_to_represent = b; // b - 1 remainder + 1 signal
+                }else{
+                    bits_to_represent = b + 1; // b remainder + 1 signal
+                }
+            }
+        }
+    }else if(approach == VALUE_INTERLEAVING){
+        if (value < 0)
+            value = 2 * abs(value) - 1;
+        else
+            value = 2 * value;
+        remainder = value % m;
+        if ((m & (m - 1)) == 0){ 
+            bits_to_represent = b; 
+        }else{ // se nao for potencia de 2
+            if (remainder < (pow(2, b) - m)){
+                bits_to_represent = b - 1; // b - 1 remainder
+                //std::cout << "remainder < (pow(2, b) - m)" << std::endl;
+            }else{
+                bits_to_represent = b; // b remainder
+            }
+        }
+    }
+    //std::cout << "RESULT: " << result << std::endl;
     //std::cout << "NUMBER OF BITS TO REPRESENT: " << bits_to_represent << std::endl;
     //std::cout << std::endl;
     bitStream.writeNBits(result, bits_to_represent);
@@ -137,8 +186,8 @@ int Golomb::decode() {
         quotient++;
     }
 
-    int b = ceil(log2(m));
-    int values_divider = pow(2, b) - m;
+    int b = ceil(log2(m)); // 3
+    int values_divider = pow(2, b) - m; // 3
 
     // read the binary part
     for (int i = 0; i < b - 1; i++) {
@@ -149,6 +198,7 @@ int Golomb::decode() {
     int extraBit = 10;
     if (remainder >= values_divider) {
         remainder = (remainder << 1) + bitStream.readBit();
+        extraBit = 1;
     }
 
     if (extraBit != 10) {
