@@ -10,6 +10,16 @@
 #define RIGHT_CHANNEL 1
 #define VECTOR_SUBSET_SIZE 5
 
+#define BITS_BLOCK_SIZE 16
+#define BITS_SAMPLE_RATE 16
+#define BITS_N_FRAMES 32
+#define BITS_N_CHANNELS 4
+#define BITS_QUANTIZATION_BITS 8
+#define BITS_LOSSY 2
+#define BITS_APPROACH 4
+#define BITS_M 14
+#define BITS_PREDICTOR 4
+
 using namespace std;
 
 /*

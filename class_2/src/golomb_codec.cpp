@@ -6,15 +6,15 @@
 ##############################################################################
 */
 
-std::string get_type_string(PREDICTOR_TYPE type){
+std::string get_type_string(PREDICTOR_TYPE type) {
     std::string predText = "AUTOMATIC";
-    if(type == AUTOMATIC)
+    if (type == AUTOMATIC)
         predText = "AUTOMATIC (0)";
-    else if(type == PREDICT1)
+    else if (type == PREDICT1)
         predText = "PREDICT1 (1)";
-    else if(type == PREDICT2)
+    else if (type == PREDICT2)
         predText = "PREDICT2 (2)";
-    else if(type == PREDICT3)
+    else if (type == PREDICT3)
         predText = "PREDICT3 (3)";
     else
         predText = "UNKNOWN";
@@ -57,12 +57,11 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
     for (size_t i = 3; i < samples.size(); ++i) {
         int prediction;
         if (type == PREDICT1) {
-            prediction = predict(type, {samples[i - 1]}, i);
+            prediction = predict(type, samples, i);
         } else if (type == PREDICT2) {
-            prediction = predict(type, {samples[i - 1], samples[i - 2]}, i);
+            prediction = predict(type, samples, i);
         } else {
-            prediction = predict(
-                type, {samples[i - 1], samples[i - 2], samples[i - 3]}, i);
+            prediction = predict(type, samples, i);
         }
         predictions.push_back(prediction);
         total_predictions++;
@@ -89,23 +88,23 @@ int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
     }
 
     // index and nChannels will be used to interact only with left or right channels
-    index = index % nChannels;  // dummy calculation for compiler warnings
+    nChannels =
+        nChannels % nChannels;  // dummy calculation for compiler warnings
 
     // with more than one channel use correlation (with MID and SIDE channels) or
     //  or encode each one separately (only save the difference)
 
-    int size = (int)samples.size();
     if (type == PREDICT1) {
-        int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
+        int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
         return predict1(a1);
     } else if (type == PREDICT2) {
-        int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
-        int a2 = (size - 2) < 0 ? 0 : samples.at(size - 2);
+        int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
+        int a2 = (index - 2) < 0 ? 0 : samples.at(index - 2);
         return predict2(a1, a2);
     } else {
-        int a1 = (size - 1) < 0 ? 0 : samples.at(size - 1);
-        int a2 = (size - 2) < 0 ? 0 : samples.at(size - 2);
-        int a3 = (size - 3) < 0 ? 0 : samples.at(size - 3);
+        int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
+        int a2 = (index - 2) < 0 ? 0 : samples.at(index - 2);
+        int a3 = (index - 3) < 0 ? 0 : samples.at(index - 3);
         return predict3(a1, a2, a3);
     }
 }
@@ -218,13 +217,13 @@ void GEncoder::quantize_samples(std::vector<short>& inSamples) {
 void GEncoder::write_file() {
 
     // Write file header_values
-    writer.writeNBits(fileStruct.blockSize, 16);
-    writer.writeNBits(fileStruct.sampleRate, 16);
-    writer.writeNBits(fileStruct.nFrames, 32);
-    writer.writeNBits(fileStruct.nChannels, 4);
-    writer.writeNBits(fileStruct.quantizationBits, 8);
-    writer.writeNBits(fileStruct.lossy, 2);
-    writer.writeNBits(fileStruct.approach, 4);
+    writer.writeNBits(fileStruct.blockSize, BITS_BLOCK_SIZE);
+    writer.writeNBits(fileStruct.sampleRate, BITS_SAMPLE_RATE);
+    writer.writeNBits(fileStruct.nFrames, BITS_N_FRAMES);
+    writer.writeNBits(fileStruct.nChannels, BITS_N_CHANNELS);
+    writer.writeNBits(fileStruct.quantizationBits, BITS_QUANTIZATION_BITS);
+    writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
+    writer.writeNBits(fileStruct.approach, BITS_APPROACH);
     golomb.setApproach(fileStruct.approach);
 
     // Write Blocks (data)
@@ -233,8 +232,8 @@ void GEncoder::write_file() {
     int count = 1;
     for (auto& block : fileStruct.blocks) {
         // Write Block header
-        writer.writeNBits(block.m, 14);
-        writer.writeNBits(block.predictor, 4);
+        writer.writeNBits(block.m, BITS_M);
+        writer.writeNBits(block.predictor, BITS_PREDICTOR);
 
         // Write Block data
         cout << " - Writing Block " << std::setw(3) << count++ << "/"
@@ -266,9 +265,10 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 
     // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
-        int prediction = predictorClass.predict(pred, (encodedBlock.data), i);
-        int difference = block.at(i) - prediction;
-        encodedBlock.data.push_back(difference);
+        int prediction = predictorClass.predict(pred, block, i);
+        int error = block.at(i) - prediction;
+
+        encodedBlock.data.push_back(error);
     }
 
     // Use attributed m or calculate one
@@ -291,9 +291,9 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
     // Divide in blocks and process each one
     for (int i = 0; i < (int)nBlocks; i++) {
         std::vector<short> block;
-        for (int j = 0; j < file.blockSize; j++) {
+        for (int j = 0; j < file.blockSize; j++)
             block.push_back(inSamples[i * file.blockSize + j]);
-        }
+
         Block encodedBlock = process_block(block, i, nBlocks);
 
         // Add encoded block to file
@@ -328,13 +328,14 @@ File& GDecoder::read_file() {
     cout << "Reading file " << inputFileName;
 
     // Read file header
-    fileStruct.blockSize = reader.readNBits(16);
-    fileStruct.sampleRate = reader.readNBits(16);
-    fileStruct.nFrames = reader.readNBits(32);
-    fileStruct.nChannels = reader.readNBits(4);
-    fileStruct.quantizationBits = reader.readNBits(8);
-    fileStruct.lossy = reader.readNBits(2);
-    fileStruct.approach = static_cast<APPROACH>(reader.readNBits(4));
+    fileStruct.blockSize = reader.readNBits(BITS_BLOCK_SIZE);
+    fileStruct.sampleRate = reader.readNBits(BITS_SAMPLE_RATE);
+    fileStruct.nFrames = reader.readNBits(BITS_N_FRAMES);
+    fileStruct.nChannels = reader.readNBits(BITS_N_CHANNELS);
+    fileStruct.quantizationBits = reader.readNBits(BITS_QUANTIZATION_BITS);
+    fileStruct.lossy = reader.readNBits(BITS_LOSSY);
+    fileStruct.approach =
+        static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
 
     // Write Blocks (data)
     int nBlocks{static_cast<int>(
@@ -360,8 +361,9 @@ File& GDecoder::read_file() {
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
-        block.m = reader.readNBits(14);
-        block.predictor = static_cast<PREDICTOR_TYPE>(reader.readNBits(4));
+        block.m = reader.readNBits(BITS_M);
+        block.predictor =
+            static_cast<PREDICTOR_TYPE>(reader.readNBits(BITS_PREDICTOR));
 
         // Read Block data
         this->golomb.setM(block.m);
