@@ -48,10 +48,6 @@ int Golomb::encode_sign_magnitude(int value) {
 
     // m is power of 2
     if ((m & (m - 1)) == 0){
-<<<<<<< HEAD
-        result <<= b;  // add b - 1 zeros to the end
-=======
->>>>>>> 997295907192cdcceb6310c5680e12bd6cf365cf
         result += remainder;  // add remainder
     }else{
     // m is not power of 2
@@ -59,11 +55,7 @@ int Golomb::encode_sign_magnitude(int value) {
             result  <<= b - 1;  // add b - 1 zeros to the end
             result += remainder;  // add remainder
         }else{
-<<<<<<< HEAD
-            remainder += pow(2, b) - m;  
-=======
             remainder += pow(2, b) - m;
->>>>>>> 997295907192cdcceb6310c5680e12bd6cf365cf
             result <<= b;  // add b zeros to the end
             result += remainder;  // add remainder
         }
@@ -168,10 +160,6 @@ int Golomb::decode() {
     if (value == 0) {   // no sign
         return value;
     } else if (approach == SIGN_MAGNITUDE) {
-<<<<<<< HEAD
-        // SIGN AND MAGNITUDE
-=======
->>>>>>> 997295907192cdcceb6310c5680e12bd6cf365cf
 
         int sign = bitStream.readBit();  // Last bit is the sign
         if (sign == 1)
@@ -179,10 +167,6 @@ int Golomb::decode() {
         return value;
 
     } else if (approach == VALUE_INTERLEAVING) {
-<<<<<<< HEAD
-        // VALUE INTERLEAVING
-=======
->>>>>>> 997295907192cdcceb6310c5680e12bd6cf365cf
 
         if (value % 2 == 1) {  // if number is odd, add 1 and divide by 2
             value++;
@@ -192,12 +176,7 @@ int Golomb::decode() {
             value /= 2;
         }
         return value;
-<<<<<<< HEAD
-    }else
-        throw std::invalid_argument("Invalid approach");
-=======
     } else
         std::invalid_argument("Invalid approach");
     return 0;
->>>>>>> 997295907192cdcceb6310c5680e12bd6cf365cf
 }
