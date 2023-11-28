@@ -18,60 +18,66 @@ using namespace std;
 
 TEST(Golomb, smallValues_SignMagnitude_mPowerOf2) {
 
-    const int MAX_VALUE = 20;
+    const int MAX_VALUE = 200;
 
-    BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(4, writer);
-    std::list<int> values;
-    for (int i = 0; i <= MAX_VALUE; i++) {
-        golomb.encode(i);
-        values.push_back(i);
+    for (int m = 2; m <= MAX_VALUE; m += 2) {
+
+        BitStream writer('w', TEST_FILE_NAME);
+        Golomb golomb(m, writer);
+        std::list<int> values;
+        for (int i = 0; i <= MAX_VALUE; i++) {
+            golomb.encode(i);
+            values.push_back(i);
+        }
+        golomb.~Golomb();
+
+        BitStream reader('r', TEST_FILE_NAME);
+        Golomb golomb2(m, reader);
+        for (int i = 0; i <= MAX_VALUE; i++) {
+            int decoded = golomb2.decode();
+            int original = values.front();
+
+            values.pop_front();
+            EXPECT_EQ(decoded, original);
+        }
+        EXPECT_EQ(values.size(), 0);
+
+        golomb2.~Golomb();
+
+        remove(TEST_FILE_NAME);
     }
-    golomb.~Golomb();
-
-    BitStream reader('r', TEST_FILE_NAME);
-    Golomb golomb2(4, reader);
-    for (int i = 0; i <= MAX_VALUE; i++) {
-        int decoded = golomb2.decode();
-        int original = values.front();
-
-        values.pop_front();
-        EXPECT_EQ(decoded, original);
-    }
-    EXPECT_EQ(values.size(), 0);
-
-    golomb2.~Golomb();
-
-    remove(TEST_FILE_NAME);
 };
 
 TEST(Golomb, negativeSmallValues_SignMagnitude_mPowerOf2) {
 
     const int MIN_VALUE = -200;
 
-    BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(4, writer, SIGN_MAGNITUDE);
-    std::list<int> values;
-    for (int i = MIN_VALUE; i < 0; i++) {
-        golomb.encode(i);
-        values.push_back(i);
+    for (int m = 2; m <= 200; m += 2) {
+
+        BitStream writer('w', TEST_FILE_NAME);
+        Golomb golomb(4, writer, SIGN_MAGNITUDE);
+        std::list<int> values;
+        for (int i = MIN_VALUE; i < 0; i++) {
+            golomb.encode(i);
+            values.push_back(i);
+        }
+        golomb.~Golomb();
+
+        BitStream reader('r', TEST_FILE_NAME);
+        Golomb golomb2(4, reader, SIGN_MAGNITUDE);
+        for (int i = MIN_VALUE; i < 0; i++) {
+            int decoded = golomb2.decode();
+            int original = values.front();
+
+            values.pop_front();
+            EXPECT_EQ(decoded, original);
+        }
+        EXPECT_EQ(values.size(), 0);
+
+        golomb2.~Golomb();
+
+        remove(TEST_FILE_NAME);
     }
-    golomb.~Golomb();
-
-    BitStream reader('r', TEST_FILE_NAME);
-    Golomb golomb2(4, reader, SIGN_MAGNITUDE);
-    for (int i = MIN_VALUE; i < 0; i++) {
-        int decoded = golomb2.decode();
-        int original = values.front();
-
-        values.pop_front();
-        EXPECT_EQ(decoded, original);
-    }
-    EXPECT_EQ(values.size(), 0);
-
-    golomb2.~Golomb();
-
-    remove(TEST_FILE_NAME);
 };
 
 TEST(Golomb, intensive_SignMagnitude_mPowerOf2) {

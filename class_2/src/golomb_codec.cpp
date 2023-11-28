@@ -231,6 +231,12 @@ void GEncoder::write_file() {
 
     int count = 1;
     for (auto& block : fileStruct.blocks) {
+        // check if block size is correct
+        if (block.data.size() != fileStruct.blockSize) {
+            cerr << "Error: Block size mismatch" << endl;
+            exit(2);
+        }
+
         // Write Block header
         writer.writeNBits(block.m, BITS_M);
         writer.writeNBits(block.predictor, BITS_PREDICTOR);
@@ -241,10 +247,16 @@ void GEncoder::write_file() {
              << " to file with m = " << std::setw(3) << unsigned(block.m)
              << ", p = " << std::setw(3) << unsigned(block.predictor) << "\r"
              << std::flush;
-        //for (auto sample : block.data)
-        //golomb.encode(sample);
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
-            golomb.encode(block.data.at(i));
+
+        for (short& sample : block.data) {
+            if (sample != 10) {
+                cout << "Error: encountered sample different than 10 sample "
+                        "with value: "
+                     << sample << endl;
+                exit(3);
+            }
+            golomb.encode(sample);
+        }
     }
     std::cout << "\nAll data written to file\n\n";
 }
@@ -265,10 +277,10 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 
     // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
-        int prediction = predictorClass.predict(pred, block, i);
-        int error = block.at(i) - prediction;
+        //int prediction = predictorClass.predict(pred, block, i);
+        //int error = block.at(i) - prediction;
 
-        encodedBlock.data.push_back(error);
+        encodedBlock.data.push_back(10);  //error);
     }
 
     // Use attributed m or calculate one
@@ -349,10 +361,11 @@ File& GDecoder::read_file() {
          << "\n - Total Number of Frames: " << unsigned(fileStruct.nFrames)
          << "\n - Number of Blocks: " << nBlocks
          << "\n - Golomb Approach: " << approach_to_string(fileStruct.approach)
-         << "\n - Encode type: " << (fileStruct.lossy ? "lossy" : "lossless") << "\n"
+         << "\n - Encode type: " << (fileStruct.lossy ? "lossy" : "lossless")
+         << "\n"
          << endl;
 
-    if(!check_approach(fileStruct.approach)){
+    if (!check_approach(fileStruct.approach)) {
         cerr << "Error: Invalid approach type " << fileStruct.approach << endl;
         exit(1);
     }
@@ -379,8 +392,17 @@ File& GDecoder::read_file() {
             exit(2);
         }
 
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
-            block.data.push_back((short)golomb.decode());
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
+            int decoded = golomb.decode();
+            if (decoded != 10) {
+                cout << "Error: encountered sample different than 10 with "
+                        "value: "
+                     << decoded << ", index = " << i << endl;
+                exit(3);
+            }
+            block.data.push_back((short)decoded);
+            //block.data.push_back((short)golomb.decode());
+        }
 
         fileStruct.blocks.push_back(block);
     }
