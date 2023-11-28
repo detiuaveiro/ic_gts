@@ -70,6 +70,7 @@ void print_processing_information(File& f) {
          << "\n - Sample Rate: " << f.sampleRate
          << "\n - Total Number of Frames: " << unsigned(f.nFrames)
          << "\n - Number of Blocks: " << nBlocks
+         << "\n - Golomb Approach: " << approach_to_string(f.approach)
          << "\n - Encode type: " << (f.lossy ? "lossy" : "lossless") << "\n"
          << endl;
 }

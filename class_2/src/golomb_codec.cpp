@@ -6,6 +6,21 @@
 ##############################################################################
 */
 
+std::string get_type_string(PREDICTOR_TYPE type){
+    std::string predText = "AUTOMATIC";
+    if(type == AUTOMATIC)
+        predText = "AUTOMATIC (0)";
+    else if(type == PREDICT1)
+        predText = "PREDICT1 (1)";
+    else if(type == PREDICT2)
+        predText = "PREDICT2 (2)";
+    else if(type == PREDICT3)
+        predText = "PREDICT3 (3)";
+    else
+        predText = "UNKNOWN";
+    return predText;
+}
+
 Predictor::Predictor(int nChannels) {
     this->nChannels = nChannels;
 }
@@ -191,7 +206,7 @@ int GEncoder::calculate_m(std::vector<short>& values) {
     // guarantee that minimum value is 1
     m = std::max(1, m);
 
-    return std::min(m, 255);  // cap golomb max size
+    return std::min(m, 16383);  // cap golomb max size (14 bits)
 }
 
 void GEncoder::quantize_samples(std::vector<short>& inSamples) {
@@ -201,13 +216,16 @@ void GEncoder::quantize_samples(std::vector<short>& inSamples) {
 }
 
 void GEncoder::write_file() {
-    // Write file headerabs_values
+
+    // Write file header_values
     writer.writeNBits(fileStruct.blockSize, 16);
     writer.writeNBits(fileStruct.sampleRate, 16);
     writer.writeNBits(fileStruct.nFrames, 32);
     writer.writeNBits(fileStruct.nChannels, 4);
     writer.writeNBits(fileStruct.quantizationBits, 8);
     writer.writeNBits(fileStruct.lossy, 2);
+    writer.writeNBits(fileStruct.approach, 4);
+    golomb.setApproach(fileStruct.approach);
 
     // Write Blocks (data)
     cout << "\nWriting data to file..." << endl;
@@ -215,7 +233,7 @@ void GEncoder::write_file() {
     int count = 1;
     for (auto& block : fileStruct.blocks) {
         // Write Block header
-        writer.writeNBits(block.m, 8);
+        writer.writeNBits(block.m, 14);
         writer.writeNBits(block.predictor, 4);
 
         // Write Block data
@@ -316,16 +334,33 @@ File& GDecoder::read_file() {
     fileStruct.nChannels = reader.readNBits(4);
     fileStruct.quantizationBits = reader.readNBits(8);
     fileStruct.lossy = reader.readNBits(2);
+    fileStruct.approach = static_cast<APPROACH>(reader.readNBits(4));
 
     // Write Blocks (data)
     int nBlocks{static_cast<int>(
         ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
-
     cout << " with " << unsigned(nBlocks) << " blocks" << endl;
+
+    cout << "\nMusic Processing information: \n"
+         << " - Block Size: " << fileStruct.blockSize
+         << "\n - Number of Channels: " << unsigned(fileStruct.nChannels)
+         << "\n - Sample Rate: " << fileStruct.sampleRate
+         << "\n - Total Number of Frames: " << unsigned(fileStruct.nFrames)
+         << "\n - Number of Blocks: " << nBlocks
+         << "\n - Golomb Approach: " << approach_to_string(fileStruct.approach)
+         << "\n - Encode type: " << (fileStruct.lossy ? "lossy" : "lossless") << "\n"
+         << endl;
+
+    if(!check_approach(fileStruct.approach)){
+        cerr << "Error: Invalid approach type " << fileStruct.approach << endl;
+        exit(1);
+    }
+    golomb.setApproach(fileStruct.approach);
+
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
-        block.m = reader.readNBits(8);
+        block.m = reader.readNBits(14);
         block.predictor = static_cast<PREDICTOR_TYPE>(reader.readNBits(4));
 
         // Read Block data

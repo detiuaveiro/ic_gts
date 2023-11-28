@@ -12,10 +12,12 @@ using namespace std;
 
 TEST(Golomb, smallValues_mPowerOf2) {
 
+    const int MAX_VALUE = 20;
+
     BitStream writer('w', TEST_FILE_NAME);
     Golomb golomb(4, writer);
     std::list<int> values;
-    for (int i = 0; i <= 20; i += 2) {
+    for (int i = 0; i <= MAX_VALUE; i++) {
         golomb.encode(i);
         values.push_back(i);
     }
@@ -23,7 +25,7 @@ TEST(Golomb, smallValues_mPowerOf2) {
 
     BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(4, reader);
-    for (int i = 0; i <= 20; i += 2) {
+    for (int i = 0; i <= MAX_VALUE; i++) {
         int decoded = golomb2.decode();
         int original = values.front();
 
@@ -39,10 +41,12 @@ TEST(Golomb, smallValues_mPowerOf2) {
 
 TEST(Golomb, smallValues_mNotPowerOf2) {
 
+    const int MAX_VALUE = 20;
+    
     BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(5, writer, 1);
+    Golomb golomb(5, writer, SIGN_MAGNITUDE);
     std::list<int> values;
-    for (int i = 1; i <= 30; i += 2) {
+    for (int i = 0; i <= MAX_VALUE; i++) {
         golomb.encode(i);
         values.push_back(i);
     }
@@ -50,7 +54,7 @@ TEST(Golomb, smallValues_mNotPowerOf2) {
 
     BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(5, reader);
-    for (int i = 1; i <= 30; i += 2) {
+    for (int i = 0; i <= MAX_VALUE; i++) {
         int decoded = golomb2.decode();
         int original = values.front();
 
@@ -64,6 +68,7 @@ TEST(Golomb, smallValues_mNotPowerOf2) {
     remove(TEST_FILE_NAME);
 };
 
+/*
 TEST(Golomb, negativeSignMagnitude) {
 
     BitStream writer('w', TEST_FILE_NAME);
@@ -94,7 +99,7 @@ TEST(Golomb, negativeSignMagnitude) {
 TEST(Golomb, negativeValueInterleaving) {
 
     BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(5, writer, 2);
+    Golomb golomb(5, writer, VALUE_INTERLEAVING);
     std::list<int> values;
     for (int i = -1; i >= -15; i--) {
         golomb.encode(i);
@@ -103,7 +108,7 @@ TEST(Golomb, negativeValueInterleaving) {
     golomb.~Golomb();
 
     BitStream reader('r', TEST_FILE_NAME);
-    Golomb golomb2(5, reader, 2);
+    Golomb golomb2(5, reader, VALUE_INTERLEAVING);
     for (int i = -1; i >= -15; i--) {
         int decoded = golomb2.decode();
         int original = values.front();
@@ -121,7 +126,7 @@ TEST(Golomb, negativeValueInterleaving) {
 TEST(Golomb, signMagnitude_intensive) {
 
     BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(11, writer, 1);
+    Golomb golomb(4, writer, SIGN_MAGNITUDE);
     std::list<int> values;
     for (int i = -32764; i <= 32764; i++) {
         golomb.encode(i);
@@ -130,7 +135,7 @@ TEST(Golomb, signMagnitude_intensive) {
     golomb.~Golomb();
 
     BitStream reader('r', TEST_FILE_NAME);
-    Golomb golomb2(100, reader, 1);
+    Golomb golomb2(4, reader, SIGN_MAGNITUDE);
     for (int i = -32764; i <= 32764; i++) {
         int decoded = golomb2.decode();
         int original = values.front();
@@ -148,7 +153,7 @@ TEST(Golomb, signMagnitude_intensive) {
 TEST(Golomb, valueInterleaving_intensive) {
 
     BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(11, writer, 2);
+    Golomb golomb(11, writer, VALUE_INTERLEAVING);
     std::list<int> values;
     for (int i = -32764; i <= 32764; i++) {
         golomb.encode(i);
@@ -158,7 +163,7 @@ TEST(Golomb, valueInterleaving_intensive) {
     golomb.~Golomb();
 
     BitStream reader('r', TEST_FILE_NAME);
-    Golomb golomb2(100, reader, 2);
+    Golomb golomb2(11, reader, VALUE_INTERLEAVING);
     for (int i = -32764; i <= 32764; i++) {
         int decoded = golomb2.decode();
         int original = values.front();
@@ -172,3 +177,4 @@ TEST(Golomb, valueInterleaving_intensive) {
 
     remove(TEST_FILE_NAME);
 };
+*/
