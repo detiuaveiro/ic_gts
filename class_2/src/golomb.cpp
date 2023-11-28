@@ -36,16 +36,20 @@ int Golomb::encode_sign_magnitude(int value) {
     value = abs(value);
 
     // creating the unary with as many 1s as the quotient
-    unsigned int result = (1 << quotient) - 1;
+    //unsigned int result = (1 << quotient) - 1;
+    for(int i = 0; i < quotient; i++)
+        bitStream.writeBit(1);
 
     // Insert 0 to separate the quotient from the remainder
-    result <<= 1;
+    //result <<= 1;
+    bitStream.writeBit(0);
 
     int b = ceil(log2(m));
 
+    unsigned int result = 0;
+
     // m is power of 2
     if ((m & (m - 1)) == 0){
-        result <<= b;  // add b - 1 zeros to the end
         result += remainder;  // add remainder
     }else{
     // m is not power of 2
@@ -97,7 +101,7 @@ void Golomb::encode(int value) {
         throw std::invalid_argument("m must be positive");
 
     
-    std::cout << "input value: " << value << std::endl;
+    //std::cout << "input value: " << value << std::endl;
 
     int result = 0;
     if (approach == SIGN_MAGNITUDE)
@@ -107,17 +111,16 @@ void Golomb::encode(int value) {
     else
         throw std::invalid_argument("Invalid approach");
 
-    std::cout << "golomb result: " << result << std::endl;
+    //std::cout << "golomb result: " << result << std::endl;
     
-    int quotient = value / m;
     int b = ceil(log2(m));
     int bits_to_represent = 0;
     if(value == 0)
-        bits_to_represent = 1 + quotient + b; // 0 doesn't have signal
+        bits_to_represent = b; // 0 doesn't have signal
     else   
-        bits_to_represent = 1 + quotient + b + 1; // include signal
+        bits_to_represent = b + 1; // include signal
 
-    std::cout << "NUMBER OF BITS TO REPRESENT: " << bits_to_represent << std::endl;
+    //std::cout << "NUMBER OF BITS TO REPRESENT: " << bits_to_represent << std::endl;
     //std::cout << std::endl;
     bitStream.writeNBits(result, bits_to_represent);
 }
