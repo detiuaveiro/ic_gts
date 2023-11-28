@@ -39,6 +39,36 @@ TEST(Golomb, smallValues_mPowerOf2) {
     remove(TEST_FILE_NAME);
 };
 
+TEST(Golomb, negativeSignMagnitude_mPowerOf2) {
+
+    const int MIN_VALUE = -200;
+
+    BitStream writer('w', TEST_FILE_NAME);
+    Golomb golomb(4, writer, SIGN_MAGNITUDE);
+    std::list<int> values;
+    for (int i = MIN_VALUE; i < 0; i++) {
+        golomb.encode(i);
+        values.push_back(i);
+    }
+    golomb.~Golomb();
+
+    BitStream reader('r', TEST_FILE_NAME);
+    Golomb golomb2(4, reader, SIGN_MAGNITUDE);
+    for (int i = MIN_VALUE; i < 0; i++) {
+        int decoded = golomb2.decode();
+        int original = values.front();
+
+        values.pop_front();
+        EXPECT_EQ(decoded, original);
+    }
+    EXPECT_EQ(values.size(), 0);
+
+    golomb2.~Golomb();
+
+    remove(TEST_FILE_NAME);
+};
+
+/*
 TEST(Golomb, smallValues_mNotPowerOf2) {
 
     const int MAX_VALUE = 20;
@@ -55,34 +85,6 @@ TEST(Golomb, smallValues_mNotPowerOf2) {
     BitStream reader('r', TEST_FILE_NAME);
     Golomb golomb2(5, reader);
     for (int i = 0; i <= MAX_VALUE; i++) {
-        int decoded = golomb2.decode();
-        int original = values.front();
-
-        values.pop_front();
-        EXPECT_EQ(decoded, original);
-    }
-    EXPECT_EQ(values.size(), 0);
-
-    golomb2.~Golomb();
-
-    remove(TEST_FILE_NAME);
-};
-
-/*
-TEST(Golomb, negativeSignMagnitude) {
-
-    BitStream writer('w', TEST_FILE_NAME);
-    Golomb golomb(11, writer);
-    std::list<int> values;
-    for (int i = -1; i >= -15; i--) {
-        golomb.encode(i);
-        values.push_back(i);
-    }
-    golomb.~Golomb();
-
-    BitStream reader('r', TEST_FILE_NAME);
-    Golomb golomb2(11, reader);
-    for (int i = -1; i >= -15; i--) {
         int decoded = golomb2.decode();
         int original = values.front();
 

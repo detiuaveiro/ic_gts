@@ -26,12 +26,12 @@ std::string approach_to_string(APPROACH approach){
 //     // log2(m) = number of bits to represent m
 // }
 
-int Golomb::encode_sign_magnitude(int value) {
-    int quotient = value / m;
-    int remainder = value % m;
-    
+int Golomb::encode_sign_magnitude(int value) {    
     bool isNegative = (value < 0) ? true : false;
     value = abs(value);
+
+    int quotient = value / m;
+    int remainder = value % m;
 
     // creating the unary with as many 1s as the quotient
     //unsigned int result = (1 << quotient) - 1;
