@@ -24,9 +24,9 @@ class Golomb {
     APPROACH approach = SIGN_MAGNITUDE;
     BitStream& bitStream;
 
-    int calculate_remainder(int r);
-    int encode_sign_magnitude(int value);
-    int encode_value_interleaving(int value);
+    void write_remainder(int r);
+    void encode_sign_magnitude(int value);
+    void encode_value_interleaving(int value);
 
    public:
     Golomb(int m, BitStream& bitStream, APPROACH approach = SIGN_MAGNITUDE);
