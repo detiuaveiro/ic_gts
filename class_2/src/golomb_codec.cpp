@@ -241,6 +241,8 @@ void GEncoder::write_file() {
         writer.writeNBits(block.m, BITS_M);
         writer.writeNBits(block.predictor, BITS_PREDICTOR);
 
+        golomb.setM(block.m); // DONT FORGET THIS 
+
         // Write Block data
         cout << " - Writing Block " << std::setw(3) << count++ << "/"
              << std::setw(3) << fileStruct.blocks.size()
@@ -248,15 +250,8 @@ void GEncoder::write_file() {
              << ", p = " << std::setw(3) << unsigned(block.predictor) << "\r"
              << std::flush;
 
-        for (short& sample : block.data) {
-            if (sample != 10) {
-                cout << "Error: encountered sample different than 10 sample "
-                        "with value: "
-                     << sample << endl;
-                exit(3);
-            }
+        for (short& sample : block.data)
             golomb.encode(sample);
-        }
     }
     std::cout << "\nAll data written to file\n\n";
 }
@@ -277,10 +272,10 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 
     // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
-        //int prediction = predictorClass.predict(pred, block, i);
-        //int error = block.at(i) - prediction;
+        int prediction = predictorClass.predict(pred, block, i);
+        int error = block.at(i) - prediction;
 
-        encodedBlock.data.push_back(10);  //error);
+        encodedBlock.data.push_back(error);
     }
 
     // Use attributed m or calculate one
@@ -354,17 +349,6 @@ File& GDecoder::read_file() {
         ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
     cout << " with " << unsigned(nBlocks) << " blocks" << endl;
 
-    cout << "\nMusic Processing information: \n"
-         << " - Block Size: " << fileStruct.blockSize
-         << "\n - Number of Channels: " << unsigned(fileStruct.nChannels)
-         << "\n - Sample Rate: " << fileStruct.sampleRate
-         << "\n - Total Number of Frames: " << unsigned(fileStruct.nFrames)
-         << "\n - Number of Blocks: " << nBlocks
-         << "\n - Golomb Approach: " << approach_to_string(fileStruct.approach)
-         << "\n - Encode type: " << (fileStruct.lossy ? "lossy" : "lossless")
-         << "\n"
-         << endl;
-
     if (!check_approach(fileStruct.approach)) {
         cerr << "Error: Invalid approach type " << fileStruct.approach << endl;
         exit(1);
@@ -392,17 +376,9 @@ File& GDecoder::read_file() {
             exit(2);
         }
 
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
-            int decoded = golomb.decode();
-            if (decoded != 10) {
-                cout << "Error: encountered sample different than 10 with "
-                        "value: "
-                     << decoded << ", index = " << i << endl;
-                exit(3);
-            }
-            block.data.push_back((short)decoded);
-            //block.data.push_back((short)golomb.decode());
-        }
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
+            block.data.push_back((short)golomb.decode());
+        
 
         fileStruct.blocks.push_back(block);
     }
@@ -414,8 +390,11 @@ std::vector<short> GDecoder::decode_block(Block& block) {
     std::vector<short> samples;
     PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
 
-    for (int i = 0; i < (int)block.data.size(); i++)
-        samples.push_back(predictorClass.predict(pred, block.data, i));
+    for (int i = 0; i < (int)block.data.size(); i++){
+        int prediction = predictorClass.predict(pred, samples, i);
+        int error = block.data.at(i) + prediction;
+        samples.push_back(error);
+    }
 
     return samples;
 }
@@ -424,13 +403,14 @@ std::vector<short> GDecoder::decode_file() {
     std::vector<short> outSamples;
     cout << "Decoding file with " << unsigned(fileStruct.blocks.size())
          << " Blocks" << endl;
-    int count = 0;
+    int count = 1;
     for (Block& block : fileStruct.blocks) {
-        cout << " - Decoding Block: " << count++ << endl;
+        cout << " - Decoding Block: " << count++ << "\r" << std::flush;
         std::vector<short> blockSamples = decode_block(block);
         outSamples.insert(outSamples.end(), blockSamples.begin(),
                           blockSamples.end());
     }
+    cout << "\nAll Blocks decoded\n" << endl;
 
     return outSamples;
 }
