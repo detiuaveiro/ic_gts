@@ -77,13 +77,12 @@ TEST(Predictor, testBadPredict) {
 TEST(Predictor, testBenchmark) {
     Predictor predictor;
 
-    // Improve this tests
-    std::vector<short> predict1_samples = {1, 3, 5, 7, 9};
+    std::vector<short> predict1_samples = {1, 1, 1, 1, 1};
     EXPECT_EQ(predictor.benchmark(predict1_samples), PREDICT1);
 
-    //std::vector<short> predict2_samples = {2, 4, 8, 16, 32};
-    //EXPECT_EQ(predictor.benchmark(predict2_samples), PREDICT2);
+    std::vector<short> predict2_samples = {2, 4, 8, 16, 32};
+    EXPECT_EQ(predictor.benchmark(predict2_samples), PREDICT2);
 
-    //std::vector<short> predict3_samples = {1, 2, 4, 7, 11, 16};
-    //EXPECT_EQ(predictor.benchmark(predict3_samples), PREDICT3);
-};
+    std::vector<short> predict3_samples = {1, 5, 14, 30, 55};
+    EXPECT_EQ(predictor.benchmark(predict3_samples), PREDICT3);
+}

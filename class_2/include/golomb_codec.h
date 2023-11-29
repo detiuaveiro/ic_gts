@@ -14,7 +14,7 @@
 #define BITS_SAMPLE_RATE 16
 #define BITS_N_FRAMES 32
 #define BITS_N_CHANNELS 4
-#define BITS_QUANTIZATION_BITS 8
+#define BITS_BIT_RATE 8
 #define BITS_LOSSY 2
 #define BITS_APPROACH 4
 #define BITS_M 14
@@ -87,7 +87,7 @@ struct File {
     uint8_t nChannels;
     uint16_t sampleRate;
     uint32_t nFrames;
-    uint16_t quantizationBits;
+    uint16_t bitRate;
     APPROACH approach;
     bool lossy;  // true if lossy, false if lossless
     /* Data */
@@ -115,7 +115,6 @@ class GEncoder {
     int calculate_m(std::vector<short>& values);
     Block process_block(std::vector<short>& block, int blockId, int nBlocks);
     void write_file();
-    void quantize_samples(std::vector<short>& inSamples);
 
    public:
     GEncoder(std::string outFileName, int m, PREDICTOR_TYPE pred);

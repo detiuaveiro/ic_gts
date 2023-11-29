@@ -54,14 +54,17 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
     std::vector<int> predictions;
 
     // Predict based on the given type and count occurrences of predictions
-    for (size_t i = 3; i < samples.size(); ++i) {
+    for (size_t i = 0; i < samples.size(); ++i) {
         int prediction;
         if (type == PREDICT1) {
             prediction = predict(type, samples, i);
         } else if (type == PREDICT2) {
             prediction = predict(type, samples, i);
-        } else {
+        } else if (type == PREDICT3) {
             prediction = predict(type, samples, i);
+        } else {  
+            cerr << "Error: Unknown Predictor type encountered" << endl;
+            exit(2);
         }
         predictions.push_back(prediction);
         total_predictions++;
@@ -121,19 +124,19 @@ PREDICTOR_TYPE Predictor::benchmark(std::vector<short> samples) {
     PREDICTOR_TYPE best_predictor = AUTOMATIC;
 
     double entropy1 = calculateEntropy(PREDICT1, samples);
-    if (entropy1 < min_entropy) {
+    if (entropy1 <= min_entropy) {
         min_entropy = entropy1;
         best_predictor = PREDICT1;
     }
 
     double entropy2 = calculateEntropy(PREDICT2, samples);
-    if (entropy2 < min_entropy) {
+    if (entropy2 <= min_entropy) {
         min_entropy = entropy2;
         best_predictor = PREDICT2;
     }
 
     double entropy3 = calculateEntropy(PREDICT3, samples);
-    if (entropy3 < min_entropy) {
+    if (entropy3 <= min_entropy) {
         min_entropy = entropy3;
         best_predictor = PREDICT3;
     }
@@ -208,12 +211,6 @@ int GEncoder::calculate_m(std::vector<short>& values) {
     return std::min(m, 16383);  // cap golomb max size (14 bits)
 }
 
-void GEncoder::quantize_samples(std::vector<short>& inSamples) {
-    for (auto& sample : inSamples) {
-        sample >>= fileStruct.quantizationBits;
-    }
-}
-
 void GEncoder::write_file() {
 
     // Write file header_values
@@ -221,7 +218,7 @@ void GEncoder::write_file() {
     writer.writeNBits(fileStruct.sampleRate, BITS_SAMPLE_RATE);
     writer.writeNBits(fileStruct.nFrames, BITS_N_FRAMES);
     writer.writeNBits(fileStruct.nChannels, BITS_N_CHANNELS);
-    writer.writeNBits(fileStruct.quantizationBits, BITS_QUANTIZATION_BITS);
+    writer.writeNBits(fileStruct.bitRate, BITS_BIT_RATE);
     writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
     writer.writeNBits(fileStruct.approach, BITS_APPROACH);
     golomb.setApproach(fileStruct.approach);
@@ -241,7 +238,7 @@ void GEncoder::write_file() {
         writer.writeNBits(block.m, BITS_M);
         writer.writeNBits(block.predictor, BITS_PREDICTOR);
 
-        golomb.setM(block.m); // DONT FORGET THIS 
+        golomb.setM(block.m);  // DONT FORGET THIS
 
         // Write Block data
         cout << " - Writing Block " << std::setw(3) << count++ << "/"
@@ -339,7 +336,7 @@ File& GDecoder::read_file() {
     fileStruct.sampleRate = reader.readNBits(BITS_SAMPLE_RATE);
     fileStruct.nFrames = reader.readNBits(BITS_N_FRAMES);
     fileStruct.nChannels = reader.readNBits(BITS_N_CHANNELS);
-    fileStruct.quantizationBits = reader.readNBits(BITS_QUANTIZATION_BITS);
+    fileStruct.bitRate = reader.readNBits(BITS_BIT_RATE);
     fileStruct.lossy = reader.readNBits(BITS_LOSSY);
     fileStruct.approach =
         static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
@@ -378,10 +375,10 @@ File& GDecoder::read_file() {
 
         for (uint16_t i = 0; i < fileStruct.blockSize; i++)
             block.data.push_back((short)golomb.decode());
-        
 
         fileStruct.blocks.push_back(block);
     }
+    std::cout << "All data read from file" << std::endl;
 
     return fileStruct;
 }
@@ -390,7 +387,7 @@ std::vector<short> GDecoder::decode_block(Block& block) {
     std::vector<short> samples;
     PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
 
-    for (int i = 0; i < (int)block.data.size(); i++){
+    for (int i = 0; i < (int)block.data.size(); i++) {
         int prediction = predictorClass.predict(pred, samples, i);
         int error = block.data.at(i) + prediction;
         samples.push_back(error);
