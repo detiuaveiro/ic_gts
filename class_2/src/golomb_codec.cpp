@@ -48,8 +48,8 @@ int Predictor::predict3(int a1, int a2, int a3) {
     return (3 * a1) - (3 * a2) + a3;
 }
 
-double Predictor::calculateEntropy(PREDICTOR_TYPE type,
-                                   std::vector<short>& samples) {
+double Predictor::calculate_entropy(PREDICTOR_TYPE type,
+                                    std::vector<short>& samples) {
     int total_predictions = 0;
     std::vector<int> predictions;
 
@@ -62,7 +62,7 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
             prediction = predict(type, samples, i);
         } else if (type == PREDICT3) {
             prediction = predict(type, samples, i);
-        } else {  
+        } else {
             cerr << "Error: Unknown Predictor type encountered" << endl;
             exit(2);
         }
@@ -82,21 +82,8 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
     return entropy;
 }
 
-int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
-                       int index) {
-    if (!check_type(type)) {
-        cerr << "Error: Unknown Predictor " << unsigned(type)
-             << " encountered while decoding Block" << endl;
-        exit(2);
-    }
-
-    // index and nChannels will be used to interact only with left or right channels
-    nChannels =
-        nChannels % nChannels;  // dummy calculation for compiler warnings
-
-    // with more than one channel use correlation (with MID and SIDE channels) or
-    //  or encode each one separately (only save the difference)
-
+int Predictor::mono_predict(PREDICTOR_TYPE type, std::vector<short>& samples,
+                            int index) {
     if (type == PREDICT1) {
         int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
         return predict1(a1);
@@ -112,6 +99,68 @@ int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
     }
 }
 
+int Predictor::stereo_predict(PREDICTOR_TYPE type, std::vector<short>& samples,
+                              int index) {
+    // 0 for encoding the channels separately, 1 for correlating them (MID or
+    //  SIDE channels (both approaches possible))
+    int correlation = 0;
+
+    // This code isn't good
+
+    if (correlation == 0) {
+        if (index % 2 == 0) {
+            // predict only for left channel (only take into account left channel value)
+            int a1_left = (index - 2) < 0 ? 0 : samples.at(index - 2);
+            int a2_left = (index - 4) < 0 ? 0 : samples.at(index - 4);
+            int a3_left = (index - 6) < 0 ? 0 : samples.at(index - 6);
+
+            if (type == PREDICT1) {
+                return predict1(a1_left);
+            } else if (type == PREDICT2) {
+                return predict2(a1_left, a2_left);
+            } else {
+                return predict3(a1_left, a2_left, a3_left);
+            }
+        } else {
+            // predict only for right channel (only take into account right channel value)
+            int a1_right = (index - 2) < 0 ? 0 : samples.at(index - 2);
+            int a2_right = (index - 4) < 0 ? 0 : samples.at(index - 4);
+            int a3_right = (index - 6) < 0 ? 0 : samples.at(index - 6);
+
+            if (type == PREDICT1) {
+                return predict1(a1_right);
+            } else if (type == PREDICT2) {
+                return predict2(a1_right, a2_right);
+            } else {
+                return predict3(a1_right, a2_right, a3_right);
+            }
+        }
+    }
+}
+
+int Predictor::predict(PREDICTOR_TYPE type, std::vector<short>& samples,
+                       int index) {
+    if (!check_type(type)) {
+        cerr << "Error: Unknown Predictor " << unsigned(type)
+             << " encountered while decoding Block" << endl;
+        exit(2);
+    }
+
+    // with more than one channel use correlation (with MID and SIDE channels) or
+    //  or encode each one separately (only save the difference)
+
+    if (nChannels >= 1)
+        return mono_predict(type, samples, index);
+    else if (nChannels == 2)
+        return stereo_predict(type, samples, index);
+    else {
+        cerr << "Error: Un-suported number of channels encountered while "
+                "decoding: "
+             << nChannels << endl;
+        exit(2);
+    }
+}
+
 bool Predictor::check_type(PREDICTOR_TYPE type) {
     if (type == AUTOMATIC || type == PREDICT1 || type == PREDICT2 ||
         type == PREDICT3)
@@ -119,23 +168,23 @@ bool Predictor::check_type(PREDICTOR_TYPE type) {
     return false;
 }
 
-PREDICTOR_TYPE Predictor::benchmark(std::vector<short> samples) {
+PREDICTOR_TYPE Predictor::benchmark(std::vector<short>& samples) {
     double min_entropy = std::numeric_limits<double>::max();
     PREDICTOR_TYPE best_predictor = AUTOMATIC;
 
-    double entropy1 = calculateEntropy(PREDICT1, samples);
+    double entropy1 = calculate_entropy(PREDICT1, samples);
     if (entropy1 <= min_entropy) {
         min_entropy = entropy1;
         best_predictor = PREDICT1;
     }
 
-    double entropy2 = calculateEntropy(PREDICT2, samples);
+    double entropy2 = calculate_entropy(PREDICT2, samples);
     if (entropy2 <= min_entropy) {
         min_entropy = entropy2;
         best_predictor = PREDICT2;
     }
 
-    double entropy3 = calculateEntropy(PREDICT3, samples);
+    double entropy3 = calculate_entropy(PREDICT3, samples);
     if (entropy3 <= min_entropy) {
         min_entropy = entropy3;
         best_predictor = PREDICT3;
@@ -267,7 +316,6 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
     Block encodedBlock;
     encodedBlock.predictor = pred;
 
-    // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
         int prediction = predictorClass.predict(pred, block, i);
         int error = block.at(i) - prediction;
@@ -288,8 +336,6 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
     this->predictorClass.set_nChannels(file.nChannels);
-
-    // Probably add quantization
 
     std::cout << "Entering encoding phase" << std::endl;
     // Divide in blocks and process each one
@@ -351,6 +397,7 @@ File& GDecoder::read_file() {
         exit(1);
     }
     golomb.setApproach(fileStruct.approach);
+    predictorClass.set_nChannels(fileStruct.nChannels);
 
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;

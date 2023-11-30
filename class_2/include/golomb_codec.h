@@ -6,9 +6,6 @@
 
 #define WRITER_FILE_NAME "outputStream.bin"
 #define DEFAULT_GOLOMB_M 4
-#define LEFT_MONO_CHANNEL 0
-#define RIGHT_CHANNEL 1
-#define VECTOR_SUBSET_SIZE 5
 
 #define BITS_BLOCK_SIZE 16
 #define BITS_SAMPLE_RATE 16
@@ -40,7 +37,13 @@ class Predictor {
     int predict2(int a1, int a2);
     int predict3(int a1, int a2, int a3);
 
-    double calculateEntropy(PREDICTOR_TYPE type, std::vector<short>& samples);
+    double calculate_entropy(PREDICTOR_TYPE type, std::vector<short>& samples);
+
+    int mono_predict(PREDICTOR_TYPE type, std::vector<short>& samples,
+                     int index);
+
+    int stereo_predict(PREDICTOR_TYPE type, std::vector<short>& samples,
+                       int index);
 
     int nChannels = 1;
 
@@ -53,13 +56,13 @@ class Predictor {
         Pass a set of samples/block and return the best predictor to be used 
             (the one that resulted in less occupied space)
     */
-    PREDICTOR_TYPE benchmark(std::vector<short> samples);
+    PREDICTOR_TYPE benchmark(std::vector<short>& samples);
 
     /*!
         Predict the next sample based on the type of the predictor and the
             previous samples
     */
-    int predict(PREDICTOR_TYPE type, std::vector<short> samples, int index);
+    int predict(PREDICTOR_TYPE type, std::vector<short>& samples, int index);
 
     bool check_type(PREDICTOR_TYPE type);
 
