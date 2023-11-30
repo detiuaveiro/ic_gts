@@ -84,7 +84,7 @@ void save_decoded_music(File& f, std::vector<short>& samples) {
         exit(1);
     }
 
-    sfhOut.writef(samples.data(), f.nFrames);
+    sfhOut.writef(samples.data(), samples.size() / f.nChannels);
 }
 
 int main(int argc, char* argv[]) {

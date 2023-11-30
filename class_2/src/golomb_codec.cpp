@@ -7,10 +7,8 @@
 */
 
 std::string get_type_string(PREDICTOR_TYPE type) {
-    std::string predText = "AUTOMATIC";
-    if (type == AUTOMATIC)
-        predText = "AUTOMATIC (0)";
-    else if (type == PREDICT1)
+    std::string predText = "AUTOMATIC (0)";
+    if (type == PREDICT1)
         predText = "PREDICT1 (1)";
     else if (type == PREDICT2)
         predText = "PREDICT2 (2)";
@@ -19,6 +17,17 @@ std::string get_type_string(PREDICTOR_TYPE type) {
     else
         predText = "UNKNOWN";
     return predText;
+}
+
+std::string get_type_string(PHASE phase) {
+    std::string corrText = "NO CORRELATION (0)";
+    if (phase == CORRELATION_MID)
+        corrText = "CORRELATION MID (1)";
+    else if (phase == CORRELATION_SIDE)
+        corrText = "CORRELATION SIDE (2)";
+    else
+        corrText = "UNKNOWN";
+    return corrText;
 }
 
 Predictor::Predictor(int nChannels) {
@@ -48,8 +57,8 @@ int Predictor::predict3(int a1, int a2, int a3) {
     return (3 * a1) - (3 * a2) + a3;
 }
 
-double Predictor::calculateEntropy(PREDICTOR_TYPE type,
-                                   std::vector<short>& samples) {
+double Predictor::calculate_entropy(PREDICTOR_TYPE type,
+                                    std::vector<short>& samples) {
     int total_predictions = 0;
     std::vector<int> predictions;
 
@@ -62,7 +71,7 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
             prediction = predict(type, samples, i);
         } else if (type == PREDICT3) {
             prediction = predict(type, samples, i);
-        } else {  
+        } else {
             cerr << "Error: Unknown Predictor type encountered" << endl;
             exit(2);
         }
@@ -82,7 +91,54 @@ double Predictor::calculateEntropy(PREDICTOR_TYPE type,
     return entropy;
 }
 
-int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
+int Predictor::predict_no_correlation(PREDICTOR_TYPE type,
+                                      std::vector<short>& samples, int index) {
+    // this code supports both mono and stereo sound
+    int a1, a2, a3;
+
+    if (nChannels == 1) {
+        a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
+        a2 = (index - 2) < 0 ? 0 : samples.at(index - 2);
+        a3 = (index - 3) < 0 ? 0 : samples.at(index - 3);
+    } else {
+        // Go two Idx back, because of getting the previous value of the same channel
+        a1 = (index - 2) < 0 ? 0 : samples.at(index - 2);
+        a2 = (index - 4) < 0 ? 0 : samples.at(index - 4);
+        a3 = (index - 6) < 0 ? 0 : samples.at(index - 6);
+    }
+
+    if (type == PREDICT1)
+        return predict1(a1);
+    else if (type == PREDICT2)
+        return predict2(a1, a2);
+    else
+        return predict3(a1, a2, a3);
+}
+
+int Predictor::predict_correlated(PREDICTOR_TYPE type,
+                                  std::vector<short>& samples, int index) {
+    // 0 for encoding the channels separately, 1 for correlating them (MID or
+    //  SIDE channels (both approaches possible))
+    //int correlation = 0;
+
+    // Go two Idx back, because of getting the previous value of the same
+    //  channel
+    int a1 = (index - 2) < 0 ? 0 : samples.at(index - 2);
+    int a2 = (index - 4) < 0 ? 0 : samples.at(index - 4);
+    int a3 = (index - 6) < 0 ? 0 : samples.at(index - 6);
+
+    if (type == PREDICT1) {
+        return predict1(a1);
+    } else if (type == PREDICT2) {
+        return predict2(a1, a2);
+    } else {
+        return predict3(a1, a2, a3);
+    }
+    cerr << "Error: Un-suported number of channels encountered while ";
+    return 0;
+}
+
+int Predictor::predict(PREDICTOR_TYPE type, std::vector<short>& samples,
                        int index) {
     if (!check_type(type)) {
         cerr << "Error: Unknown Predictor " << unsigned(type)
@@ -90,26 +146,21 @@ int Predictor::predict(PREDICTOR_TYPE type, std::vector<short> samples,
         exit(2);
     }
 
-    // index and nChannels will be used to interact only with left or right channels
-    nChannels =
-        nChannels % nChannels;  // dummy calculation for compiler warnings
+    if (!check_phase(phase)) {
+        cerr << "Error: Unknown Phase " << unsigned(phase)
+             << " encountered while decoding Block" << endl;
+        exit(2);
+    }
 
     // with more than one channel use correlation (with MID and SIDE channels) or
     //  or encode each one separately (only save the difference)
 
-    if (type == PREDICT1) {
-        int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
-        return predict1(a1);
-    } else if (type == PREDICT2) {
-        int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
-        int a2 = (index - 2) < 0 ? 0 : samples.at(index - 2);
-        return predict2(a1, a2);
-    } else {
-        int a1 = (index - 1) < 0 ? 0 : samples.at(index - 1);
-        int a2 = (index - 2) < 0 ? 0 : samples.at(index - 2);
-        int a3 = (index - 3) < 0 ? 0 : samples.at(index - 3);
-        return predict3(a1, a2, a3);
-    }
+    if (phase == NO_CORRELATION)
+        return predict_no_correlation(type, samples, index);
+    else if (phase == CORRELATION_MID)
+        return predict_correlated(type, samples, index);
+    else
+        return predict_correlated(type, samples, index);
 }
 
 bool Predictor::check_type(PREDICTOR_TYPE type) {
@@ -119,23 +170,30 @@ bool Predictor::check_type(PREDICTOR_TYPE type) {
     return false;
 }
 
-PREDICTOR_TYPE Predictor::benchmark(std::vector<short> samples) {
+bool Predictor::check_phase(PHASE phase) {
+    if (phase == NO_CORRELATION || phase == CORRELATION_MID ||
+        phase == CORRELATION_SIDE)
+        return true;
+    return false;
+}
+
+PREDICTOR_TYPE Predictor::benchmark(std::vector<short>& samples) {
     double min_entropy = std::numeric_limits<double>::max();
     PREDICTOR_TYPE best_predictor = AUTOMATIC;
 
-    double entropy1 = calculateEntropy(PREDICT1, samples);
+    double entropy1 = calculate_entropy(PREDICT1, samples);
     if (entropy1 <= min_entropy) {
         min_entropy = entropy1;
         best_predictor = PREDICT1;
     }
 
-    double entropy2 = calculateEntropy(PREDICT2, samples);
+    double entropy2 = calculate_entropy(PREDICT2, samples);
     if (entropy2 <= min_entropy) {
         min_entropy = entropy2;
         best_predictor = PREDICT2;
     }
 
-    double entropy3 = calculateEntropy(PREDICT3, samples);
+    double entropy3 = calculate_entropy(PREDICT3, samples);
     if (entropy3 <= min_entropy) {
         min_entropy = entropy3;
         best_predictor = PREDICT3;
@@ -267,7 +325,6 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
     Block encodedBlock;
     encodedBlock.predictor = pred;
 
-    // only works for Mono
     for (int i = 0; i < (int)block.size(); i++) {
         int prediction = predictorClass.predict(pred, block, i);
         int error = block.at(i) - prediction;
@@ -288,8 +345,6 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
     this->predictorClass.set_nChannels(file.nChannels);
-
-    // Probably add quantization
 
     std::cout << "Entering encoding phase" << std::endl;
     // Divide in blocks and process each one
@@ -344,6 +399,9 @@ File& GDecoder::read_file() {
     // Write Blocks (data)
     int nBlocks{static_cast<int>(
         ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
+
+    nBlocks *= (int)fileStruct.nChannels;
+
     cout << " with " << unsigned(nBlocks) << " blocks" << endl;
 
     if (!check_approach(fileStruct.approach)) {
@@ -351,6 +409,7 @@ File& GDecoder::read_file() {
         exit(1);
     }
     golomb.setApproach(fileStruct.approach);
+    predictorClass.set_nChannels(fileStruct.nChannels);
 
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;

@@ -216,7 +216,11 @@ int main(int argc, char* argv[]) {
     f.lossy = Options::lossy;
     f.approach = Options::approach;
 
-    gEncoder.encode_file(f, inputSamples, nBlocks);
+    // dont forget to multiply the number of blocks by the number of channels
+    //  since each the nBlocks is accounting for raw frames and in the case of
+    //  stereo audio, each frame has two samples, so double the calculated blocks
+    //  (because blocks have samples, not frames)
+    gEncoder.encode_file(f, inputSamples, nBlocks * Options::nChannels);
 
     clock_t endTime = clock();
     std::cout << "Program took " << std::fixed << std::setprecision(2)
