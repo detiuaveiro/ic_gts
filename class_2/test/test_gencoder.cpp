@@ -11,7 +11,7 @@
 using namespace std;
 
 TEST(GEncoder, testCalculateM) {
-    GEncoder gEncoder(TEST_FILE_NAME, 5, AUTOMATIC);
+    GEncoder gEncoder(TEST_FILE_NAME, 5, AUTOMATIC, NO_CORRELATION);
 
     std::vector<short> samples = {1, 2, 3, 4, 5};
     int m = gEncoder.test_calculate_m(samples);
@@ -20,7 +20,7 @@ TEST(GEncoder, testCalculateM) {
 };
 
 TEST(GEncoder, testAbsValues) {
-    GEncoder gEncoder(TEST_FILE_NAME, 5, AUTOMATIC);
+    GEncoder gEncoder(TEST_FILE_NAME, 5, AUTOMATIC, NO_CORRELATION);
 
     std::vector<short> samples = {-1, 2, -3, 4, -5};
     std::vector<unsigned short> abs_values =

@@ -20,6 +20,7 @@ size_t nFrames;
 size_t sampleRate;
 PREDICTOR_TYPE predictor = AUTOMATIC;
 APPROACH approach = SIGN_MAGNITUDE;
+PHASE phase = P_AUTOMATIC;
 }  // namespace Options
 
 static void print_usage() {
@@ -38,6 +39,8 @@ static void print_usage() {
             "  -p, --predict     --- set predictor [0,3] (default: PREDICT1)\n"
             "  -a, --approach    --- set approach [0,1] (default: "
             "SIGN_MAGNITUDE)"
+            "  -s, --phase       --- set phase [0,3], only applicable to "
+            "stereo audio (default: P_AUTOMATIC)"
          << endl;
 }
 
@@ -124,6 +127,17 @@ int process_arguments(int argc, char* argv[]) {
                     << argv[i] << std::endl;
                 return -1;
             }
+        } else if (strcmp(argv[i], "-s") == 0 ||
+                   strcmp(argv[i], "--phase") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::phase = static_cast<PHASE>(atoi(argv[i]));
+            } else {
+                std::cerr
+                    << "Error: Missing or bad argument for -s/--phase option."
+                    << argv[i] << std::endl;
+                return -1;
+            }
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
                       << std::endl;
@@ -163,6 +177,7 @@ void print_processing_information(int nBlocks) {
          << "\n - Number of Blocks: " << nBlocks
          << "\n - Predictor: " << get_type_string(Options::predictor)
          << "\n - Golomb Approach: " << approach_to_string(Options::approach)
+         << "\n - Phase: " << get_phase_string(Options::phase)
          << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless")
          << "\n"
          << endl;
@@ -202,8 +217,11 @@ int main(int argc, char* argv[]) {
 
     print_processing_information(nBlocks);
 
+    // if lossy show current bit rate and ask for new bit rate
+
     // Create Golomb Encoder class
-    GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
+    GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor,
+                      Options::phase);
 
     // Create file struct
     File f;
