@@ -12,7 +12,7 @@ namespace Options {
 string musicName = "../songs/sample_mono.wav";
 string encodedName = "encodedSample";
 size_t blockSize = 1024;
-size_t bitRate = 8;
+size_t bitRate = -1;
 int m = -1;  // automatic
 bool lossy = false;
 size_t nChannels;
@@ -32,7 +32,6 @@ static void print_usage() {
             "  -o, --output      --- set encoded file name (default: "
             "encodedSample)\n"
             "  -b, --blockSize   --- set block size (default: 1024)\n"
-            "  -b, --bitRate     --- set bit rate (default: 8)\n"
             "  -l, --lossy       --- set lossy compression (default: off)\n"
             "  -m, --modulus     --- set m number (default: automatic "
             "calculation)\n"
@@ -78,17 +77,6 @@ int process_arguments(int argc, char* argv[]) {
                 std::cerr << "Error: Missing or bad argument for "
                              "-b/--blockSize option: "
                           << argv[i] << std::endl;
-                return -1;
-            }
-        } else if (strcmp(argv[i], "-b") == 0 ||
-                   strcmp(argv[i], "--bitRate") == 0) {
-            i++;
-            if (i < argc && isdigit(*argv[i])) {
-                Options::bitRate = atoi(argv[i]);
-            } else {
-                std::cerr
-                    << "Error: Missing or bad argument for -l/--levels option."
-                    << argv[i] << std::endl;
                 return -1;
             }
         } else if (strcmp(argv[i], "-l") == 0 ||
