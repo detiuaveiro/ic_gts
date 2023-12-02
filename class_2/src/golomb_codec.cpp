@@ -119,33 +119,48 @@ int Predictor::predict_no_correlation(PREDICTOR_TYPE type,
 
 int Predictor::predict_correlated_mid(PREDICTOR_TYPE type,
                                       std::vector<short>& samples, int index) {
-    int left = (index - 2) < 0 ? 0 : samples.at(index - 2);
-    int right = (index - 4) < 0 ? 0 : samples.at(index - 4);
-
-    int mid = (left + right) / 2;
+    std::vector<int> an(3);
+    for (int i = 1; i < 6; i += 2) {
+        // odd index
+        int channel1 = (((index - i) < 0) || samples.size()) == 0
+                           ? 0
+                           : samples.at(index - i);
+        // even index
+        int channel2 = (((index - i - 1) < 0) || samples.size())
+                           ? 0
+                           : samples.at(index - (i - 1));
+        an.push_back((channel1 + channel2) / 2);
+    }
 
     if (type == PREDICT1)
-        return predict1(mid);
+        return predict1(an.at(0));
     else if (type == PREDICT2)
-        return predict2(mid, 0);
+        return predict2(an.at(0), an.at(1));
     else
-        return predict3(mid, 0, 0);
+        return predict3(an.at(0), an.at(1), an.at(2));
 }
 
 int Predictor::predict_correlated_side(PREDICTOR_TYPE type,
                                        std::vector<short>& samples, int index) {
-    // For side channel prediction, consider index - 3 and index - 6 samples
-    int left = (index - 3) < 0 ? 0 : samples.at(index - 3);
-    int right = (index - 6) < 0 ? 0 : samples.at(index - 6);
-
-    int side = (left - right) / 2;
+    std::vector<int> an(3);
+    for (int i = 1; i < 6; i += 2) {
+        // odd index
+        int channel1 = (((index - i) < 0) || samples.size()) == 0
+                           ? 0
+                           : samples.at(index - i);
+        // even index
+        int channel2 = (((index - i - 1) < 0) || samples.size())
+                           ? 0
+                           : samples.at(index - (i - 1));
+        an.push_back((channel1 - channel2) / 2);
+    }
 
     if (type == PREDICT1)
-        return predict1(side);
+        return predict1(an.at(0));
     else if (type == PREDICT2)
-        return predict2(side, 0);
+        return predict2(an.at(0), an.at(1));
     else
-        return predict3(side, 0, 0);
+        return predict3(an.at(0), an.at(1), an.at(2));
 }
 
 int Predictor::predict(PREDICTOR_TYPE type, PHASE phase,
@@ -513,8 +528,9 @@ std::vector<short> GDecoder::decode_block(Block& block) {
 
     for (int i = 0; i < (int)block.data.size(); i++) {
         int prediction = predictorClass.predict(pred, ph, samples, i);
-        int error = block.data.at(i) + prediction;
-        samples.push_back(error);
+        // error + prediction
+        int sample = block.data.at(i) + prediction;
+        samples.push_back(sample);
     }
 
     return samples;
