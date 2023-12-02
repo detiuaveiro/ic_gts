@@ -402,6 +402,24 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
     return encodedBlock;
 }
 
+Block GEncoder::lossy_process_block(std::vector<short>& block, PREDICTOR_TYPE pred, PHASE phase, int m){
+    Block encodedBlock;
+    encodedBlock.predictor = pred;
+    encodedBlock.phase = phase;
+
+    for(int i = 0; i < (int)block.size(); i++){
+        int prediction = predictorClass.predict(pred, phase, block, i);
+        int error = block.at(i) - prediction;
+        golomb.encode(error);
+        encodedBlock.data.push_back(error);
+    }
+
+    //Use attributed m or calculate one
+    if(m < 1) m = calculate_m(encodedBlock.data);
+    return encodedBlock;
+}
+
+
 void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
@@ -414,10 +432,24 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
         for (int j = 0; j < file.blockSize; j++)
             block.push_back(inSamples[i * file.blockSize + j]);
 
-        Block encodedBlock = process_block(block, i, nBlocks);
+        if (file.lossy == false) {
+            Block encodedBlock = process_block(block, i, nBlocks);
+            // Add encoded block to file
+            fileStruct.blocks.push_back(encodedBlock);
+        } else {
+            PREDICTOR_TYPE pred = predictor;
+            PHASE ph = phase;
+            if (pred == AUTOMATIC || ph == P_AUTOMATIC) {
+                std::tuple<int, int> ret =
+                    predictorClass.benchmark(block, pred, ph);
+                pred = static_cast<PREDICTOR_TYPE>(std::get<0>(ret));
+                ph = static_cast<PHASE>(std::get<1>(ret));
+            }
 
-        // Add encoded block to file
-        fileStruct.blocks.push_back(encodedBlock);
+            Block encodedBlock = lossy_process_block(block, pred, ph, m);
+            //ad encoded block to file
+            fileStruct.blocks.push_back(encodedBlock);
+        }
     }
     if (predictor == AUTOMATIC)
         std::cout << "\n";
@@ -426,6 +458,7 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
 
     write_file();
 }
+
 
 /*
 ##############################################################################

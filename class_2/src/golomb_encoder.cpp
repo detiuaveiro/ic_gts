@@ -206,6 +206,16 @@ int main(int argc, char* argv[]) {
     print_processing_information(nBlocks);
 
     // if lossy show current bit rate and ask for new bit rate
+    if(Options::lossy == true){
+        cout << "Current bitRate is " << Options::bitRate << "\n";
+        //calculalte bitrate https://hydrogenaud.io/index.php/topic,43259.0.html
+        //bitrate = audio size in bits / seconds = Nframes * frameSize / (Nframes / sample rate) = 
+        // = Nframes * frameSize * sampleRate / Nframes = frameSize * samplerate
+        //frameSize = sample rate * bit depth * number of channels
+        //bitrate = sample rate * sample rate * bit depth * number of channels
+
+        Options::bitRate = 16 * Options::nChannels * std::pow(Options::sampleRate, 2);
+    }
 
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor,
