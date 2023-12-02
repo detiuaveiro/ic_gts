@@ -130,8 +130,8 @@ class GEncoder {
 
     std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
     int calculate_m(std::vector<short>& values);
-    Block process_block(std::vector<short>& block, int blockId, int nBlocks);
-    Block lossy_process_block(std::vector<short>& block, PREDICTOR_TYPE pred, PHASE phase, int m);
+    Block process_block(std::vector<short>& block, int blockId, int nBlocks, bool lossy);
+    int lossy_error(int error, PREDICTOR_TYPE pred, int currentIndex, std::vector<short>& samples);
 
     void write_file();
 

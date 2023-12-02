@@ -215,6 +215,8 @@ int main(int argc, char* argv[]) {
         //bitrate = sample rate * sample rate * bit depth * number of channels
 
         Options::bitRate = 16 * Options::nChannels * std::pow(Options::sampleRate, 2);
+
+        cout << "New bitRate is " << Options::bitRate << "\n";
     }
 
     // Create Golomb Encoder class

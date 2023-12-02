@@ -369,7 +369,7 @@ void GEncoder::write_file() {
 }
 
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
-                              int nBlocks) {
+                              int nBlocks, bool lossy) {
 
     PREDICTOR_TYPE pred = predictor;
     PHASE ph = phase;
@@ -390,6 +390,9 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
         int prediction = predictorClass.predict(pred, ph, block, i);
         int error = block.at(i) - prediction;
 
+        if(lossy){
+            error = lossy_error(error, pred, i, block);
+        }
         encodedBlock.data.push_back(error);
     }
 
@@ -402,7 +405,47 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
     return encodedBlock;
 }
 
-Block GEncoder::lossy_process_block(std::vector<short>& block, PREDICTOR_TYPE pred, PHASE phase, int m){
+int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, int currentIndex, std::vector<short>& samples){
+    if(pred == PREDICT1){
+        error /= 2;
+
+        if(currentIndex > 0){
+            samples[currentIndex - 1] += error;
+        }
+    }
+    else if(pred == PREDICT2){
+        error *= 2;
+
+        if(currentIndex > 0){
+            samples[currentIndex-1] += error;
+        }
+        if(currentIndex > 1){
+            samples[currentIndex - 2] += error;
+            samples[currentIndex - 1] += error;
+        }
+    }
+    else if(pred == PREDICT3){
+        error /= 3;
+
+        if(currentIndex > 0){
+            samples[currentIndex-1] += error;
+        }
+        if(currentIndex > 1){
+            samples[currentIndex - 2] += error;
+            samples[currentIndex - 1] += error;
+        }
+        if(currentIndex > 2){
+            samples[currentIndex - 3] += error;
+            samples[currentIndex - 2] += error;
+            samples[currentIndex - 1] += error;
+        }
+    }
+
+    return error;
+}
+
+
+/*Block GEncoder::lossy_process_block(std::vector<short>& block, PREDICTOR_TYPE pred, PHASE phase, int m){
     Block encodedBlock;
     encodedBlock.predictor = pred;
     encodedBlock.phase = phase;
@@ -417,10 +460,34 @@ Block GEncoder::lossy_process_block(std::vector<short>& block, PREDICTOR_TYPE pr
     //Use attributed m or calculate one
     if(m < 1) m = calculate_m(encodedBlock.data);
     return encodedBlock;
-}
-
+}*/
 
 void GEncoder::encode_file(File file, std::vector<short>& inSamples,
+                           size_t nBlocks) {
+    this->fileStruct = file;
+    this->predictorClass.set_nChannels(file.nChannels);
+
+    std::cout << "Entering encoding phase" << std::endl;
+    // Divide in blocks and process each one
+    for (int i = 0; i < (int)nBlocks; i++) {
+        std::vector<short> block;
+        for (int j = 0; j < file.blockSize; j++)
+            block.push_back(inSamples[i * file.blockSize + j]);
+
+        Block encodedBlock = process_block(block, i, nBlocks, file.lossy);
+
+        // Add encoded block to file
+        fileStruct.blocks.push_back(encodedBlock);
+    }
+    if (predictor == AUTOMATIC)
+        std::cout << "\n";
+
+    std::cout << "All blocks encoded. Writing to file" << endl;
+
+    write_file();
+}
+
+/*void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
     this->predictorClass.set_nChannels(file.nChannels);
@@ -457,7 +524,7 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
     std::cout << "All blocks encoded. Writing to file" << endl;
 
     write_file();
-}
+}*/
 
 
 /*
