@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
     // if lossy show current bit rate and ask for new bit rate
     if (Options::lossy) {
         // 16 is size of short
-        double bitsPerFrame = Options::sampleRate * 16 * Options::nChannels;
+        long bitsPerFrame = Options::sampleRate * 16 * Options::nChannels;
 
         /* I don't think it's needed
         long totalBits = bitsPerFrame * Options::nFrames;

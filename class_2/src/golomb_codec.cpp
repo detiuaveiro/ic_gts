@@ -301,6 +301,10 @@ GEncoder::~GEncoder() {
     writer.~BitStream();
 }
 
+void GEncoder::setFile(File file) {
+    this->fileStruct = file;
+}
+
 int GEncoder::test_calculate_m(std::vector<short>& values) {
     return calculate_m(values);
 }
@@ -308,6 +312,11 @@ int GEncoder::test_calculate_m(std::vector<short>& values) {
 std::vector<unsigned short> GEncoder::test_abs_value_vector(
     std::vector<short>& values) {
     return abs_value_vector(values);
+}
+
+int GEncoder::test_lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
+                               int currentIndex, std::vector<short>& samples) {
+    return lossy_error(error, pred, phase, currentIndex, samples);
 }
 
 std::vector<unsigned short> GEncoder::abs_value_vector(
@@ -387,41 +396,84 @@ void GEncoder::write_file() {
     std::cout << "\nAll data written to file\n\n";
 }
 
-int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, int currentIndex,
-                          std::vector<short>& samples, size_t bitRate) {
-
+int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
+                          int currentIndex, std::vector<short>& samples) {
+    const int bitsPerSample = 16;  // size of short
 
     int bitsPerFrame =  // in kbps
-        (fileStruct.sampleRate * 16 * fileStruct.nChannels) / 1000;
+        (fileStruct.sampleRate * bitsPerSample * fileStruct.nChannels) / 1000;
 
-    int bitsToEliminate = (bitsPerFrame - fileStruct.bitRate) / (fileStruct.sampleRate * fileStruct.nChannels);
+    double bitsToEliminate =
+        double(bitsPerFrame - fileStruct.bitRate) /
+        double(fileStruct.sampleRate * fileStruct.nChannels);
 
-    error >>= bitsToEliminate;
+    /*cout << "bitsToEliminate = " << bitsToEliminate << endl;
+    cout << "bitsPerFrame = " << bitsPerFrame << endl;
+    cout << "bitRate = " << fileStruct.bitRate << endl;*/
 
-    if (pred == PREDICT1) {
-        if (currentIndex > 0) {
-            samples[currentIndex - 1] += error;
+    if (bitsToEliminate == 0.0 ||
+        (currentIndex == 0 && fileStruct.nChannels == 1) ||
+        (currentIndex < 2 && fileStruct.nChannels == 2))
+        return error;
+
+    // Calculate the number of bits to discard for this particular sample
+    // Calculate the number of bits required to represent the error based on the bitrate
+    //int bitsToRepresent = static_cast<int>(log2(abs(error)) + 1) - bitRate;
+    //int bitsToDiscard = static_cast<int>(bitsToEliminate * bitsPerSample);
+    //int bitsToRepresent = 1;
+    //cout << "bitsToDiscard = " << bitsToRepresent << endl;
+
+    /*
+    int adjustedError = error >> bitsToRepresent;
+
+    if (pred == PREDICT1 && phase == NO_CORRELATION && currentIndex > 0) {
+        //if (log2(error) + 1 > bitsToRepresent) {
+        cout << "...HERE..." << endl;
+        //samples[currentIndex - 1] += error;
+
+        samples[currentIndex] += adjustedError;
+        ;
+        //}
+
+        if (adjustedError == 0 &&
+            samples[currentIndex - 1] != samples[currentIndex]) {
+            if (samples[currentIndex - 1] > 0)
+                samples[currentIndex - 1] -=
+                    abs(samples[currentIndex - 1] - samples[currentIndex]);
+            else
+                samples[currentIndex - 1] +=
+                    abs(samples[currentIndex - 1] - samples[currentIndex]);
         }
-    } else if (pred == PREDICT2) {
-        if (currentIndex > 0) {
-            samples[currentIndex - 1] += error;
-        }
-        if (currentIndex > 1) {
-            samples[currentIndex - 2] += error;
-        }
-    } else if (pred == PREDICT3) {
-        if (currentIndex > 0) {
-            samples[currentIndex - 1] += error;
-        }
-        if (currentIndex > 1) {
-            samples[currentIndex - 2] += error;
-        }
-        if (currentIndex > 2) {
-            samples[currentIndex - 3] += error;
+    }*/
+
+    int maxBits = 1;  // Maximum 1 bit representation
+
+    // If error is positive and greater than 1, limit it to 1
+    if (error > 1) {
+        error = 1;
+    }
+    // If error is negative and less than -1, limit it to -1
+    else if (error < -1) {
+        error = -1;
+    }
+
+    // Adjust the samples based on the error
+    if (pred == PREDICT1 && phase == NO_CORRELATION && currentIndex > 0) {
+        samples[currentIndex] += error;
+
+        if (error == 0 && samples[currentIndex - 1] != samples[currentIndex]) {
+            if (samples[currentIndex - 1] > 0)
+                samples[currentIndex - 1] -=
+                    abs(samples[currentIndex - 1] - samples[currentIndex]);
+            else
+                samples[currentIndex - 1] +=
+                    abs(samples[currentIndex - 1] - samples[currentIndex]);
         }
     }
 
     return error;
+
+    //return adjustedError;
 }
 
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
@@ -447,7 +499,7 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
         int error = block.at(i) - prediction;
 
         if (fileStruct.lossy)
-            error = lossy_error(error, pred, i, block, fileStruct.bitRate);
+            error = lossy_error(error, pred, ph, i, block);
 
         encodedBlock.data.push_back(error);
     }
