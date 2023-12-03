@@ -417,8 +417,7 @@ int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
     double scalingFactor = pow(2, bitsToEliminatePerSecond) / 2.0;
 
     // Adjust the error using quantization with the scaling factor
-    int adjustedError = error >> 1;
-    (int)(error / scalingFactor) * scalingFactor;
+    int adjustedError = (int)(error / scalingFactor) * scalingFactor;
 
     //cout << "bitsToEliminate = " << averageBitsToEliminate << endl;
     //cout << "defaultBitRate = " << defaultBitRate << endl;
