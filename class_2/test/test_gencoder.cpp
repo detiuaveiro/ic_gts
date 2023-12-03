@@ -32,3 +32,15 @@ TEST(GEncoder, testAbsValues) {
         EXPECT_EQ(abs(samples[i]), abs_values[i]);
     }
 };
+
+/*
+TEST(GEncoder, test_lossy_error) {
+    GEncoder gEncoder(TEST_FILE_NAME, 5, PREDICT1, NO_CORRELATION);
+
+    std::vector<short> samples = {7, 7, 8, 8, 9, 10};
+    int prediction = predictorClass.predict(pred, ph, block, i);
+    int error = block.at(i) - prediction;
+    int error = gEncoder.test_calculate_m(samples);
+
+    EXPECT_EQ(m, 3);
+};*/

@@ -387,6 +387,43 @@ void GEncoder::write_file() {
     std::cout << "\nAll data written to file\n\n";
 }
 
+int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, int currentIndex,
+                          std::vector<short>& samples, size_t bitRate) {
+
+
+    int bitsPerFrame =  // in kbps
+        (fileStruct.sampleRate * 16 * fileStruct.nChannels) / 1000;
+
+    int bitsToEliminate = (bitsPerFrame - fileStruct.bitRate) / (fileStruct.sampleRate * fileStruct.nChannels);
+
+    error >>= bitsToEliminate;
+
+    if (pred == PREDICT1) {
+        if (currentIndex > 0) {
+            samples[currentIndex - 1] += error;
+        }
+    } else if (pred == PREDICT2) {
+        if (currentIndex > 0) {
+            samples[currentIndex - 1] += error;
+        }
+        if (currentIndex > 1) {
+            samples[currentIndex - 2] += error;
+        }
+    } else if (pred == PREDICT3) {
+        if (currentIndex > 0) {
+            samples[currentIndex - 1] += error;
+        }
+        if (currentIndex > 1) {
+            samples[currentIndex - 2] += error;
+        }
+        if (currentIndex > 2) {
+            samples[currentIndex - 3] += error;
+        }
+    }
+
+    return error;
+}
+
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
                               int nBlocks) {
 
@@ -408,6 +445,9 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
     for (int i = 0; i < (int)block.size(); i++) {
         int prediction = predictorClass.predict(pred, ph, block, i);
         int error = block.at(i) - prediction;
+
+        if (fileStruct.lossy)
+            error = lossy_error(error, pred, i, block, fileStruct.bitRate);
 
         encodedBlock.data.push_back(error);
     }
@@ -493,7 +533,6 @@ File& GDecoder::read_file() {
 
     std::ofstream outputFile("decoded_values_distribution.txt");
 
-
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
@@ -518,11 +557,11 @@ File& GDecoder::read_file() {
             exit(2);
         }
 
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++){
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
             int data = golomb.decode();
             block.data.push_back((short)data);
             outputFile << data << "\n";
-        }   
+        }
 
         fileStruct.blocks.push_back(block);
     }
