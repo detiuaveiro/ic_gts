@@ -6,16 +6,16 @@ Golomb::Golomb(int m, BitStream& bitStream, APPROACH approach)
     this->approach = approach;
 }
 
-bool check_approach(APPROACH approach){
-    if(approach != SIGN_MAGNITUDE && approach != VALUE_INTERLEAVING)
+bool check_approach(APPROACH approach) {
+    if (approach != SIGN_MAGNITUDE && approach != VALUE_INTERLEAVING)
         return false;
-    return true; 
+    return true;
 }
 
-std::string approach_to_string(APPROACH approach){
-    if(approach == SIGN_MAGNITUDE)
+std::string approach_to_string(APPROACH approach) {
+    if (approach == SIGN_MAGNITUDE)
         return "SIGN_MAGNITUDE (0)";
-    else if(approach == VALUE_INTERLEAVING)
+    else if (approach == VALUE_INTERLEAVING)
         return "VALUE_INTERLEAVING (1)";
     else
         return "UNKNOWN";
@@ -26,14 +26,14 @@ void Golomb::write_remainder(int remainder) {
     // m is power of 2
     int b = ceil(log2(m));
 
-    if(b>0){
-        if ((m & (m - 1)) == 0){
+    if (b > 0) {
+        if ((m & (m - 1)) == 0) {
             bitStream.writeNBits(remainder, b);
-        }else{
-        // m is not power of 2
-            if (remainder < (pow(2, b) - m)){
-                bitStream.writeNBits(remainder, b-1);
-            }else{
+        } else {
+            // m is not power of 2
+            if (remainder < (pow(2, b) - m)) {
+                bitStream.writeNBits(remainder, b - 1);
+            } else {
                 remainder += pow(2, b) - m;
                 bitStream.writeNBits(remainder, b);
             }
@@ -44,13 +44,13 @@ void Golomb::write_remainder(int remainder) {
 void Golomb::encode_sign_magnitude(int value) {
     bool isNegative = (value < 0) ? true : false;
     value = abs(value);
-    
+
     int quotient = value / m;
-    int remainder = value % m;    
+    int remainder = value % m;
 
     // creating the unary with as many 1s as the quotient
     //unsigned int result = (1 << quotient) - 1;
-    for(int i = 0; i < quotient; i++)
+    for (int i = 0; i < quotient; i++)
         bitStream.writeBit(1);
 
     // Insert 0 to separate the quotient from the remainder
@@ -58,7 +58,7 @@ void Golomb::encode_sign_magnitude(int value) {
 
     write_remainder(remainder);
 
-    if (value == 0){ // 0 dont need signal
+    if (value == 0) {  // 0 dont need signal
         return;
     }
     if (isNegative)
@@ -78,9 +78,9 @@ void Golomb::encode_value_interleaving(int value) {
     int remainder = value % m;
 
     // creating the unary with as many 1s as the quotient
-    for(int i = 0; i < quotient; i++)
+    for (int i = 0; i < quotient; i++)
         bitStream.writeBit(1);
-    
+
     // Insert 0 to separate the quotient from the remainder
     bitStream.writeBit(0);
 
@@ -114,10 +114,10 @@ int Golomb::decode() {
         quotient++;
     }
 
-    int b = ceil(log2(m)); // 3
-    int values_divider = pow(2, b) - m; // 3
+    int b = ceil(log2(m));               // 3
+    int values_divider = pow(2, b) - m;  // 3
 
-    if(b>0){
+    if (b > 0) {
         // read the binary part
         for (int i = 0; i < b - 1; i++) {
             int bit = bitStream.readBit();
@@ -133,13 +133,13 @@ int Golomb::decode() {
         if (extraBit != 10) {
             remainder = remainder - values_divider;
         }
-    }else{
+    } else {
         remainder = 0;
     }
 
     value = quotient * m + remainder;
 
-    if (value == 0) {   // no sign
+    if (value == 0) {  // no sign
         return value;
     } else if (approach == SIGN_MAGNITUDE) {
 

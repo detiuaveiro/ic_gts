@@ -301,6 +301,10 @@ GEncoder::~GEncoder() {
     writer.~BitStream();
 }
 
+void GEncoder::setFile(File file) {
+    this->fileStruct = file;
+}
+
 int GEncoder::test_calculate_m(std::vector<short>& values) {
     return calculate_m(values);
 }
@@ -308,6 +312,11 @@ int GEncoder::test_calculate_m(std::vector<short>& values) {
 std::vector<unsigned short> GEncoder::test_abs_value_vector(
     std::vector<short>& values) {
     return abs_value_vector(values);
+}
+
+int GEncoder::test_lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
+                               int currentIndex, std::vector<short>& samples) {
+    return lossy_error(error, pred, phase, currentIndex, samples);
 }
 
 std::vector<unsigned short> GEncoder::abs_value_vector(
@@ -378,8 +387,7 @@ void GEncoder::write_file() {
                   << " to file with m = " << std::setw(3) << unsigned(block.m)
                   << ", p = " << std::setw(1) << unsigned(block.predictor)
                   << " and phase = " << std::setw(1) << unsigned(block.phase)
-                  << "  "
-                  << "\r" << std::flush;
+                  << "  " << endl;  //<< "\r" << std::flush;
 
         for (short& sample : block.data)
             golomb.encode(sample);
@@ -387,8 +395,54 @@ void GEncoder::write_file() {
     std::cout << "\nAll data written to file\n\n";
 }
 
+int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
+                          int currentIndex, std::vector<short>& samples) {
+    // We cannot cut samples directly, since that would speed up the audio
+    //  , so we need to cut the number of bits per sample required to represent
+    //  the sample. We do that by quantizing the error and then the samples
+    //  should be updated to guarantee that our audio pattern didn't get
+    //  corrupted.
+
+    // skip compiler warnings
+    pred = pred;
+    phase = phase;
+    samples = samples;
+
+    const int bitsPerSample = 16;  // size of short
+
+    int defaultBitRate =  // in kbps
+        (fileStruct.sampleRate * bitsPerSample * fileStruct.nChannels) / 1000;
+
+    double averageBitsToEliminate =
+        double(defaultBitRate - fileStruct.bitRate) /
+        double(fileStruct.sampleRate * fileStruct.nChannels);
+
+    //int bitsToEliminatePerSecond = defaultBitRate - fileStruct.bitRate;
+
+    if (averageBitsToEliminate == 0.0 ||
+        (currentIndex == 0 && fileStruct.nChannels == 1) ||
+        (currentIndex < 2 && fileStruct.nChannels == 2))
+        return error;
+
+    // or error >> 1
+    double tmpShift = double(defaultBitRate / fileStruct.bitRate);
+    int shiftAmount = std::ceil(tmpShift);
+    int adjustedError = error >> shiftAmount;
+
+    //cout << "bitsToEliminate = " << averageBitsToEliminate << endl;
+    //cout << "defaultBitRate = " << defaultBitRate << endl;
+    //cout << "new bitRate = " << fileStruct.bitRate << endl;
+    //cout << "bitsToEliminatePerSecond = " << bitsToEliminatePerSecond << endl;
+    //cout << "scalingFactor = " << double(scalingFactor) << endl;
+
+    // Here past samples should be adjusted with the error,
+    //  according to predictor and phase chosen
+
+    return adjustedError;
+}
+
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
-                              int nBlocks, bool lossy, size_t bitRate) {
+                              int nBlocks) {
 
     PREDICTOR_TYPE pred = predictor;
     PHASE ph = phase;
@@ -409,86 +463,26 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
         int prediction = predictorClass.predict(pred, ph, block, i);
         int error = block.at(i) - prediction;
 
-        if (lossy) {
-            error = lossy_error(error, pred, i, block, bitRate, fileStruct.sampleRate);
-        }
+        if (fileStruct.lossy)
+            error = lossy_error(error, pred, ph, i, block);
+
         encodedBlock.data.push_back(error);
     }
 
     // Use attributed m or calculate one
     int bM = m;
     if (bM < 1)
-        bM = calculate_m((encodedBlock.data));
+        bM = calculate_m(encodedBlock.data);
     encodedBlock.m = bM;
 
     return encodedBlock;
 }
 
-int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, int currentIndex,
-                          std::vector<short>& samples, size_t bitRate, size_t sampleRate) {
-
-    int bitsPerSample = static_cast<int>(std::round(bitRate/sampleRate));
-    int maxBitsToRepresent = static_cast<int>(std::ceil(std::log2(std::max(std::abs(error) + 1,2))));
-    
-    int bitsToEliminate = maxBitsToRepresent - bitsPerSample;
-    cout << bitsToEliminate << std::endl;
-    int aux = error;
-    samples.at(currentIndex) >>= bitsToEliminate;
-    
-    int difference = aux - error;
-    error -= difference;
-
- /**  if(pred == PREDICT1){
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-    }
-    else if(pred == PREDICT2){
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-    }
-    else if(pred == PREDICT3){
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-        if(currentIndex > 0 && difference == 0){
-            samples[currentIndex] -= difference;
-        }
-    }*/
-    return error;
-}
-
-/*Block GEncoder::lossy_process_block(std::vector<short>& block, PREDICTOR_TYPE pred, PHASE phase, int m){
-    Block encodedBlock;
-    encodedBlock.predictor = pred;
-    encodedBlock.phase = phase;
-
-    for(int i = 0; i < (int)block.size(); i++){
-        int prediction = predictorClass.predict(pred, phase, block, i);
-        int error = block.at(i) - prediction;
-        golomb.encode(error);
-        encodedBlock.data.push_back(error);
-    }
-
-    //Use attributed m or calculate one
-    if(m < 1) m = calculate_m(encodedBlock.data);
-    return encodedBlock;
-}*/
-
 void GEncoder::encode_file(File file, std::vector<short>& inSamples,
                            size_t nBlocks) {
     this->fileStruct = file;
     this->predictorClass.set_nChannels(file.nChannels);
+    this->golomb.setApproach(fileStruct.approach);
 
     std::cout << "Entering encoding phase" << std::endl;
     // Divide in blocks and process each one
@@ -497,8 +491,7 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
         for (int j = 0; j < file.blockSize; j++)
             block.push_back(inSamples[i * file.blockSize + j]);
 
-        Block encodedBlock =
-            process_block(block, i, nBlocks, file.lossy, file.bitRate);
+        Block encodedBlock = process_block(block, i, nBlocks);
 
         // Add encoded block to file
         fileStruct.blocks.push_back(encodedBlock);
@@ -510,45 +503,6 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
 
     write_file();
 }
-
-/*void GEncoder::encode_file(File file, std::vector<short>& inSamples,
-                           size_t nBlocks) {
-    this->fileStruct = file;
-    this->predictorClass.set_nChannels(file.nChannels);
-
-    std::cout << "Entering encoding phase" << std::endl;
-    // Divide in blocks and process each one
-    for (int i = 0; i < (int)nBlocks; i++) {
-        std::vector<short> block;
-        for (int j = 0; j < file.blockSize; j++)
-            block.push_back(inSamples[i * file.blockSize + j]);
-
-        if (file.lossy == false) {
-            Block encodedBlock = process_block(block, i, nBlocks);
-            // Add encoded block to file
-            fileStruct.blocks.push_back(encodedBlock);
-        } else {
-            PREDICTOR_TYPE pred = predictor;
-            PHASE ph = phase;
-            if (pred == AUTOMATIC || ph == P_AUTOMATIC) {
-                std::tuple<int, int> ret =
-                    predictorClass.benchmark(block, pred, ph);
-                pred = static_cast<PREDICTOR_TYPE>(std::get<0>(ret));
-                ph = static_cast<PHASE>(std::get<1>(ret));
-            }
-
-            Block encodedBlock = lossy_process_block(block, pred, ph, m);
-            //ad encoded block to file
-            fileStruct.blocks.push_back(encodedBlock);
-        }
-    }
-    if (predictor == AUTOMATIC)
-        std::cout << "\n";
-
-    std::cout << "All blocks encoded. Writing to file" << endl;
-
-    write_file();
-}*/
 
 /*
 ##############################################################################
@@ -579,6 +533,16 @@ File& GDecoder::read_file() {
     fileStruct.lossy = reader.readNBits(BITS_LOSSY);
     fileStruct.approach =
         static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
+
+    cout << "Music Processing information: \n"
+         << "\n - Block Size: " << fileStruct.blockSize
+         << "\n - Number of Channels: " << unsigned(fileStruct.nChannels)
+         << "\n - Sample Rate: " << fileStruct.sampleRate
+         << "\n - Total Number of Frames: " << unsigned(fileStruct.nFrames)
+         << "\n - Golomb Approach: " << approach_to_string(fileStruct.approach)
+         << "\n - Encode type: " << (fileStruct.lossy ? "lossy" : "lossless")
+         << "\n - Bit Rate: " << fileStruct.bitRate << "\n"
+         << endl;
 
     // Write Blocks (data)
     int nBlocks{static_cast<int>(
@@ -621,11 +585,11 @@ File& GDecoder::read_file() {
             exit(2);
         }
 
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++){
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
             int data = golomb.decode();
             block.data.push_back((short)data);
             //outputFile << data << "\n";
-        }   
+        }
 
         fileStruct.blocks.push_back(block);
     }
