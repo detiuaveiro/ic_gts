@@ -5,8 +5,6 @@
 #include <string>
 #include <tuple>
 
-#include <fstream>
-
 #define WRITER_FILE_NAME "outputStream.bin"
 #define DEFAULT_GOLOMB_M 4
 
@@ -14,7 +12,7 @@
 #define BITS_SAMPLE_RATE 16
 #define BITS_N_FRAMES 32
 #define BITS_N_CHANNELS 4
-#define BITS_BIT_RATE 8
+#define BITS_BIT_RATE 16
 #define BITS_LOSSY 2
 #define BITS_APPROACH 4
 #define BITS_M 14

@@ -65,6 +65,7 @@ TEST(GEncoder, test_lossy_error_same_bitRate) {
     }
 };
 
+
 TEST(GEncoder, test_lossy_error_smaller_bitRate) {
 
     File inF;

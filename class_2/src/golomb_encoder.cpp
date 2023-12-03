@@ -210,11 +210,6 @@ int main(int argc, char* argv[]) {
         // 16 is size of short
         long bitsPerFrame = Options::sampleRate * 16 * Options::nChannels;
 
-        /* I don't think it's needed
-        long totalBits = bitsPerFrame * Options::nFrames;
-        double bitrate = static_cast<double>(totalBits) / Options::nFrames *
-                         Options::sampleRate;*/
-
         std::cout << "Current Bit Rate is " << bitsPerFrame / 1000
                   << " kbps. Please introduce the new Bit Rate in kbps: ";
 
