@@ -391,7 +391,7 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
         int error = block.at(i) - prediction;
 
         if (lossy) {
-            error = lossy_error(error, pred, i, block, bitRate);
+            error = lossy_error(error, pred, i, block, bitRate, fileStruct.sampleRate);
         }
         encodedBlock.data.push_back(error);
     }
@@ -406,37 +406,46 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 }
 
 int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, int currentIndex,
-                          std::vector<short>& samples, size_t bitRate) {
+                          std::vector<short>& samples, size_t bitRate, size_t sampleRate) {
 
-    int maxBits = static_cast<int>(std::round(std::log2(bitRate)));
-    int originalBits = std::ceil(std::log2(std::abs(error) +1));
-    int bitsToEliminate = std::max(0, originalBits - maxBits);
+    int bitsPerSample = static_cast<int>(std::round(bitRate/sampleRate));
+    int maxBitsToRepresent = static_cast<int>(std::ceil(std::log2(std::max(std::abs(error) + 1,2))));
+    
+    int bitsToEliminate = maxBitsToRepresent - bitsPerSample;
+    cout << bitsToEliminate << std::endl;
+    int aux = error;
+    samples.at(currentIndex) >>= bitsToEliminate;
+    
+    int difference = aux - error;
+    error -= difference;
 
-    error >>= bitsToEliminate;
-
-    if (pred == PREDICT1) {
-        if (currentIndex > 0) {
-            samples[currentIndex - 1] += error;
-        }
-    } else if (pred == PREDICT2) {
-        if (currentIndex > 0) {
-            samples[currentIndex - 1] += error;
-        }
-        if (currentIndex > 1) {
-            samples[currentIndex - 2] += error;
-        }
-    } else if (pred == PREDICT3) {
-        if (currentIndex > 0) {
-            samples[currentIndex - 1] += error;
-        }
-        if (currentIndex > 1) {
-            samples[currentIndex - 2] += error;
-        }
-        if (currentIndex > 2) {
-            samples[currentIndex - 3] += error;
+ /**  if(pred == PREDICT1){
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
         }
     }
-
+    else if(pred == PREDICT2){
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
+        }
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
+        }
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
+        }
+    }
+    else if(pred == PREDICT3){
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
+        }
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
+        }
+        if(currentIndex > 0 && difference == 0){
+            samples[currentIndex] -= difference;
+        }
+    }*/
     return error;
 }
 

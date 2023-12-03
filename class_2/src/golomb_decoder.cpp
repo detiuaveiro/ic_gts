@@ -33,7 +33,7 @@ int process_arguments(int argc, char* argv[]) {
                    strcmp(argv[i], "--input") == 0) {
             i++;
             if (i < argc) {
-                Options::musicName = argv[i];
+                Options::encodedName = argv[i];
             } else {
                 std::cerr << "Error: Missing argument for -i/--input option."
                           << std::endl;
@@ -43,7 +43,7 @@ int process_arguments(int argc, char* argv[]) {
                    strcmp(argv[i], "--output") == 0) {
             i++;
             if (i < argc) {
-                Options::encodedName = argv[i];
+                Options::musicName = argv[i];
             } else {
                 std::cerr << "Error: Missing argument for -o/--output option."
                           << std::endl;
