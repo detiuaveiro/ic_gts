@@ -413,13 +413,15 @@ int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
 
     int bitsToEliminatePerSecond = defaultBitRate - fileStruct.bitRate;
 
-    // Calculate the scaling factor based on the bitrate difference
-    double scalingFactor = pow(2, bitsToEliminatePerSecond) / 2.0;
-
-    // Adjust the error using quantization with the scaling factor
+    if (averageBitsToEliminate == 0.0 ||
+        (currentIndex == 0 && fileStruct.nChannels == 1) ||
+        (currentIndex < 2 && fileStruct.nChannels == 2))
+        return error;
 
     // or error >> 1
-    int adjustedError = (int)(error / scalingFactor) * scalingFactor;
+    double tmpShift = double(defaultBitRate / fileStruct.bitRate);
+    int shiftAmount = std::ceil(tmpShift);
+    int adjustedError = error >> shiftAmount;
 
     //cout << "bitsToEliminate = " << averageBitsToEliminate << endl;
     //cout << "defaultBitRate = " << defaultBitRate << endl;
@@ -427,40 +429,8 @@ int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
     //cout << "bitsToEliminatePerSecond = " << bitsToEliminatePerSecond << endl;
     //cout << "scalingFactor = " << double(scalingFactor) << endl;
 
-    if (averageBitsToEliminate == 0.0 ||
-        (currentIndex == 0 && fileStruct.nChannels == 1) ||
-        (currentIndex < 2 && fileStruct.nChannels == 2))
-        return error;
-
-    // Calculate the number of bits to discard for this particular sample
-    // Calculate the number of bits required to represent the error based on the bitrate
-    //int bitsToRepresent = static_cast<int>(log2(abs(error)) + 1) - bitRate;
-    //int bitsToDiscard = static_cast<int>(bitsToEliminate * bitsPerSample);
-    //int bitsToRepresent = 1;
-    //cout << "bitsToDiscard = " << bitsToRepresent << endl;
-
-    /*
-    int adjustedError = error >> bitsToRepresent;
-
-    if (pred == PREDICT1 && phase == NO_CORRELATION && currentIndex > 0) {
-        //if (log2(error) + 1 > bitsToRepresent) {
-        cout << "...HERE..." << endl;
-        //samples[currentIndex - 1] += error;
-
-        samples[currentIndex] += adjustedError;
-        ;
-        //}
-
-        if (adjustedError == 0 &&
-            samples[currentIndex - 1] != samples[currentIndex]) {
-            if (samples[currentIndex - 1] > 0)
-                samples[currentIndex - 1] -=
-                    abs(samples[currentIndex - 1] - samples[currentIndex]);
-            else
-                samples[currentIndex - 1] +=
-                    abs(samples[currentIndex - 1] - samples[currentIndex]);
-        }
-    }*/
+    // Here past samples should be adjusted with the error,
+    //  according to predictor and phase chosen
 
     return adjustedError;
 }
@@ -613,7 +583,7 @@ File& GDecoder::read_file() {
             int data = golomb.decode();
             block.data.push_back((short)data);
             //outputFile << data << "\n";
-        }   
+        }
 
         fileStruct.blocks.push_back(block);
     }
