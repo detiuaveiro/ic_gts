@@ -119,16 +119,18 @@ int Predictor::predict_no_correlation(PREDICTOR_TYPE type,
 
 int Predictor::predict_correlated_mid(PREDICTOR_TYPE type,
                                       std::vector<short>& samples, int index) {
-    std::vector<int> an(3);
-    for (int i = 1; i < 6; i += 2) {
+    std::vector<int> an;
+    for (int i = 1; i <= 5; i += 2) {
         // odd index
-        int channel1 = (((index - i) < 0) || samples.size()) == 0
-                           ? 0
-                           : samples.at(index - i);
+        int channel1 = 0;
+        if ((index - i) > (int)samples.size())
+            channel1 = samples.at(index - i);
+
         // even index
-        int channel2 = (((index - i - 1) < 0) || samples.size())
-                           ? 0
-                           : samples.at(index - (i - 1));
+        int channel2 = 0;
+        if ((index - (i - 1)) > (int)samples.size())
+            channel2 = samples.at(index - (i - 1));
+
         an.push_back((channel1 + channel2) / 2);
     }
 
@@ -142,16 +144,18 @@ int Predictor::predict_correlated_mid(PREDICTOR_TYPE type,
 
 int Predictor::predict_correlated_side(PREDICTOR_TYPE type,
                                        std::vector<short>& samples, int index) {
-    std::vector<int> an(3);
-    for (int i = 1; i < 6; i += 2) {
+    std::vector<int> an;
+    for (int i = 1; i <= 5; i += 2) {
         // odd index
-        int channel1 = (((index - i) < 0) || samples.size()) == 0
-                           ? 0
-                           : samples.at(index - i);
+        int channel1 = 0;
+        if ((index - i) > (int)samples.size())
+            channel1 = samples.at(index - i);
+
         // even index
-        int channel2 = (((index - i - 1) < 0) || samples.size())
-                           ? 0
-                           : samples.at(index - (i - 1));
+        int channel2 = 0;
+        if ((index - (i - 1)) > (int)samples.size())
+            channel2 = samples.at(index - (i - 1));
+
         an.push_back((channel1 - channel2) / 2);
     }
 
@@ -372,7 +376,7 @@ void GEncoder::write_file() {
         std::cout << " - Writing Block " << std::setw(3) << count++ << "/"
                   << std::setw(3) << fileStruct.blocks.size()
                   << " to file with m = " << std::setw(3) << unsigned(block.m)
-                  << ", p = " << std::setw(3) << unsigned(block.predictor)
+                  << ", p = " << std::setw(1) << unsigned(block.predictor)
                   << " and phase = " << std::setw(1) << unsigned(block.phase)
                   << "  "
                   << "\r" << std::flush;
@@ -499,9 +503,9 @@ File& GDecoder::read_file() {
         this->golomb.setM(block.m);
         std::cout << " - Reading Block " << std::setw(3) << bId + 1
                   << " with m = " << std::setw(3) << unsigned(block.m)
-                  << ", predictor = " << std::setw(3)
+                  << ", predictor = " << std::setw(1)
                   << unsigned(block.predictor)
-                  << " and phase = " << std::setw(3) << unsigned(block.phase)
+                  << " and phase = " << std::setw(1) << unsigned(block.phase)
                   << endl;
 
         // check m
