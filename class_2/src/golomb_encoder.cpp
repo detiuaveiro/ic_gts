@@ -37,7 +37,7 @@ static void print_usage() {
             "calculation)\n"
             "  -p, --predict     --- set predictor [0,3] (default: PREDICT1)\n"
             "  -a, --approach    --- set approach [0,1] (default: "
-            "SIGN_MAGNITUDE)"
+            "SIGN_MAGNITUDE)\n"
             "  -s, --phase       --- set phase [0,3], only applicable to "
             "stereo audio (default: P_AUTOMATIC)"
          << endl;

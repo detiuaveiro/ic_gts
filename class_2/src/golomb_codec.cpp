@@ -119,33 +119,52 @@ int Predictor::predict_no_correlation(PREDICTOR_TYPE type,
 
 int Predictor::predict_correlated_mid(PREDICTOR_TYPE type,
                                       std::vector<short>& samples, int index) {
-    int left = (index - 2) < 0 ? 0 : samples.at(index - 2);
-    int right = (index - 4) < 0 ? 0 : samples.at(index - 4);
+    std::vector<int> an;
+    for (int i = 1; i <= 5; i += 2) {
+        // odd index
+        int channel1 = 0;
+        if ((index - i) > (int)samples.size())
+            channel1 = samples.at(index - i);
 
-    int mid = (left + right) / 2;
+        // even index
+        int channel2 = 0;
+        if ((index - (i - 1)) > (int)samples.size())
+            channel2 = samples.at(index - (i - 1));
+
+        an.push_back((channel1 + channel2) / 2);
+    }
 
     if (type == PREDICT1)
-        return predict1(mid);
+        return predict1(an.at(0));
     else if (type == PREDICT2)
-        return predict2(mid, 0);
+        return predict2(an.at(0), an.at(1));
     else
-        return predict3(mid, 0, 0);
+        return predict3(an.at(0), an.at(1), an.at(2));
 }
 
 int Predictor::predict_correlated_side(PREDICTOR_TYPE type,
                                        std::vector<short>& samples, int index) {
-    // For side channel prediction, consider index - 3 and index - 6 samples
-    int left = (index - 3) < 0 ? 0 : samples.at(index - 3);
-    int right = (index - 6) < 0 ? 0 : samples.at(index - 6);
+    std::vector<int> an;
+    for (int i = 1; i <= 5; i += 2) {
+        // odd index
+        int channel1 = 0;
+        if ((index - i) > (int)samples.size())
+            channel1 = samples.at(index - i);
 
-    int side = (left - right) / 2;
+        // even index
+        int channel2 = 0;
+        if ((index - (i - 1)) > (int)samples.size())
+            channel2 = samples.at(index - (i - 1));
+
+        an.push_back((channel1 - channel2) / 2);
+    }
 
     if (type == PREDICT1)
-        return predict1(side);
+        return predict1(an.at(0));
     else if (type == PREDICT2)
-        return predict2(side, 0);
+        return predict2(an.at(0), an.at(1));
     else
-        return predict3(side, 0, 0);
+        return predict3(an.at(0), an.at(1), an.at(2));
 }
 
 int Predictor::predict(PREDICTOR_TYPE type, PHASE phase,
@@ -357,7 +376,7 @@ void GEncoder::write_file() {
         std::cout << " - Writing Block " << std::setw(3) << count++ << "/"
                   << std::setw(3) << fileStruct.blocks.size()
                   << " to file with m = " << std::setw(3) << unsigned(block.m)
-                  << ", p = " << std::setw(3) << unsigned(block.predictor)
+                  << ", p = " << std::setw(1) << unsigned(block.predictor)
                   << " and phase = " << std::setw(1) << unsigned(block.phase)
                   << "  "
                   << "\r" << std::flush;
@@ -576,6 +595,8 @@ File& GDecoder::read_file() {
     golomb.setApproach(fileStruct.approach);
     predictorClass.set_nChannels(fileStruct.nChannels);
 
+    //std::ofstream outputFile("decoded_values_distribution.txt");
+
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
@@ -588,9 +609,9 @@ File& GDecoder::read_file() {
         this->golomb.setM(block.m);
         std::cout << " - Reading Block " << std::setw(3) << bId + 1
                   << " with m = " << std::setw(3) << unsigned(block.m)
-                  << ", predictor = " << std::setw(3)
+                  << ", predictor = " << std::setw(1)
                   << unsigned(block.predictor)
-                  << " and phase = " << std::setw(3) << unsigned(block.phase)
+                  << " and phase = " << std::setw(1) << unsigned(block.phase)
                   << endl;
 
         // check m
@@ -600,12 +621,17 @@ File& GDecoder::read_file() {
             exit(2);
         }
 
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
-            block.data.push_back((short)golomb.decode());
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++){
+            int data = golomb.decode();
+            block.data.push_back((short)data);
+            //outputFile << data << "\n";
+        }   
 
         fileStruct.blocks.push_back(block);
     }
     std::cout << "All data read from file" << std::endl;
+
+    //outputFile.close();
 
     return fileStruct;
 }
@@ -617,8 +643,9 @@ std::vector<short> GDecoder::decode_block(Block& block) {
 
     for (int i = 0; i < (int)block.data.size(); i++) {
         int prediction = predictorClass.predict(pred, ph, samples, i);
-        int error = block.data.at(i) + prediction;
-        samples.push_back(error);
+        // error + prediction
+        int sample = block.data.at(i) + prediction;
+        samples.push_back(sample);
     }
 
     return samples;
