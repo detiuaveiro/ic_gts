@@ -206,6 +206,25 @@ int main(int argc, char* argv[]) {
     print_processing_information(nBlocks);
 
     // if lossy show current bit rate and ask for new bit rate
+    if (Options::lossy) {
+        // 16 is size of short
+        long bitsPerFrame = Options::sampleRate * 16 * Options::nChannels;
+
+        std::cout << "Current Bit Rate is " << bitsPerFrame / 1000
+                  << " kbps. Please introduce the new Bit Rate in kbps: ";
+
+        std::cin >> Options::bitRate;
+
+        if (Options::bitRate > bitsPerFrame) {
+            std::cout << "The New bitrate can't be higher than the original"
+                      << std::endl;
+            return 1;
+        }
+
+        std::cout << "New Bitrate is " << std::fixed << std::setprecision(2)
+                  << Options::bitRate << " kbps\n"
+                  << std::endl;
+    }
 
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor,

@@ -131,6 +131,8 @@ class GEncoder {
 
     std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
     int calculate_m(std::vector<short>& values);
+    int lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase, int currentIndex,
+                              std::vector<short>& samples);
     Block process_block(std::vector<short>& block, int blockId, int nBlocks);
     void write_file();
 
@@ -140,10 +142,15 @@ class GEncoder {
 
     void encode_file(File file, std::vector<short>& inSamples, size_t nBlocks);
 
+    void setFile(File file);
+
     // Stuff used for testing private members
     int test_calculate_m(std::vector<short>& values);
     std::vector<unsigned short> test_abs_value_vector(
         std::vector<short>& values);
+    int test_lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase, int currentIndex,
+                              std::vector<short>& samples);
+    
 };
 
 /*
