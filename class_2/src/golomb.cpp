@@ -26,15 +26,17 @@ void Golomb::write_remainder(int remainder) {
     // m is power of 2
     int b = ceil(log2(m));
 
-    if ((m & (m - 1)) == 0){
-        bitStream.writeNBits(remainder, b);
-    }else{
-    // m is not power of 2
-        if (remainder < (pow(2, b) - m)){
-            bitStream.writeNBits(remainder, b-1);
-        }else{
-            remainder += pow(2, b) - m;
+    if(b>0){
+        if ((m & (m - 1)) == 0){
             bitStream.writeNBits(remainder, b);
+        }else{
+        // m is not power of 2
+            if (remainder < (pow(2, b) - m)){
+                bitStream.writeNBits(remainder, b-1);
+            }else{
+                remainder += pow(2, b) - m;
+                bitStream.writeNBits(remainder, b);
+            }
         }
     }
 }
@@ -115,20 +117,24 @@ int Golomb::decode() {
     int b = ceil(log2(m)); // 3
     int values_divider = pow(2, b) - m; // 3
 
-    // read the binary part
-    for (int i = 0; i < b - 1; i++) {
-        int bit = bitStream.readBit();
-        remainder = (remainder << 1) + bit;
-    }
+    if(b>0){
+        // read the binary part
+        for (int i = 0; i < b - 1; i++) {
+            int bit = bitStream.readBit();
+            remainder = (remainder << 1) + bit;
+        }
 
-    int extraBit = 10;
-    if (remainder >= values_divider) {
-        remainder = (remainder << 1) + bitStream.readBit();
-        extraBit = 1;
-    }
+        int extraBit = 10;
+        if (remainder >= values_divider) {
+            remainder = (remainder << 1) + bitStream.readBit();
+            extraBit = 1;
+        }
 
-    if (extraBit != 10) {
-        remainder = remainder - values_divider;
+        if (extraBit != 10) {
+            remainder = remainder - values_divider;
+        }
+    }else{
+        remainder = 0;
     }
 
     value = quotient * m + remainder;
