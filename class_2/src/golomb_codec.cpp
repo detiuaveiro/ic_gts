@@ -491,6 +491,9 @@ File& GDecoder::read_file() {
     golomb.setApproach(fileStruct.approach);
     predictorClass.set_nChannels(fileStruct.nChannels);
 
+    std::ofstream outputFile("decoded_values_distribution.txt");
+
+
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
@@ -515,12 +518,17 @@ File& GDecoder::read_file() {
             exit(2);
         }
 
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++)
-            block.data.push_back((short)golomb.decode());
+        for (uint16_t i = 0; i < fileStruct.blockSize; i++){
+            int data = golomb.decode();
+            block.data.push_back((short)data);
+            outputFile << data << "\n";
+        }   
 
         fileStruct.blocks.push_back(block);
     }
     std::cout << "All data read from file" << std::endl;
+
+    outputFile.close();
 
     return fileStruct;
 }

@@ -5,6 +5,8 @@
 #include <string>
 #include <tuple>
 
+#include <fstream>
+
 #define WRITER_FILE_NAME "outputStream.bin"
 #define DEFAULT_GOLOMB_M 4
 
