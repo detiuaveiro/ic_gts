@@ -1,4 +1,4 @@
-#include <golomb_codec.h>
+#include <image_codec.h>
 #include <string.h>
 #include <cmath>
 #include <iostream>

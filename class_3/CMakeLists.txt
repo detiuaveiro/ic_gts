@@ -65,10 +65,10 @@ include_directories(
 add_executable(system_test ${SOURCE_FOLDER}/systemCheck.cpp)
 target_link_libraries( system_test ${OpenCV_LIBS} )
 
-add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/golomb_codec.cpp ${SOURCE_FOLDER}/golomb_encoder.cpp)
+add_executable(golomb_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/golomb_encoder.cpp)
 target_link_libraries( golomb_encoder ${OpenCV_LIBS} sndfile )
 
-add_executable(golomb_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/golomb_codec.cpp ${SOURCE_FOLDER}/golomb_decoder.cpp)
+add_executable(golomb_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/golomb_decoder.cpp)
 target_link_libraries( golomb_decoder ${OpenCV_LIBS} sndfile )
 
 ##############################################################################
@@ -77,7 +77,7 @@ target_link_libraries( golomb_decoder ${OpenCV_LIBS} sndfile )
 
 set(TEST_SOURCES
     ${SOURCE_FOLDER}/golomb.cpp
-    ${SOURCE_FOLDER}/golomb_codec.cpp
+    ${SOURCE_FOLDER}/image_codec.cpp
     ${TEST_FOLDER}/test_bitStream.cpp
     )
 
