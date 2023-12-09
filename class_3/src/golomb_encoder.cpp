@@ -200,7 +200,6 @@ int main(int argc, char* argv[]) {
     f.blockSize = Options::blockSize;
     f.nChannels = Options::nChannels;
     f.nFrames = Options::nFrames;
-    f.blocks = std::vector<Block>();
     f.bitRate = Options::bitRate;
     f.lossy = Options::lossy;
     f.approach = Options::approach;

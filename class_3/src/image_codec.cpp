@@ -129,8 +129,7 @@ PREDICTOR_TYPE Predictor::benchmark(std::vector<short>& samples) {
 ##############################################################################
 */
 
-GEncoder::GEncoder(std::string outFileName, int m = -1,
-                   PREDICTOR_TYPE pred = AUTOMATIC)
+GEncoder::GEncoder(std::string outFileName, int m, PREDICTOR_TYPE pred)
     : writer('w', outFileName), golomb(DEFAULT_GOLOMB_M, writer) {
 
     this->m = m;
@@ -160,7 +159,6 @@ std::vector<unsigned short> GEncoder::test_abs_value_vector(
     std::vector<short>& values) {
     return abs_value_vector(values);
 }
-
 
 std::vector<unsigned short> GEncoder::abs_value_vector(
     std::vector<short>& values) {
@@ -194,9 +192,7 @@ int GEncoder::calculate_m(std::vector<short>& values) {
     return std::min(m, 16383);  // cap golomb max size (14 bits)
 }
 
-void GEncoder::write_file() {
-
-    // Write file header_values
+void GEncoder::write_file_header() {
     writer.writeNBits(fileStruct.blockSize, BITS_BLOCK_SIZE);
     writer.writeNBits(fileStruct.sampleRate, BITS_SAMPLE_RATE);
     writer.writeNBits(fileStruct.nFrames, BITS_N_FRAMES);
@@ -204,37 +200,31 @@ void GEncoder::write_file() {
     writer.writeNBits(fileStruct.bitRate, BITS_BIT_RATE);
     writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
     writer.writeNBits(fileStruct.approach, BITS_APPROACH);
+}
 
+void GEncoder::write_file_block(Block& block, int blockId, int nBlocks) {
     golomb.setApproach(fileStruct.approach);
 
-    // Write Blocks (data)
-    std::cout << "\nWriting data to file..." << endl;
-
-    int count = 1;
-    for (auto& block : fileStruct.blocks) {
-        // check if block size is correct
-        if (block.data.size() != fileStruct.blockSize) {
-            cerr << "Error: Block size mismatch" << endl;
-            exit(2);
-        }
-
-        // Write Block header
-        writer.writeNBits(block.m, BITS_M);
-        writer.writeNBits(block.predictor, BITS_PREDICTOR);
-
-        golomb.setM(block.m);  // DONT FORGET THIS
-
-        // Write Block data
-        std::cout << " - Writing Block " << std::setw(3) << count++ << "/"
-                  << std::setw(3) << fileStruct.blocks.size()
-                  << " to file with m = " << std::setw(3) << unsigned(block.m)
-                  << ", p = " << std::setw(1) << unsigned(block.predictor)
-                  << "\r" << std::flush;
-
-        for (short& sample : block.data)
-            golomb.encode(sample);
+    // check if block size is correct
+    if (block.data.size() != fileStruct.blockSize) {
+        cerr << "Error: Block size mismatch" << endl;
+        exit(2);
     }
-    std::cout << "\nAll data written to file\n\n";
+
+    // Write Block header
+    writer.writeNBits(block.m, BITS_M);
+    writer.writeNBits(block.predictor, BITS_PREDICTOR);
+
+    golomb.setM(block.m);  // DONT FORGET THIS
+
+    // Write Block data
+    std::cout << "\r" << std::flush << " - Writing Block " << std::setw(3)
+              << blockId++ << "/" << std::setw(3) << nBlocks
+              << " to file with m = " << std::setw(3) << unsigned(block.m)
+              << ", p = " << std::setw(1) << unsigned(block.predictor);
+
+    for (short& sample : block.data)
+        golomb.encode(sample);
 }
 
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
@@ -242,9 +232,9 @@ Block GEncoder::process_block(std::vector<short>& block, int blockId,
 
     PREDICTOR_TYPE pred = predictor;
     if (pred == AUTOMATIC) {
-        std::cout << " - "
-                  << "Benchmarking predictor for Block " << std::setw(3)
-                  << blockId + 1 << "/" << nBlocks << "\r" << std::flush;
+        std::cout << "\r" << std::flush << " - "
+                  << "Benchmarking predictor for Block " << std::setw(4)
+                  << blockId << "/" << std::setw(4) << nBlocks;
         pred = predictorClass.benchmark(block);
     }
 
@@ -272,24 +262,20 @@ void GEncoder::encode_file(File file, std::vector<short>& inSamples,
     this->fileStruct = file;
     this->golomb.setApproach(fileStruct.approach);
 
-    std::cout << "Entering encoding phase" << std::endl;
+    write_file_header();
+
+    std::cout << "\nStarting encoding phase..." << std::endl;
     // Divide in blocks and process each one
     for (int i = 0; i < (int)nBlocks; i++) {
         std::vector<short> block;
         for (int j = 0; j < file.blockSize; j++)
             block.push_back(inSamples[i * file.blockSize + j]);
 
-        Block encodedBlock = process_block(block, i, nBlocks);
-
-        // Add encoded block to file
-        fileStruct.blocks.push_back(encodedBlock);
+        Block encodedBlock = process_block(block, i + 1, nBlocks);
+        write_file_block(encodedBlock, i + 1, nBlocks);
     }
-    if (predictor == AUTOMATIC)
-        std::cout << "\n";
 
-    std::cout << "All blocks encoded. Writing to file" << endl;
-
-    write_file();
+    std::cout << "\nEncoding ended, all data written to file\n" << endl;
 }
 
 /*
@@ -308,75 +294,66 @@ GDecoder::~GDecoder() {
     reader.~BitStream();
 }
 
-File& GDecoder::read_file() {
-    std::cout << "Reading file " << inputFileName;
+File& GDecoder::get_file() {
+    return fileStruct;
+}
 
-    // Read file header
-    fileStruct.blockSize = reader.readNBits(BITS_BLOCK_SIZE);
-    fileStruct.sampleRate = reader.readNBits(BITS_SAMPLE_RATE);
-    fileStruct.nFrames = reader.readNBits(BITS_N_FRAMES);
-    fileStruct.nChannels = reader.readNBits(BITS_N_CHANNELS);
-    fileStruct.bitRate = reader.readNBits(BITS_BIT_RATE);
-    fileStruct.lossy = reader.readNBits(BITS_LOSSY);
-    fileStruct.approach =
-        static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
+int GDecoder::read_file_header() {
+    if (!headerRead) {
+        // Read file header
+        fileStruct.blockSize = reader.readNBits(BITS_BLOCK_SIZE);
+        fileStruct.sampleRate = reader.readNBits(BITS_SAMPLE_RATE);
+        fileStruct.nFrames = reader.readNBits(BITS_N_FRAMES);
+        fileStruct.nChannels = reader.readNBits(BITS_N_CHANNELS);
+        fileStruct.bitRate = reader.readNBits(BITS_BIT_RATE);
+        fileStruct.lossy = reader.readNBits(BITS_LOSSY);
+        fileStruct.approach =
+            static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
 
-    cout << "Music Processing information: \n"
-         << "\n - Block Size: " << fileStruct.blockSize
-         << "\n - Number of Channels: " << unsigned(fileStruct.nChannels)
-         << "\n - Sample Rate: " << fileStruct.sampleRate
-         << "\n - Total Number of Frames: " << unsigned(fileStruct.nFrames)
-         << "\n - Golomb Approach: " << approach_to_string(fileStruct.approach)
-         << "\n - Encode type: " << (fileStruct.lossy ? "lossy" : "lossless")
-         << "\n - Bit Rate: " << fileStruct.bitRate << "\n"
-         << endl;
+        headerRead = true;
 
-    // Write Blocks (data)
+        if (!check_approach(fileStruct.approach)) {
+            cerr << "Error: Invalid approach type " << fileStruct.approach
+                 << endl;
+            exit(1);
+        }
+
+        golomb.setApproach(fileStruct.approach);
+    }
+
     int nBlocks{static_cast<int>(
         ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
 
-    nBlocks *= (int)fileStruct.nChannels;
+    return nBlocks;
+}
 
-    std::cout << " with " << unsigned(nBlocks) << " blocks" << endl;
+Block GDecoder::read_file_block(int blockId, int nBlocks) {
+    Block block;
 
-    if (!check_approach(fileStruct.approach)) {
-        cerr << "Error: Invalid approach type " << fileStruct.approach << endl;
-        exit(1);
+    // Read Block header
+    block.m = reader.readNBits(BITS_M);
+    block.predictor =
+        static_cast<PREDICTOR_TYPE>(reader.readNBits(BITS_PREDICTOR));
+
+    // Read Block data
+    this->golomb.setM(block.m);
+    std::cout << " - Reading Block " << std::setw(3) << blockId << "/"
+              << std::setw(3) << nBlocks << " with m = " << std::setw(3)
+              << unsigned(block.m) << ", predictor = " << std::setw(1)
+              << unsigned(block.predictor) << endl;
+
+    // check m
+    if (block.m < 1) {
+        cerr << "Error: Encountered invalid m = " << unsigned(block.m) << endl;
+        exit(2);
     }
-    golomb.setApproach(fileStruct.approach);
 
-    for (int bId = 0; bId < nBlocks; bId++) {
-        Block block;
-        // Read Block header
-        block.m = reader.readNBits(BITS_M);
-        block.predictor =
-            static_cast<PREDICTOR_TYPE>(reader.readNBits(BITS_PREDICTOR));
-
-        // Read Block data
-        this->golomb.setM(block.m);
-        std::cout << " - Reading Block " << std::setw(3) << bId + 1
-                  << " with m = " << std::setw(3) << unsigned(block.m)
-                  << ", predictor = " << std::setw(1)
-                  << unsigned(block.predictor)
-                  << endl;
-
-        // check m
-        if (block.m < 1) {
-            cerr << "Error: Encountered invalid m = " << unsigned(block.m)
-                 << endl;
-            exit(2);
-        }
-
-        for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
-            int data = golomb.decode();
-            block.data.push_back((short)data);
-        }
-
-        fileStruct.blocks.push_back(block);
+    for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
+        int data = golomb.decode();
+        block.data.push_back((short)data);
     }
-    std::cout << "All data read from file" << std::endl;
 
-    return fileStruct;
+    return block;
 }
 
 std::vector<short> GDecoder::decode_block(Block& block) {
@@ -395,16 +372,21 @@ std::vector<short> GDecoder::decode_block(Block& block) {
 
 std::vector<short> GDecoder::decode_file() {
     std::vector<short> outSamples;
-    std::cout << "Decoding file with " << unsigned(fileStruct.blocks.size())
-              << " Blocks" << endl;
-    int count = 1;
-    for (Block& block : fileStruct.blocks) {
-        std::cout << " - Decoding Block: " << count++ << "\r" << std::flush;
+
+    int nBlocks = read_file_header();
+
+    std::cout << "Decoding file with " << unsigned(nBlocks) << " Blocks..."
+              << endl;
+
+    for (int bId = 0; bId < nBlocks; bId++) {
+        Block block = read_file_block(bId + 1, nBlocks);
+
+        std::cout << " - Decoding Block: " << bId + 1 << "\r" << std::flush;
         std::vector<short> blockSamples = decode_block(block);
         outSamples.insert(outSamples.end(), blockSamples.begin(),
                           blockSamples.end());
     }
-    std::cout << "\nAll Blocks decoded\n" << endl;
+    std::cout << "\nAll Blocks read and decoded\n" << endl;
 
     return outSamples;
 }

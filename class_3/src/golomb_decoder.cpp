@@ -99,13 +99,13 @@ int main(int argc, char* argv[]) {
     // Create Golomb Encoder class
     GDecoder gDecoder(Options::encodedName);
 
-    File f = gDecoder.read_file();
+    gDecoder.read_file_header();
 
-    print_processing_information(f);
+    print_processing_information(gDecoder.get_file());
 
     std::vector<short> decodedSamples = gDecoder.decode_file();
 
-    save_decoded_music(f, decodedSamples);
+    save_decoded_music(gDecoder.get_file(), decodedSamples);
 
     clock_t endTime = clock();
     std::cout << "Program took "

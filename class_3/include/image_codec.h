@@ -84,8 +84,6 @@ struct File {
     uint16_t bitRate;
     APPROACH approach;
     bool lossy;  // true if lossy, false if lossless
-    /* Data */
-    vector<Block> blocks;
 };
 
 /*
@@ -108,10 +106,13 @@ class GEncoder {
     std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
     int calculate_m(std::vector<short>& values);
     Block process_block(std::vector<short>& block, int blockId, int nBlocks);
-    void write_file();
+
+    void write_file_header();
+    void write_file_block(Block& block, int blockId, int nBlocks);
 
    public:
-    GEncoder(std::string outFileName, int m, PREDICTOR_TYPE pred);
+    GEncoder(std::string outFileName, int m = -1,
+             PREDICTOR_TYPE pred = AUTOMATIC);
     ~GEncoder();
 
     void encode_file(File file, std::vector<short>& inSamples, size_t nBlocks);
@@ -139,12 +140,19 @@ class GDecoder {
     File fileStruct;
     Predictor predictorClass;
 
+    bool headerRead = false;
+
     std::vector<short> decode_block(Block& block);
+
+    Block read_file_block(int blockId, int nBlocks);
 
    public:
     GDecoder(std::string inFileName);
     ~GDecoder();
 
-    File& read_file();
+    int read_file_header();
+    void print_processing_information();
     std::vector<short> decode_file();
+
+    File& get_file();
 };
