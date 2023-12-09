@@ -25,11 +25,10 @@ class GrayscaleConverter {
             for (int j = 0; j < img.cols; j++)
             {
                 Vec3b pixel = img.at<Vec3b>(i, j);
-                if(pixel[0] != pixel[1] != pixel[2]) return false;
+                if((pixel[0] != pixel[1]) || (pixel[1] != pixel[2])) return false;
             }
             
         }
-
         return true;
     }
 
@@ -42,5 +41,10 @@ class GrayscaleConverter {
 
         cvtColor(img, img, COLOR_BGR2GRAY);
     }
-    ~GrayscaleConverter();
+
+    void SaveToFile(std::string outputFileName) {
+        imwrite(outputFileName, img);
+        cout << "Grayscale image saved to: " << outputFileName << endl;
+    }
+    ~GrayscaleConverter(){}
 };
