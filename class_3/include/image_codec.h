@@ -30,11 +30,7 @@ using namespace std;
 
 enum PREDICTOR_TYPE { AUTOMATIC, PREDICT1, PREDICT2, PREDICT3 };
 
-enum PHASE { P_AUTOMATIC, NO_CORRELATION, CORRELATION_MID, CORRELATION_SIDE };
-
 std::string get_type_string(PREDICTOR_TYPE type);
-
-std::string get_phase_string(PHASE phase);
 
 class Predictor {
    private:
@@ -54,8 +50,7 @@ class Predictor {
         Pass a set of samples/block and return the best predictor to be used 
             (the one that resulted in less occupied space)
     */
-    PREDICTOR_TYPE benchmark(std::vector<short>& samples,
-                             PREDICTOR_TYPE bestPredictor = AUTOMATIC);
+    PREDICTOR_TYPE benchmark(std::vector<short>& samples);
 
     /*!
         Predict the next sample based on the type of the predictor and the
@@ -75,7 +70,6 @@ class Predictor {
 struct Block {
     /* Header */
     uint16_t m;
-    uint8_t phase;
     PREDICTOR_TYPE predictor;
     /* Data */
     vector<short> data;
@@ -106,7 +100,6 @@ class GEncoder {
     Golomb golomb;
     PREDICTOR_TYPE predictor = AUTOMATIC;
     Predictor predictorClass;
-    PHASE phase = P_AUTOMATIC;
     int m;
 
     std::string outputFileName;
@@ -114,13 +107,11 @@ class GEncoder {
 
     std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
     int calculate_m(std::vector<short>& values);
-    int lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
-                    int currentIndex, std::vector<short>& samples);
     Block process_block(std::vector<short>& block, int blockId, int nBlocks);
     void write_file();
 
    public:
-    GEncoder(std::string outFileName, int m, PREDICTOR_TYPE pred, PHASE phase);
+    GEncoder(std::string outFileName, int m, PREDICTOR_TYPE pred);
     ~GEncoder();
 
     void encode_file(File file, std::vector<short>& inSamples, size_t nBlocks);
@@ -131,8 +122,6 @@ class GEncoder {
     int test_calculate_m(std::vector<short>& values);
     std::vector<unsigned short> test_abs_value_vector(
         std::vector<short>& values);
-    int test_lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
-                         int currentIndex, std::vector<short>& samples);
 };
 
 /*

@@ -98,24 +98,23 @@ bool Predictor::check_type(PREDICTOR_TYPE type) {
     return false;
 }
 
-PREDICTOR_TYPE Predictor::benchmark(std::vector<short>& samples,
-                                    PREDICTOR_TYPE bestPredictor) {
+PREDICTOR_TYPE Predictor::benchmark(std::vector<short>& samples) {
     double min_entropy = std::numeric_limits<double>::max();
     PREDICTOR_TYPE best_predictor = AUTOMATIC;
 
-    double entropy1 = calculateEntropy(PREDICT1, samples);
+    double entropy1 = calculate_entropy(PREDICT1, samples);
     if (entropy1 < min_entropy) {
         min_entropy = entropy1;
         best_predictor = PREDICT1;
     }
 
-    double entropy2 = calculateEntropy(PREDICT2, samples);
+    double entropy2 = calculate_entropy(PREDICT2, samples);
     if (entropy2 < min_entropy) {
         min_entropy = entropy2;
         best_predictor = PREDICT2;
     }
 
-    double entropy3 = calculateEntropy(PREDICT3, samples);
+    double entropy3 = calculate_entropy(PREDICT3, samples);
     if (entropy3 < min_entropy) {
         min_entropy = entropy3;
         best_predictor = PREDICT3;
@@ -131,7 +130,7 @@ PREDICTOR_TYPE Predictor::benchmark(std::vector<short>& samples,
 */
 
 GEncoder::GEncoder(std::string outFileName, int m = -1,
-                   PREDICTOR_TYPE pred = AUTOMATIC, PHASE phase = P_AUTOMATIC)
+                   PREDICTOR_TYPE pred = AUTOMATIC)
     : writer('w', outFileName), golomb(DEFAULT_GOLOMB_M, writer) {
 
     this->m = m;
@@ -146,7 +145,6 @@ GEncoder::GEncoder(std::string outFileName, int m = -1,
 }
 
 GEncoder::~GEncoder() {
-    golomb.~Golomb();
     writer.~BitStream();
 }
 
@@ -163,10 +161,6 @@ std::vector<unsigned short> GEncoder::test_abs_value_vector(
     return abs_value_vector(values);
 }
 
-int GEncoder::test_lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
-                               int currentIndex, std::vector<short>& samples) {
-    return lossy_error(error, pred, phase, currentIndex, samples);
-}
 
 std::vector<unsigned short> GEncoder::abs_value_vector(
     std::vector<short>& values) {
@@ -210,6 +204,7 @@ void GEncoder::write_file() {
     writer.writeNBits(fileStruct.bitRate, BITS_BIT_RATE);
     writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
     writer.writeNBits(fileStruct.approach, BITS_APPROACH);
+
     golomb.setApproach(fileStruct.approach);
 
     // Write Blocks (data)
@@ -225,7 +220,6 @@ void GEncoder::write_file() {
 
         // Write Block header
         writer.writeNBits(block.m, BITS_M);
-        writer.writeNBits(block.phase, BITS_PHASE);
         writer.writeNBits(block.predictor, BITS_PREDICTOR);
 
         golomb.setM(block.m);  // DONT FORGET THIS
@@ -235,8 +229,7 @@ void GEncoder::write_file() {
                   << std::setw(3) << fileStruct.blocks.size()
                   << " to file with m = " << std::setw(3) << unsigned(block.m)
                   << ", p = " << std::setw(1) << unsigned(block.predictor)
-                  << " and phase = " << std::setw(1) << unsigned(block.phase)
-                  << "  " << endl;  //<< "\r" << std::flush;
+                  << "\r" << std::flush;
 
         for (short& sample : block.data)
             golomb.encode(sample);
@@ -244,76 +237,23 @@ void GEncoder::write_file() {
     std::cout << "\nAll data written to file\n\n";
 }
 
-int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
-                          int currentIndex, std::vector<short>& samples) {
-    // We cannot cut samples directly, since that would speed up the audio
-    //  , so we need to cut the number of bits per sample required to represent
-    //  the sample. We do that by quantizing the error and then the samples
-    //  should be updated to guarantee that our audio pattern didn't get
-    //  corrupted.
-
-    // skip compiler warnings
-    pred = pred;
-    phase = phase;
-    samples = samples;
-
-    const int bitsPerSample = 16;  // size of short
-
-    int defaultBitRate =  // in kbps
-        (fileStruct.sampleRate * bitsPerSample * fileStruct.nChannels) / 1000;
-
-    double averageBitsToEliminate =
-        double(defaultBitRate - fileStruct.bitRate) /
-        double(fileStruct.sampleRate * fileStruct.nChannels);
-
-    //int bitsToEliminatePerSecond = defaultBitRate - fileStruct.bitRate;
-
-    if (averageBitsToEliminate == 0.0 ||
-        (currentIndex == 0 && fileStruct.nChannels == 1) ||
-        (currentIndex < 2 && fileStruct.nChannels == 2))
-        return error;
-
-    // or error >> 1
-    double tmpShift = double(defaultBitRate / fileStruct.bitRate);
-    int shiftAmount = std::ceil(tmpShift);
-    int adjustedError = error >> shiftAmount;
-
-    //cout << "bitsToEliminate = " << averageBitsToEliminate << endl;
-    //cout << "defaultBitRate = " << defaultBitRate << endl;
-    //cout << "new bitRate = " << fileStruct.bitRate << endl;
-    //cout << "bitsToEliminatePerSecond = " << bitsToEliminatePerSecond << endl;
-    //cout << "scalingFactor = " << double(scalingFactor) << endl;
-
-    // Here past samples should be adjusted with the error,
-    //  according to predictor and phase chosen
-
-    return adjustedError;
-}
-
 Block GEncoder::process_block(std::vector<short>& block, int blockId,
                               int nBlocks) {
 
     PREDICTOR_TYPE pred = predictor;
-    PHASE ph = phase;
-    if (pred == AUTOMATIC || ph == P_AUTOMATIC) {
+    if (pred == AUTOMATIC) {
         std::cout << " - "
                   << "Benchmarking predictor for Block " << std::setw(3)
                   << blockId + 1 << "/" << nBlocks << "\r" << std::flush;
-        std::tuple<int, int> ret = predictorClass.benchmark(block, pred, ph);
-        pred = static_cast<PREDICTOR_TYPE>(std::get<0>(ret));
-        ph = static_cast<PHASE>(std::get<1>(ret));
+        pred = predictorClass.benchmark(block);
     }
 
     Block encodedBlock;
     encodedBlock.predictor = pred;
-    encodedBlock.phase = ph;
 
     for (int i = 0; i < (int)block.size(); i++) {
-        int prediction = predictorClass.predict(pred, ph, block, i);
+        int prediction = predictorClass.predict(pred, block, i);
         int error = block.at(i) - prediction;
-
-        if (fileStruct.lossy)
-            error = lossy_error(error, pred, ph, i, block);
 
         encodedBlock.data.push_back(error);
     }
@@ -365,7 +305,6 @@ GDecoder::GDecoder(std::string inFileName)
 }
 
 GDecoder::~GDecoder() {
-    golomb.~Golomb();
     reader.~BitStream();
 }
 
@@ -406,13 +345,10 @@ File& GDecoder::read_file() {
     }
     golomb.setApproach(fileStruct.approach);
 
-    //std::ofstream outputFile("decoded_values_distribution.txt");
-
     for (int bId = 0; bId < nBlocks; bId++) {
         Block block;
         // Read Block header
         block.m = reader.readNBits(BITS_M);
-        block.phase = static_cast<PHASE>(reader.readNBits(BITS_PHASE));
         block.predictor =
             static_cast<PREDICTOR_TYPE>(reader.readNBits(BITS_PREDICTOR));
 
@@ -422,7 +358,6 @@ File& GDecoder::read_file() {
                   << " with m = " << std::setw(3) << unsigned(block.m)
                   << ", predictor = " << std::setw(1)
                   << unsigned(block.predictor)
-                  << " and phase = " << std::setw(1) << unsigned(block.phase)
                   << endl;
 
         // check m
@@ -435,14 +370,11 @@ File& GDecoder::read_file() {
         for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
             int data = golomb.decode();
             block.data.push_back((short)data);
-            //outputFile << data << "\n";
         }
 
         fileStruct.blocks.push_back(block);
     }
     std::cout << "All data read from file" << std::endl;
-
-    //outputFile.close();
 
     return fileStruct;
 }
@@ -450,10 +382,9 @@ File& GDecoder::read_file() {
 std::vector<short> GDecoder::decode_block(Block& block) {
     std::vector<short> samples;
     PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
-    PHASE ph = static_cast<PHASE>(block.phase);
 
     for (int i = 0; i < (int)block.data.size(); i++) {
-        int prediction = predictorClass.predict(pred, ph, samples, i);
+        int prediction = predictorClass.predict(pred, samples, i);
         // error + prediction
         int sample = block.data.at(i) + prediction;
         samples.push_back(sample);
