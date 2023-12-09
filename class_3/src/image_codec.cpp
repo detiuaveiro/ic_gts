@@ -322,7 +322,7 @@ int GDecoder::read_file_header() {
     }
 
     int nBlocks{static_cast<int>(
-        ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize))};
+        ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize)) * fileStruct.nChannels};
 
     return nBlocks;
 }

@@ -58,10 +58,7 @@ int process_arguments(int argc, char* argv[]) {
     return 0;
 }
 
-void print_processing_information(File& f) {
-    size_t nBlocks{static_cast<size_t>(
-        ceil(static_cast<double>(f.nFrames) / f.blockSize))};
-
+void print_processing_information(File& f, int nBlocks) {
     cout << "\nMusic Processing information: \n"
          << " - Encoded File Name: " << Options::encodedName
          << "\n - Decoded Music Name: " << Options::musicName
@@ -99,9 +96,9 @@ int main(int argc, char* argv[]) {
     // Create Golomb Encoder class
     GDecoder gDecoder(Options::encodedName);
 
-    gDecoder.read_file_header();
+    int nBlocks = gDecoder.read_file_header();
 
-    print_processing_information(gDecoder.get_file());
+    print_processing_information(gDecoder.get_file(), nBlocks);
 
     std::vector<short> decodedSamples = gDecoder.decode_file();
 
