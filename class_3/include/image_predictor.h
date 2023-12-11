@@ -1,5 +1,6 @@
 #pragma once
 
+#include <frame.h>
 #include <golomb.h>
 #include <fstream>
 #include <iostream>
@@ -8,25 +9,38 @@
 
 using namespace std;
 
+enum PREDICTOR_TYPE {
+    AUTOMATIC,
+    JPEG1,
+    JPEG2,
+    JPEG3,
+    JPEG4,
+    JPEG5,
+    JPEG6,
+    JPEG7,
+    JPEG_LS  // JPEG-LS is a non-linear predictor
+};
+
 /*
 ##############################################################################
 ###################           Predictor Class              ###################
 ##############################################################################
 */
 
-enum PREDICTOR_TYPE { AUTOMATIC, PREDICT1, PREDICT2, PREDICT3 };
-
 std::string get_type_string(PREDICTOR_TYPE type);
 
 class Predictor {
    private:
-    /*! a1, a2 and a3 represent, a(n-1) a(n-2) and a(n-3) respectively
-            where n is the index of the predicted sample */
-    int predict1(int a1);
-    int predict2(int a1, int a2);
-    int predict3(int a1, int a2, int a3);
+    int predict_jpeg_1(int a);
+    int predict_jpeg_2(int b);
+    int predict_jpeg_3(int c);
+    int predict_jpeg_4(int a, int b, int c);
+    int predict_jpeg_5(int a, int b, int c);
+    int predict_jpeg_6(int a, int b, int c);
+    int predict_jpeg_7(int a, int b);
+    int predict_jpeg_LS(int a, int b, int c);
 
-    double calculate_entropy(PREDICTOR_TYPE type, std::vector<short>& samples);
+    double calculate_entropy(PREDICTOR_TYPE type, std::vector<vector<uint8_t>>& samples);
 
    public:
     Predictor();
@@ -36,13 +50,14 @@ class Predictor {
         Pass a set of samples/block and return the best predictor to be used 
             (the one that resulted in less occupied space)
     */
-    PREDICTOR_TYPE benchmark(std::vector<short>& samples);
+    PREDICTOR_TYPE benchmark(std::vector<vector<uint8_t>>& samples);
 
     /*!
         Predict the next sample based on the type of the predictor and the
             previous samples
     */
-    int predict(PREDICTOR_TYPE type, std::vector<short>& samples, int index);
+    int predict(PREDICTOR_TYPE type, vector<vector<uint8_t>>& block, int idX,
+                int idY);
 
     bool check_type(PREDICTOR_TYPE type);
 };
