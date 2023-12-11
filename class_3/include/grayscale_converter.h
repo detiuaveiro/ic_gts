@@ -13,24 +13,9 @@ class GrayscaleConverter {
     Mat img;
 
    public:
-    GrayscaleConverter(std::string fileName) {
-        this->file.open(fileName, std::fstream::in | std::fstream::binary);
-        this->img = imread(fileName);
-    }
+    GrayscaleConverter(std::string fileName) {}
 
-    bool IsGrayScale() {
-        //For grayscale, pixels must have the same value
-        for (int i = 0; i < img.rows; i++)
-        {
-            for (int j = 0; j < img.cols; j++)
-            {
-                Vec3b pixel = img.at<Vec3b>(i, j);
-                if((pixel[0] != pixel[1]) || (pixel[1] != pixel[2])) return false;
-            }
-            
-        }
-        return true;
-    }
+    bool IsGrayScale() {}
 
     void ColorScaleToGrayScale() {
         //Perform Color Scale change
