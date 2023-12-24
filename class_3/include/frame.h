@@ -11,12 +11,14 @@ class Frame
 {
 private:
     Mat frame;
+    short frameSize;
+    uchar* framePtr;
 public:
-    Frame(Mat frame){}
+    Frame::Frame(Mat frame, short frameSize){}
 
-    uint8_t getPixel(){}
+    uint8_t Frame::getPixel(short pixelIndex){}
 
-    vector<vector<uint8_t>> getBlock(){}
+    vector<uint8_t> Frame::getBlock(short blockSize){}
 };
 
 

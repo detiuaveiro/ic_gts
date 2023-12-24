@@ -1,7 +1,5 @@
 #include "movie.h"
 
-using namespace std;
-
 void Movie::getHeaderParameters(std::fstream movie) {
     if (!movie.is_open()) {
         cerr << "Error: movie file is not open" << std::endl;
@@ -31,11 +29,13 @@ void Movie::getHeaderParameters(std::fstream movie) {
         }
     }
 
-    //for 4:2:0 chroma
-    headerParameters.bytesPerFrame = headerParameters.height * headerParameters.width * (3/2);
+    //For 4:2:0 chroma
+    //IMPORTANT: THIS IS THE SIZE OF THE Y CHANNEL ONLY, 
+    //It would be times 3/2 if it was all
+    headerParameters.bytesPerFrame = headerParameters.height * headerParameters.width;
 }
 
-uint16_t getParameter(string line, size_t startPos, char parameterType) {
+uint16_t Movie::getParameter(string line, size_t startPos, char parameterType) {
     size_t endPos = line.find_first_of("\t", startPos);
 
     string parameter;
@@ -49,8 +49,7 @@ uint16_t getParameter(string line, size_t startPos, char parameterType) {
     return stoi(parameter);
 }
 
-//LACKS ITERATION-LIKE WAY OF GETTING FRAMES
-vector<uint8_t> Movie::readFrameFromMovie(std::fstream movie) {
+Mat Movie::readFrameFromMovie(std::fstream movie) {
     if (!movie.is_open()) {
         cerr << "Error: movie file is not open" << std::endl;
     }
@@ -61,7 +60,7 @@ vector<uint8_t> Movie::readFrameFromMovie(std::fstream movie) {
 
     //frameData.data() returns pointer to data inside vector
     //reinterpret_cast<char*> used for the * to be interpretated as a char* because readsome requires it to be
-    movie.readsome(reinterpret_cast<char*>(frameData.data()), headerParameters.bytesPerFrame);
+    movie.read(reinterpret_cast<char*>(frameData.data()), headerParameters.bytesPerFrame);  
 
-    return frameData;
+    return Mat(1, headerParameters.bytesPerFrame, CV_8UC1, frameData.data());
 }

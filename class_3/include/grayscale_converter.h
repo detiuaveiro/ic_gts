@@ -23,7 +23,6 @@ class GrayscaleConverter {
             cout << "Image is already in greyscale\n";
             return;
         }
-
         cvtColor(img, img, COLOR_BGR2GRAY);
     }
 
