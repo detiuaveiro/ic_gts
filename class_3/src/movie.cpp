@@ -1,6 +1,6 @@
 #include "movie.h"
 
-void Movie::getHeaderParameters(std::fstream movie) {
+void Movie::getHeaderParameters(std::fstream& movie) {
     if (!movie.is_open()) {
         cerr << "Error: movie file is not open" << std::endl;
     }
@@ -11,15 +11,15 @@ void Movie::getHeaderParameters(std::fstream movie) {
     for (size_t i = 9; i < line.length(); i++) {
         switch (line[i]) {
             case 'W':
-                headerParameters.width = getParameter(line, i, 'W');
+                headerParameters.width = stoi(getParameter(line, i, 'W'));
                 break;
 
             case 'H':
-                headerParameters.height = getParameter(line, i, 'H');
+                headerParameters.height = stoi(getParameter(line, i, 'H'));
                 break;
 
             case 'C':
-                headerParameters.chroma = getParameter(line, i, 'C');
+                headerParameters.chroma = stoi(getParameter(line, i, 'C'));
                 break;
             case 'F':
                 headerParameters.fps = getParameter(line, i, 'F');
@@ -35,7 +35,7 @@ void Movie::getHeaderParameters(std::fstream movie) {
     headerParameters.bytesPerFrame = headerParameters.height * headerParameters.width;
 }
 
-uint16_t Movie::getParameter(string line, size_t startPos, char parameterType) {
+string Movie::getParameter(string line, size_t startPos, char parameterType) {
     size_t endPos = line.find_first_of("\t", startPos);
 
     string parameter;
@@ -46,7 +46,7 @@ uint16_t Movie::getParameter(string line, size_t startPos, char parameterType) {
     else
         parameter = line.substr(startPos + 1, endPos - startPos);
 
-    return stoi(parameter);
+    return parameter;
 }
 
 Mat Movie::readFrameFromMovie(std::fstream movie) {

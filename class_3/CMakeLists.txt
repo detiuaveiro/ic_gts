@@ -79,7 +79,7 @@ set(TEST_SOURCES
     ${SOURCE_FOLDER}/golomb.cpp
     ${SOURCE_FOLDER}/audio_codec.cpp
     ${TEST_FOLDER}/test_bitStream.cpp
-    ${TEST_FOLDER}/test_grayscale_converter.cpp
+    ${TEST_FOLDER}/test_frame.cpp
     )
 
 add_executable(tests ${TEST_SOURCES})

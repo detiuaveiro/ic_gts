@@ -10,15 +10,17 @@ using namespace std;
 class Frame
 {
 private:
-    Mat frame;
+    Mat* frame;
     short frameSize;
     uchar* framePtr;
 public:
-    Frame::Frame(Mat frame, short frameSize){}
+    Frame(Mat* frame, int frameSize){}
 
-    uint8_t Frame::getPixel(short pixelIndex){}
+    uint8_t getPixel(int pixelIndex){}
 
-    vector<uint8_t> Frame::getBlock(short blockSize){}
+    vector<uint8_t> getBlock(short blockSize){}
+
+    Mat* getFrame() {return this->frame;}
 };
 
 

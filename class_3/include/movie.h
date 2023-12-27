@@ -8,7 +8,7 @@ typedef struct{
     uint16_t chroma;
     uint16_t width;
     uint16_t height;
-    uint16_t fps;
+    string fps;
     int bytesPerFrame;
     int currentFrameIndex;
 }HeaderParameters;
@@ -31,10 +31,10 @@ public:
     ~Movie();
 
     //Get the parameters from an y4m file's header
-    void Movie::getHeaderParameters(std::fstream movie){}
+    void Movie::getHeaderParameters(std::fstream& movie){}
 
     //Auxiliar function used in getHeaderParameters to get one specific parameter
-    uint16_t Movie::getParameter(string line, size_t startPos, char parameterType){}
+    string Movie::getParameter(string line, size_t startPos, char parameterType){}
 
     //Returns one frame of the video/movie
     Mat Movie::readFrameFromMovie(std::fstream movie){}
@@ -43,4 +43,17 @@ public:
     FILE createMovie(vector<Mat> frames){
 
     }
+
+    uint16_t getChroma(){ return this->headerParameters.chroma;}
+
+    uint16_t getWidth(){ return this->headerParameters.width;}
+    
+    uint16_t getHeight(){ return this->headerParameters.height;}
+
+    string getFps(){ return this->headerParameters.fps;}
+
+    int getBytesPerFrame(){ return this->headerParameters.bytesPerFrame;}
+
+    int getCurrentFrameIndex(){ return this->headerParameters.currentFrameIndex;}
+
 };
