@@ -6,23 +6,33 @@
 #include <string>
 #include <tuple>
 #include <image_predictor.h>
+#include <opencv2/opencv.hpp>
 
 #define WRITER_FILE_NAME "outputStream.bin"
 #define DEFAULT_GOLOMB_M 4
 
+// TODO - Mess with this values and see results
+#define BITS_FILE_TYPE 2
 #define BITS_BLOCK_SIZE 16
-#define BITS_SAMPLE_RATE 16
-#define BITS_N_FRAMES 32
-#define BITS_N_CHANNELS 4
-#define BITS_BIT_RATE 16
+//#define BITS_N_FRAMES 32
+#define BITS_CHROMA 16
+#define BITS_WIDTH 16
+#define BITS_HEIGHT 16
+//#define BITS_BIT_RATE 16
+//#define BITS_FPS 8
+#define BITS_APPROACH 1 // sign magnitud, value interleaving, golomb
 #define BITS_LOSSY 2
-#define BITS_APPROACH 4
+
+#define BITS_FRAME_TYPE 1 // for each block and frame
+
 #define BITS_M 14
-#define BITS_PHASE 2
-#define BITS_PREDICTOR 2
+#define BITS_PREDICTOR 4
 
 using namespace std;
 
+enum FRAME_TYPE { I, P };
+
+enum FILE_TYPE { Y4M, PGM };
 /*
 ##############################################################################
 ###################           Data Structures              ###################
@@ -32,19 +42,26 @@ using namespace std;
 struct Block {
     /* Header */
     uint16_t m;
-    // frame type -> objeto da classe do Samu
+    FRAME_TYPE type; // I or P
     PREDICTOR_TYPE predictor;
     /* Data */
-    vector<vector<u_int8_t>> data; // 2D vector of bytes -> each byte represents a y value of a pixel
+    vector<vector<uint8_t>> data; // 2D vector of bytes -> each byte represents a y value of a pixel
+};
+
+struct FrameSegment {
+    FRAME_TYPE type;
+    vector<Block> blocks;
 };
 
 struct File {
     /* Header */
+    FILE_TYPE type;
     uint16_t blockSize;
-    uint8_t nChannels;
-    uint16_t sampleRate;
-    uint32_t nFrames;
-    uint16_t bitRate;
+    //uint32_t nFrames;
+    uint16_t chroma;
+    uint16_t width;
+    uint16_t height;
+    string fps;
     APPROACH approach;
     bool lossy;  // true if lossy, false if lossless
 };
@@ -62,15 +79,20 @@ class GEncoder {
     PREDICTOR_TYPE predictor = AUTOMATIC;
     Predictor predictorClass;
     int m;
+    //int frameId = 0;
+    Frame frame;
 
     std::string outputFileName;
     File fileStruct;
 
+    // TODO - DELETE abs_value_vector?
     std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
-    int calculate_m(std::vector<short>& values);
-    Block process_block(std::vector<short>& block, int blockId, int nBlocks);
+    int calculate_m(std::vector<std::vector<uint8_t>>& values);
+    Block process_block(std::vector<std::vector<uint8_t>>& block, int blockId, int nBlocks);
 
     void write_file_header();
+    // TODO
+    void write_file_frame(FrameSegment& frame);
     void write_file_block(Block& block, int blockId, int nBlocks);
 
    public:
@@ -78,12 +100,17 @@ class GEncoder {
              PREDICTOR_TYPE pred = AUTOMATIC);
     ~GEncoder();
 
-    void encode_file(File file, std::vector<short>& inSamples, size_t nBlocks);
+    // TODO
+    // a main é que recebe o movie e chama a função encode_frame (EM VEZ DA ENCODE FILE!!!)
+    void encode_file_header(File file);
+
+    // TODO - Usar funções do Samu para fazer a funçao (buscar blocos, etc)
+    void encode_frame(Frame frame, size_t nBlocks);
 
     void setFile(File file);
 
-    // Stuff used for testing private members
-    int test_calculate_m(std::vector<short>& values);
+    // Stuff used for testing private members (TODO)
+    int test_calculate_m(std::vector<std::vector<uint8_t>>& values);
     std::vector<unsigned short> test_abs_value_vector(
         std::vector<short>& values);
 };

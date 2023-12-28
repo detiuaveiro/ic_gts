@@ -1,35 +1,48 @@
-#include <audio_codec.h>
+#include <image_codec.h>
 #include <string.h>
 #include <cmath>
 #include <iostream>
-#include <sndfile.hh>
 #include <vector>
+#include <movie.h>
 
 using namespace std;
 
+// either read an image or a video
+// if image, then nFrames = 1
+// -> cols and rows are the dimensions of the image
+
+// recebo um ficheiro y4m ou pgm ->
+// 1. se for y4m, criar um objeto da classe movie -> read frame from movie -> dps usar classe frame -> encoding
+// 2. se for pgm, criar um objeto da classe frame -> encoding
+
+// header parameters
+namespace MovieFile {
+    size_t chroma;
+    size_t width;
+    size_t height;
+    string fps;
+}
+
 // configurable parameters
 namespace Options {
-string musicName = "../songs/sample_mono.wav";
-string encodedName = "encodedSample";
-size_t blockSize = 1024;
-size_t bitRate = -1;
-int m = -1;  // automatic
-bool lossy = false;
-size_t nChannels;
-size_t nFrames;
-size_t sampleRate;
-PREDICTOR_TYPE predictor = AUTOMATIC;
-APPROACH approach = SIGN_MAGNITUDE;
-}  // namespace Options
+    string fileName = "../movies/sintel_trailer_2k_480p24.y4m";
+    string encodedName = "encodedMovie";
+    size_t blockSize = 64;
+    //size_t nFrames;
+    int m = -1;  // automatic
+    bool lossy = false;
+    PREDICTOR_TYPE predictor = AUTOMATIC;
+    APPROACH approach = SIGN_MAGNITUDE;
+}  
 
 static void print_usage() {
     cerr << "Usage: %s [OPTIONS]\n"
             "  OPTIONS:\n"
             "  -h, --help        --- print this help\n"
-            "  -i, --input       --- set music file name (default: "
-            "../songs/sample01.wav)\n"
+            "  -i, --input       --- set image/video file name (default: "
+            "../images/airplane_gray.pgm)\n"
             "  -o, --output      --- set encoded file name (default: "
-            "encodedSample)\n"
+            "encodedMovie)\n"
             "  -b, --blockSize   --- set block size (default: 1024)\n"
             "  -l, --lossy       --- set lossy compression (default: off)\n"
             "  -m, --modulus     --- set m number (default: automatic "
@@ -49,7 +62,7 @@ int process_arguments(int argc, char* argv[]) {
                    strcmp(argv[i], "--input") == 0) {
             i++;
             if (i < argc) {
-                Options::musicName = argv[i];
+                Options::fileName = argv[i];
             } else {
                 std::cerr << "Error: Missing argument for -i/--input option."
                           << std::endl;
@@ -121,33 +134,13 @@ int process_arguments(int argc, char* argv[]) {
     return 0;
 }
 
-int check_wav_file(SndfileHandle& musicFile) {
-    if (musicFile.error()) {
-        cerr << "Error: invalid input file\n";
-        return -1;
-    }
-
-    if ((musicFile.format() & SF_FORMAT_TYPEMASK) != SF_FORMAT_WAV) {
-        cerr << "Error: file is not in WAV format\n";
-        return -1;
-    }
-
-    if ((musicFile.format() & SF_FORMAT_SUBMASK) != SF_FORMAT_PCM_16) {
-        cerr << "Error: file is not in PCM_16 format\n";
-        return -1;
-    }
-
-    return 0;
-}
-
 void print_processing_information(int nBlocks) {
-    cout << "\nMusic Processing information: \n"
-         << " - Music File Name: " << Options::musicName
+    cout << "\nVideo/Image Processing information: \n"
+         << " - Video/Image File Name: " << Options::fileName
          << "\n - Encoded File Name: " << Options::encodedName
          << "\n - Block Size: " << Options::blockSize
-         << "\n - Number of Channels: " << Options::nChannels
-         << "\n - Sample Rate: " << Options::sampleRate
-         << "\n - Total Number of Frames: " << Options::nFrames
+         //<< "\n - Bit Rate: " << Options::bitRate
+         //<< "\n - Total Number of Frames: " << Options::nFrames
          << "\n - Number of Blocks: " << nBlocks
          << "\n - Predictor: " << get_type_string(Options::predictor)
          << "\n - Golomb Approach: " << approach_to_string(Options::approach)
@@ -164,51 +157,51 @@ int main(int argc, char* argv[]) {
 
     clock_t startTime = clock();
 
-    /* Check .wav file */
-    SndfileHandle sfhIn{Options::musicName};
-    if (check_wav_file(sfhIn) < 0)
-        return 1;
+    // TODO - Check .pgm or .y4m file
+    Movie movie{};
+    fstream file(Options::fileName, std::ios::in);
 
-    if (!check_approach(Options::approach)) {
-        cerr << "Error: Invalid approach type " << Options::approach << endl;
-        return 1;
-    }
+    movie.getHeaderParameters(file);
+    MovieFile::chroma = movie.getChroma();
+    MovieFile::width = movie.getWidth();
+    MovieFile::height = movie.getHeight();
+    MovieFile::fps = movie.getFps();
 
-    // Set Options variables
-    Options::sampleRate = static_cast<size_t>(sfhIn.samplerate());
-    Options::nChannels = static_cast<size_t>(sfhIn.channels());
-    Options::nFrames = static_cast<size_t>(sfhIn.frames());
-
-    std::vector<short> inputSamples(Options::nChannels * Options::nFrames);
-    sfhIn.readf(inputSamples.data(), Options::nFrames);
-
-    size_t nBlocks{static_cast<size_t>(
-        ceil(static_cast<double>(Options::nFrames) / Options::blockSize))};
-
-    // Do zero padding, if necessary
-    inputSamples.resize(nBlocks * Options::blockSize * Options::nChannels);
-
-    print_processing_information(nBlocks);
-
+    /* TODO - WRITE HEADER PARAMETERS USING WRITE FILE HEADER */
 
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
-    // Create file struct
+    /* TODO - Create file struct for video/image */
     File f;
-    f.sampleRate = Options::sampleRate;
+    f.type = Y4M;
     f.blockSize = Options::blockSize;
-    f.nChannels = Options::nChannels;
-    f.nFrames = Options::nFrames;
-    f.bitRate = Options::bitRate;
-    f.lossy = Options::lossy;
+    //f.nFrames = Options::nFrames;
+    f.chroma = MovieFile::chroma;
+    f.width = MovieFile::width;
+    f.height = MovieFile::height;
+    f.fps = MovieFile::fps;
     f.approach = Options::approach;
+    f.lossy = Options::lossy;
 
-    // dont forget to multiply the number of blocks by the number of channels
-    //  since each the nBlocks is accounting for raw frames and in the case of
-    //  stereo audio, each frame has two samples, so double the calculated blocks
-    //  (because blocks have samples, not frames)
-    gEncoder.encode_file(f, inputSamples, nBlocks * Options::nChannels);
+    gEncoder.encode_file_header(f);
+
+    
+
+    // TODO
+    /* Need to read frame by frame, encode the frame and go to next frame */
+    int frameSize = static_cast<int>(MovieFile::width * MovieFile::height);
+
+    size_t nBlocks{static_cast<size_t>(
+        ceil(static_cast<double>(frameSize) / Options::blockSize))};
+    //TODO - While (frames nao acabaram) {
+        cv::Mat fr = movie.readFrameFromMovie(file);
+        Mat* frPtr = &fr;
+        Frame frame(frPtr, frameSize); 
+        gEncoder.encode_frame(frame, nBlocks);
+    // }
+
+    //print_processing_information(nBlocks);
 
     clock_t endTime = clock();
     std::cout << "Program took " << std::fixed << std::setprecision(2)
