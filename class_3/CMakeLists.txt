@@ -78,6 +78,8 @@ target_link_libraries( audio_decoder ${OpenCV_LIBS} sndfile )
 set(TEST_SOURCES
     ${SOURCE_FOLDER}/golomb.cpp
     ${SOURCE_FOLDER}/audio_codec.cpp
+    ${SOURCE_FOLDER}/frame.cpp
+    ${SOURCE_FOLDER}/movie.cpp
     ${TEST_FOLDER}/test_bitStream.cpp
     ${TEST_FOLDER}/test_frame.cpp
     )

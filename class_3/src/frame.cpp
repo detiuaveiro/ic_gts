@@ -1,25 +1,26 @@
 #include "frame.h"
 
-
-Frame::Frame(Mat* frame, int frameSize){
+Frame::Frame(Mat frame, int frameSize) {
     this->frame = frame;
     this->frameSize = frameSize;
-    this->framePtr = (*this->frame).ptr();
 }
 
-uint8_t Frame::getPixel(int pixelIndex){
-    cout << "Pixel: " << (*this->frame).at<uint8_t>(pixelIndex) << std::endl;
-    return (*this->frame).at<uint8_t>(pixelIndex);
+uint8_t Frame::getPixel(int pixelIndex) {
+    uint8_t pixel = frame.at<uint8_t>(pixelIndex);
+    return pixel;
 }
 
-vector<uint8_t> Frame::getBlock(short blockSize){
-    vector<uint8_t> block;
+vector<uint8_t> Frame::getBlock(short nBlocks) {
+    vector<uint8_t> block(nBlocks);
 
-    for (size_t i = 0; i < frameSize; i++)
-    {
-        block.push_back((*this->frame).at<uint8_t>(i));
-    }
+    block.resize(nBlocks);  // pad with 0s
+
+    int nPixelBlock = (frameSize / nBlocks) + (frameSize % nBlocks);
+
+    // fix this
+    //for (size_t i = 0; i < frameSize; i++) {
+    //    block.push_back(frame.at<uint8_t>(i));
+    //}
 
     return block;
 }
-
