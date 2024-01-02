@@ -13,6 +13,8 @@ class Frame {
    private:
     Mat frame;
     short frameSize;
+    short indexX = 0;
+    short indexY = 0;
 
    public:
     // Maybe use move constructor

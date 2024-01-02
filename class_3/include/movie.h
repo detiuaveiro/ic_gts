@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -8,7 +10,7 @@ typedef struct{
     uint16_t chroma;
     uint16_t width;
     uint16_t height;
-    string fps;
+    std::string fps;
     int bytesPerFrame;
     int currentFrameIndex;
 }HeaderParameters;
@@ -31,18 +33,16 @@ public:
     ~Movie();
 
     //Get the parameters from an y4m file's header
-    void Movie::getHeaderParameters(std::fstream& movie){}
+    void getHeaderParameters(std::fstream& movie);
 
     //Auxiliar function used in getHeaderParameters to get one specific parameter
-    string Movie::getParameter(string line, size_t startPos, char parameterType){}
+    string getParameter(string line, size_t startPos, char parameterType);
 
     //Returns one frame of the video/movie
-    Mat Movie::readFrameFromMovie(std::fstream movie){}
+    Mat readFrameFromMovie(std::fstream movie);
 
     //Creates a movie with the frames
-    FILE createMovie(vector<Mat> frames){
-
-    }
+    FILE createMovie(vector<Mat> frames);
 
     uint16_t getChroma(){ return this->headerParameters.chroma;}
 

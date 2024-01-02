@@ -21,22 +21,29 @@ TEST(Frame, testGetPixel) {
         << "Failed to copy image data to Frame object";
 
     cout << "Pixel: " << img.at<uint8_t>(0) << std::endl;
-    cout << "Pixel: " << img.at<uint8_t>(512) << std::endl;
+    cout << "Pixel: " << img.at<uint8_t>(262143) << std::endl;
     cout << "Rows: " << frame.getFrame().rows << std::endl;
     cout << "Cols: " << frame.getFrame().cols << std::endl;
 
     cout << "Pixel: " << frame.getFrame().at<uint8_t>(0) << std::endl;
-    cout << "Pixel: " << frame.getFrame().at<uint8_t>(512) << std::endl;
+    cout << "Pixel: " << frame.getFrame().at<uint8_t>(262143) << std::endl;
 
     uint8_t expectedPixelValue = img.at<uint8_t>(0);
-    uint8_t expectedPixelValue2 = img.at<uint8_t>(512);
+    uint8_t expectedPixelValue2 = img.at<uint8_t>(262143);
     EXPECT_EQ(frame.getPixel(0), expectedPixelValue);
-    EXPECT_EQ(frame.getPixel(512), expectedPixelValue2);
+    EXPECT_EQ(frame.getPixel(262143), expectedPixelValue2);
 }
 
 TEST(Frame, testGetBlock) {
     Frame frame = Frame(img, 262144);
 
-    vector<uint8_t> block = frame.getBlock(16);
-    EXPECT_EQ(block.size(), 16);
+    vector<vector<uint8_t>> blocks;
+    for (size_t i = 0; i < 16; i++)
+    {
+        vector<uint8_t> block = frame.getBlock(16);
+        EXPECT_EQ(block.size(),16384);
+        blocks.push_back(block);
+    }
+    
+    EXPECT_EQ(blocks.size(), 16);
 }
