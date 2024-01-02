@@ -12,7 +12,7 @@ using namespace std;
 class Frame {
    private:
     Mat frame;
-    short frameSize;
+    int frameSize;
     short indexX = 0;
     short indexY = 0;
 
@@ -22,7 +22,7 @@ class Frame {
 
     uint8_t getPixel(int pixelIndex);
 
-    vector<uint8_t> getBlock(short nBlocks);
+    vector<uint8_t> getBlock(int nBlocks);
 
     Mat& getFrame() { return this->frame; }
 };

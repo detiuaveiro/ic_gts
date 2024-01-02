@@ -1,6 +1,7 @@
 #include "frame.h"
 #include <cmath>
 
+
 Frame::Frame(Mat frame, int frameSize) {
     this->frame = frame;
     this->frameSize = frameSize;
@@ -11,26 +12,37 @@ uint8_t Frame::getPixel(int pixelIndex) {
     return pixel;
 }
 
-vector<uint8_t> Frame::getBlock(short nBlocks) {
+vector<uint8_t> Frame::getBlock(int nBlocks) {
     vector<uint8_t> block;
 
+    /*
+    std::cout << "blocks: " << nBlocks << std::endl;
+    std::cout << "Frame Size: " << this->frameSize << std::endl;*/
+
     //number of pixels per block
-    int nPixelBlock = (frameSize / nBlocks) + (frameSize % nBlocks);
+    int nPixelBlock = (this->frameSize / nBlocks) + (this->frameSize % nBlocks);
     //Length of the edge of the block
-    short blockEdge = (short) sqrt(nPixelBlock);
-    //Length of the edge of the frame
-    short frameEdge = (short) sqrt(frameSize);
+    int blockEdge =  sqrt(nPixelBlock);
+
+    /*
+    std::cout << "blockEdge: " << blockEdge << std::endl;
+    std::cout << "frameEdge: " << frameEdge << std::endl;
+    std::cout << "nPixelBlock: " << nPixelBlock << std::endl;
 
     //Process blocks (literal geometrical squares)
-    for (short i = indexY; i < indexY + blockEdge; i++)
+    std::cout << indexY+blockEdge << std::endl;
+    std::cout << indexX+blockEdge << std::endl;*/
+
+    for (int i = indexY; i < indexY + blockEdge; i++)
     {
-        for (short j = indexX; j < indexX + blockEdge; j++)
+        for (int j = indexX; j < indexX + blockEdge; j++)
         {
-            block.push_back(frame.at<uint8_t>(i, j));
+            block.push_back(frame.at<uint8_t>(j, i));
         }
     }
+
     //if last block of a row is reached
-    if(indexX == frameEdge - blockEdge){
+    if(indexX + blockEdge == 512){
         indexX = 0;
         indexY +=blockEdge;
     }
