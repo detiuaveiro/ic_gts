@@ -82,6 +82,7 @@ set(TEST_SOURCES
     ${SOURCE_FOLDER}/movie.cpp
     ${TEST_FOLDER}/test_bitStream.cpp
     ${TEST_FOLDER}/test_frame.cpp
+    ${TEST_FOLDER}/test_movie.cpp
     )
 
 add_executable(tests ${TEST_SOURCES})

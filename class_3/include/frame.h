@@ -13,12 +13,14 @@ class Frame {
    private:
     Mat frame;
     int frameSize;
+    short frameWidth;
+    short frameHeight;
     short indexX = 0;
     short indexY = 0;
 
    public:
     // Maybe use move constructor
-    Frame(Mat frame, int frameSize);
+    Frame(Mat frame, int frameSize, short frameWidth, short frameHeight);
 
     uint8_t getPixel(int pixelIndex);
 

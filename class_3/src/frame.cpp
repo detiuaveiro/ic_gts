@@ -2,9 +2,11 @@
 #include <cmath>
 
 
-Frame::Frame(Mat frame, int frameSize) {
+Frame::Frame(Mat frame, int frameSize, short frameWidth, short frameHeight) {
     this->frame = frame;
     this->frameSize = frameSize;
+    this->frameWidth = frameWidth;
+    this->frameHeight = frameHeight;
 }
 
 uint8_t Frame::getPixel(int pixelIndex) {

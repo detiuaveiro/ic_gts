@@ -30,7 +30,6 @@ public:
         this->movieIndex = 0;
         this->headerParameters.currentFrameIndex = 0;
     }
-    ~Movie();
 
     //Get the parameters from an y4m file's header
     void getHeaderParameters(std::fstream& movie);
@@ -39,7 +38,7 @@ public:
     string getParameter(string line, size_t startPos, char parameterType);
 
     //Returns one frame of the video/movie
-    Mat readFrameFromMovie(std::fstream movie);
+    Mat readFrameFromMovie(std::fstream& movie);
 
     //Creates a movie with the frames
     FILE createMovie(vector<Mat> frames);
