@@ -110,7 +110,6 @@ Block GEncoder::process_block(Mat& block, int blockId, int nBlocks,
         for (int j = 0; j < block.cols; ++j) {
             int prediction = predictorClass.predict(pred, block, i, j);
             int error = block.at<uint8_t>(i, j) - prediction;
-            rowErrors.push_back(static_cast<uint8_t>(error));
             predictBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(error);
         }
     }
@@ -312,13 +311,12 @@ Block GDecoder::read_file_block(int blockId, int nBlocks, FrameSegment& frame) {
 
 Mat GDecoder::decode_block(Mat& blockImg, FrameSegment& frame) {
 
-    cv::Mat decodedBlock = cv::Mat::zeros(block.size(), block.type());
+    cv::Mat decodedBlock = cv::Mat::zeros(blockImg.size(), blockImg.type());
     for (int i = 0; i < blockImg.rows; ++i) {
         for (int j = 0; j < blockImg.cols; ++j) {
             int prediction =
                 predictorClass.predict(frame.type, decodedBlock, i, j);
             int error = blockImg.at<uint8_t>(i, j) - prediction;
-            rowErrors.push_back(static_cast<uint8_t>(error));
             decodedBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(error);
         }
     }
@@ -334,7 +332,7 @@ Mat GDecoder::decode_frame(int frameId) {
 
     std::vector<Mat> frameVector;
     for (int bId = 1; bId <= nBlocksPerFrame; bId++) {
-        Block block = read_file_block(bId, nBlocks);
+        Block block = read_file_block(bId, nBlocksPerFrame, frameStruct);
 
         Mat blockImg = Frame::linear_vector_to_mat(block.data);
 

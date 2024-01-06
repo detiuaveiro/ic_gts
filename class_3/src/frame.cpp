@@ -6,23 +6,27 @@ uint8_t Frame::get_pixel(Mat& image, int pixelIndex) {
     return pixel;
 }
 
-/*! \attention If one of the dimensions isn't multiple of the blockSize, 
-    some blocks may end up with inferior size on that axis 
-    To know the size of the of the last block, which will be cut, just divide
-    the axis by blockSize */
+/*! \attention This function applies padding */
 std::vector<cv::Mat> Frame::get_blocks(Mat& image, int blockSize) {
     std::vector<cv::Mat> blocks;
 
     int rows = image.rows;
     int cols = image.cols;
 
-    for (int y = 0; y < rows; y += blockSize) {
-        for (int x = 0; x < cols; x += blockSize) {
-            int blockWidth = std::min(blockSize, cols - x);
-            int blockHeight = std::min(blockSize, rows - y);
+    int paddedRows = ((rows + blockSize - 1) / blockSize) * blockSize;
+    int paddedCols = ((cols + blockSize - 1) / blockSize) * blockSize;
 
-            cv::Mat block = image(cv::Range(y, y + blockHeight),
-                                  cv::Range(x, x + blockWidth))
+    Mat paddedImage;
+    copyMakeBorder(image, paddedImage, 0, paddedRows - rows, 0,
+                   paddedCols - cols, BORDER_CONSTANT, Scalar(0));
+
+    for (int y = 0; y < paddedRows; y += blockSize) {
+        for (int x = 0; x < paddedCols; x += blockSize) {
+            int blockWidth = std::min(blockSize, paddedCols - x);
+            int blockHeight = std::min(blockSize, paddedRows - y);
+
+            cv::Mat block = paddedImage(cv::Range(y, y + blockHeight),
+                                        cv::Range(x, x + blockWidth))
                                 .clone();
             blocks.push_back(block);
         }

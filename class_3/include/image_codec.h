@@ -99,7 +99,7 @@ class GEncoder {
     void encode_file_header(File file, size_t nBlocksPerFrame,
                             int intraFramePeriodicity);
 
-    void encode_frame(Frame frame, int blockId, size_t nBlocks);
+    void encode_frame(Mat frame, int blockId, size_t nBlocks);
 
     void setFile(File file);
 
@@ -126,7 +126,7 @@ class GDecoder {
 
     FrameSegment read_frame_header();
     Block read_file_block(int blockId, int nBlocks, FrameSegment& frame);
-    Mat decode_block(Block& block, FrameSegment& frame);
+    Mat decode_block(Mat& block, FrameSegment& frame);
 
    public:
     GDecoder(std::string inFileName);
