@@ -184,11 +184,17 @@ int main(int argc, char* argv[]) {
     f.approach = Options::approach;
     f.lossy = Options::lossy;
 
-    int frameSize = static_cast<int>(MovieFile::width * MovieFile::height);
-    // std::cout << "frame size after cast: " << frameSize << "\n";
+    int numBlocksWidth = MovieFile::width / Options::blockSize;
+    int numBlocksHeight = MovieFile::height / Options::blockSize;
 
-    size_t nBlocksPerFrame{static_cast<size_t>(
-        ceil(static_cast<double>(frameSize) / Options::blockSize))};
+    if (MovieFile::width % Options::blockSize != 0)
+        ++numBlocksWidth; // Add another column of blocks not fully occupied
+
+    if (MovieFile::height % Options::blockSize != 0)
+        ++numBlocksHeight; // Add another row of blocks not fully occupied
+
+    size_t nBlocksPerFrame = static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
+
 
     Options::nFrames = movieClass.getNumberFrames();
 

@@ -39,7 +39,7 @@ TEST(Frame, testGetBlock_image) {
 
     vector<Mat> blocks = Frame::get_blocks(img, 16);
 
-    for (Mat& block: blocks) {
+    for (Mat& block : blocks) {
         EXPECT_EQ(block.rows, 16);
         EXPECT_EQ(block.cols, 16);
     }
@@ -64,14 +64,26 @@ TEST(Frame, testGetBlock_frame) {
 
     Mat img = movieClass.readFrameFromMovie(movieStream);
 
+    cout << "Pixel 0: " << unsigned(img.at<uint8_t>(0)) << std::endl;
+
     vector<Mat> blocks = Frame::get_blocks(img, 16);
 
-    for (Mat& block: blocks) {
+    for (Mat& block : blocks) {
         EXPECT_EQ(block.rows, 16);
-        EXPECT_EQ(block.cols, 16);
+        if ((block.cols % 16) != 0)
+            EXPECT_EQ(block.cols, 6);
+        else
+            EXPECT_EQ(block.cols, 16);
     }
 
-    int expectedBlockCount = img.rows / 16 * img.cols / 16;
+    int expectedBlockCount = int(img.rows / 16) * int(img.cols / 16);
+    if ((img.rows % 16) != 0)
+        expectedBlockCount +=
+            img.cols / 16;  // add another row of blocks not full
+
+    if ((img.cols % 16) != 0)
+        expectedBlockCount +=
+            img.rows / 16;  // add another col of blocks not full
 
     EXPECT_EQ(blocks.size(), expectedBlockCount);
 

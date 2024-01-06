@@ -23,10 +23,11 @@
 
 #define BITS_FRAME_TYPE 1  // for each block and frame
 
-#define BITS_M 14
+#define BITS_M 4
 #define BITS_PREDICTOR 4
 
 using namespace std;
+using namespace cv;
 
 enum FRAME_TYPE { I, P };
 
@@ -39,17 +40,16 @@ enum FILE_TYPE { Y4M, PGM };
 
 struct Block {
     /* Header */
-    uint16_t m;
     FRAME_TYPE type;  // I or P
-    PREDICTOR_TYPE predictor;
     /* Data */
-    vector<vector<uint8_t>>
-        data;  // 2D vector of bytes -> each byte represents a y value of a pixel
+    std::vector<uint8_t> data;
 };
 
 struct FrameSegment {
+    /* Header */
     FRAME_TYPE type;
-    vector<Block> blocks;
+    uint16_t m;
+    PREDICTOR_TYPE predictor;
 };
 
 struct File {
@@ -78,20 +78,17 @@ class GEncoder {
     PREDICTOR_TYPE predictor = AUTOMATIC;
     Predictor predictorClass;
     int m;
-    Frame frame;
     size_t nBlocksPerFrame;
     int intraFramePeriodicity;
 
     std::string outputFileName;
     File fileStruct;
 
-    std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
-    int calculate_m(std::vector<std::vector<uint8_t>>& values);
-    Block process_block(std::vector<std::vector<uint8_t>>& block, int blockId,
-                        int nBlocks);
+    int calculate_m(Mat& values);
+    Block process_block(Mat& block, int blockId, int nBlocks);
 
     void write_file_header();
-    void write_file_frame(FrameSegment& frame);
+    void write_frame_header(FrameSegment& frame);
     void write_file_block(Block& block, int blockId, int nBlocks);
 
    public:
@@ -108,8 +105,6 @@ class GEncoder {
 
     // Stuff used for testing private members (TODO)
     int test_calculate_m(std::vector<std::vector<uint8_t>>& values);
-    std::vector<unsigned short> test_abs_value_vector(
-        std::vector<short>& values);
 };
 
 /*

@@ -40,24 +40,23 @@ class Predictor {
     int predict_jpeg_7(int a, int b);
     int predict_jpeg_LS(int a, int b, int c);
 
-    double calculate_entropy(PREDICTOR_TYPE type, std::vector<vector<uint8_t>>& samples);
+    double calculate_entropy(PREDICTOR_TYPE type, Mat& frame);
 
    public:
     Predictor();
     ~Predictor();
 
     /*! 
-        Pass a set of samples/block and return the best predictor to be used 
+        Pass a set of frames/block and return the best predictor to be used 
             (the one that resulted in less occupied space)
     */
-    PREDICTOR_TYPE benchmark(std::vector<vector<uint8_t>>& samples);
+    PREDICTOR_TYPE benchmark(Mat& frame);
 
     /*!
         Predict the next sample based on the type of the predictor and the
             previous samples
     */
-    int predict(PREDICTOR_TYPE type, vector<vector<uint8_t>>& block, int idX,
-                int idY);
+    int predict(PREDICTOR_TYPE type, Mat& frame, int idX, int idY);
 
     bool check_type(PREDICTOR_TYPE type);
 };

@@ -9,10 +9,12 @@
 using namespace cv;
 using namespace std;
 
-class Frame {
-   private:
-   public:
-    static uint8_t get_pixel(Mat& image, int pixelIndex);
+namespace Frame {
+uint8_t get_pixel(Mat& image, int pixelIndex);
 
-    static std::vector<cv::Mat> get_blocks(Mat& image, int blockSize);
+std::vector<cv::Mat> get_blocks(Mat& image, int blockSize);
+
+std::vector<uint8_t> mat_to_linear_vector(Mat& image);
+
+Mat linear_vector_to_mat(std::vector<uint8_t> data, int rows, int cols);
 };
