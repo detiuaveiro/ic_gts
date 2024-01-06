@@ -139,8 +139,6 @@ void print_processing_information(int nBlocks) {
          << " - Video/Image File Name: " << Options::fileName
          << "\n - Encoded File Name: " << Options::encodedName
          << "\n - Block Size: " << Options::blockSize
-         //<< "\n - Bit Rate: " << Options::bitRate
-         //<< "\n - Total Number of Frames: " << Options::nFrames
          << "\n - Number of Blocks: " << nBlocks
          << "\n - Predictor: " << get_type_string(Options::predictor)
          << "\n - Golomb Approach: " << approach_to_string(Options::approach)
@@ -187,19 +185,24 @@ int main(int argc, char* argv[]) {
     gEncoder.encode_file_header(f);
 
     
-
-    // TODO
     /* Need to read frame by frame, encode the frame and go to next frame */
+    // std::cout << "frame size: " << MovieFile::width * MovieFile::height << "\n
     int frameSize = static_cast<int>(MovieFile::width * MovieFile::height);
+    // std::cout << "frame size after cast: " << frameSize << "\n";
 
     size_t nBlocks{static_cast<size_t>(
         ceil(static_cast<double>(frameSize) / Options::blockSize))};
-    //TODO - While (frames nao acabaram) {
+    while (true){
         cv::Mat fr = movie.readFrameFromMovie(file);
-        Mat* frPtr = &fr;
-        Frame frame(frPtr, frameSize); 
+
+        if (fr.empty()){
+            break;
+        }
+
+        Frame frame(fr, frameSize, MovieFile::width, MovieFile::height);
+
         gEncoder.encode_frame(frame, nBlocks);
-    // }
+    }
 
     //print_processing_information(nBlocks);
 

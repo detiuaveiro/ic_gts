@@ -50,21 +50,24 @@ std::vector<unsigned short> GEncoder::abs_value_vector(
 }
 
 // TODO - Values of pixels are unsigned, don't need to be converted to abs
-int GEncoder::calculate_m(std::vector<std::vector<uint8_t>>& values) {
+int GEncoder::calculate_m(std::vector<uint8_t>& values) {
     /* Calculate alpha */
     double alpha = 1.0;
-    if (!values.empty() && !values.at(0).empty()) {
-        std::vector<uint8_t> img_values;
+    if (!values.empty()) {
+        // std::vector<uint8_t> flatten_values;
 
-        // Flatten vector by rows
-        for (std::vector<uint8_t>& row : values) {
-            img_values.insert(img_values.end(), row.begin(), row.end());
-        }
+        // // Flatten vector by rows
+        // for (std::vector<uint8_t>& row : values) {
+        //     flatten_values.insert(img_values.end(), row.begin(), row.end());
+        // }
 
         // Calculate pixel values mean for the block
+        //double mean = static_cast<double>(std::accumulate(
+        //                    img_values.begin(), img_values.end(), 0)) /
+        //                img_values.size();
         double mean = static_cast<double>(std::accumulate(
-                            img_values.begin(), img_values.end(), 0)) /
-                        img_values.size();
+                       values.begin(), values.end(), 0)) /
+                    values.size();
         alpha = exp(-1.0 / mean);  // Calculate alpha using mean
     }
 
@@ -93,12 +96,6 @@ void GEncoder::write_file_header() {
 // TODO
 void GEncoder::write_file_frame(FrameSegment& frame) {
     writer.writeNBits(frame.type, BITS_FRAME_TYPE);
-
-    // BLOCKS ARE WRITTEN IN THE ENCODE_FILE FUNCTION
-
-    // for (Block& block : frame.blocks) {
-    //     write_file_block(block, 0, 0);
-    // }
 }
 
 void GEncoder::write_file_block(Block& block, int blockId, int nBlocks) {
@@ -112,6 +109,7 @@ void GEncoder::write_file_block(Block& block, int blockId, int nBlocks) {
 
     // Write Block header
     writer.writeNBits(block.m, BITS_M);
+    // TODO- falta frame type?
     writer.writeNBits(block.predictor, BITS_PREDICTOR);
 
     golomb.setM(block.m); 
@@ -122,16 +120,20 @@ void GEncoder::write_file_block(Block& block, int blockId, int nBlocks) {
               << " to file with m = " << std::setw(3) << unsigned(block.m)
               << ", p = " << std::setw(1) << unsigned(block.predictor);
 
-    // TODO - Done
-    for (std::vector<uint8_t>& row : block.data) {
-        for (uint8_t& pixel : row) {
-            golomb.encode(pixel);
-        }
+
+    for (uint8_t& pixel : block.data) {
+        // TODO - Do i need to static cast int?
+        golomb.encode(pixel);
     }
+    // for (std::vector<uint8_t>& row : block.data) {
+    //     for (uint8_t& pixel : row) {
+    //         golomb.encode(pixel);
+    //     }
+    // }
 }
 
 // TODO
-Block GEncoder::process_block(std::vector<std::vector<uint8_t>>& block, int blockId,
+Block GEncoder::process_block(std::vector<uint8_t>& block, int blockId,
                               int nBlocks) {
 
     PREDICTOR_TYPE pred = predictor;
@@ -139,22 +141,30 @@ Block GEncoder::process_block(std::vector<std::vector<uint8_t>>& block, int bloc
         std::cout << "\r" << std::flush << " - "
                   << "Benchmarking predictor for Block " << std::setw(4)
                   << blockId << "/" << std::setw(4) << nBlocks;
-        pred = predictorClass.benchmark(block);
+        // To uncomment
+        //pred = predictorClass.benchmark(block);
     }
 
     Block encodedBlock;
     encodedBlock.predictor = pred;
 
-    // For each pixel in the block, calculate prediction and error
-    for (int i = 0; i < static_cast<int>(block.size()); i++) { 
-        std::vector<uint8_t> rowErrors;
-        for (int j = 0; j < static_cast<int>(block[i].size()); j++) { 
-            int prediction = predictorClass.predict(pred, block, i, j); // (i, j) -> (row, col)
-            int error = block[i][j] - prediction;
-            rowErrors.push_back(static_cast<uint8_t>(error));
-        }
-        encodedBlock.data.push_back(rowErrors);
+    // Instead of a 2D vector for the block i have a 1D vector
+    for (int i = 0; i < static_cast<int>(block.size()); i++){
+        int prediction = predictorClass.predict(pred, block, i);
+        int error = block[i] - prediction;
+        encodedBlock.data.push_back(static_cast<uint8_t>(error));
     }
+
+
+    // for (int i = 0; i < static_cast<int>(block.size()); i++) { 
+    //     std::vector<uint8_t> rowErrors;
+    //     for (int j = 0; j < static_cast<int>(block[i].size()); j++) { 
+    //         int prediction = predictorClass.predict(pred, block, i, j); // (i, j) -> (row, col)
+    //         int error = block[i][j] - prediction;
+    //         rowErrors.push_back(static_cast<uint8_t>(error));
+    //     }
+    //     encodedBlock.data.push_back(rowErrors);
+    // }
 
     // Use attributed m or calculate one
     int bM = m;
@@ -173,33 +183,16 @@ void GEncoder::encode_file_header(File file) {
     this->golomb.setApproach(fileStruct.approach);
 
     write_file_header();
-
-    /*if(frameId == 0){
-    write_file_header();}
-
-    std::cout << "\nStarting encoding phase..." << std::endl;
-    // Divide in blocks and process each one
-    for (int i = 0; i < (int)nBlocks; i++) {
-        std::vector<short> block;
-        for (int j = 0; j < file.blockSize; j++)
-            block.push_back(inSamples[i * file.blockSize + j]);
-
-        Block encodedBlock = process_block(block, i + 1, nBlocks);
-        write_file_block(encodedBlock, i + 1, nBlocks);
-    }
-
-    std::cout << "\nEncoding ended, all data written to file\n" << endl;
-
-    frameId++;
-
-    if (frameId == nFrames) {
-        std::cout << "All frames encoded..." << std::endl;
-    }*/
 }
 
 void GEncoder::encode_frame(Frame frame, size_t nBlocks){
-
-
+    //TODO - Escrever frame type???
+    
+    for (int i = 0; i < (int)nBlocks; i++) {
+        std::vector<uint8_t> block = frame.getBlock(nBlocks);
+        Block encodedBlock = process_block(block, i + 1, nBlocks);
+        write_file_block(encodedBlock, i + 1, nBlocks);
+    }
 }
 
 
@@ -227,15 +220,16 @@ File& GDecoder::get_file() {
 int GDecoder::read_file_header() {
     if (!headerRead) {
         // Read file header
+        fileStruct.type = 
+            static_cast<FILE_TYPE>(reader.readNBits(BITS_FILE_TYPE));
         fileStruct.blockSize = reader.readNBits(BITS_BLOCK_SIZE);
-        fileStruct.sampleRate = reader.readNBits(BITS_SAMPLE_RATE);
-        fileStruct.nFrames = reader.readNBits(BITS_N_FRAMES);
-        fileStruct.nChannels = reader.readNBits(BITS_N_CHANNELS);
-        fileStruct.bitRate = reader.readNBits(BITS_BIT_RATE);
-        fileStruct.lossy = reader.readNBits(BITS_LOSSY);
+        fileStruct.chroma = reader.readNBits(BITS_CHROMA);
+        fileStruct.width = reader.readNBits(BITS_WIDTH);
+        fileStruct.height = reader.readNBits(BITS_HEIGHT);
+        fileStruct.fps = reader.readString(BITS_FPS);
         fileStruct.approach =
             static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
-
+        fileStruct.lossy = reader.readNBits(BITS_LOSSY);
         headerRead = true;
 
         if (!check_approach(fileStruct.approach)) {
@@ -247,8 +241,9 @@ int GDecoder::read_file_header() {
         golomb.setApproach(fileStruct.approach);
     }
 
+    int frameSize = static_cast<int>(fileStruct.width * fileStruct.height);
     int nBlocks{static_cast<int>(
-        ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize)) * fileStruct.nChannels};
+        ceil(static_cast<double>(frameSize) / fileStruct.blockSize))};
 
     return nBlocks;
 }
@@ -282,18 +277,18 @@ Block GDecoder::read_file_block(int blockId, int nBlocks) {
     return block;
 }
 
-std::vector<short> GDecoder::decode_block(Block& block) {
-    std::vector<short> samples;
+std::vector<uint8_t> GDecoder::decode_block(Block& block) {
+    std::vector<uint8_t> decodedBlock;
     PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
 
     for (int i = 0; i < (int)block.data.size(); i++) {
-        int prediction = predictorClass.predict(pred, samples, i);
+        int prediction = predictorClass.predict(pred, decodedBlock, i);
         // error + prediction
         int sample = block.data.at(i) + prediction;
-        samples.push_back(sample);
+        decodedBlock.push_back(sample);
     }
 
-    return samples;
+    return decodedBlock;
 }
 
 std::vector<short> GDecoder::decode_file() {

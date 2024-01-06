@@ -12,14 +12,13 @@
 #define DEFAULT_GOLOMB_M 4
 
 // TODO - Mess with this values and see results
-#define BITS_FILE_TYPE 2
+#define BITS_FILE_TYPE 1
 #define BITS_BLOCK_SIZE 16
 //#define BITS_N_FRAMES 32
 #define BITS_CHROMA 16
 #define BITS_WIDTH 16
 #define BITS_HEIGHT 16
-//#define BITS_BIT_RATE 16
-//#define BITS_FPS 8
+#define BITS_FPS 32 // F24:1 -> 24 fps (film), to represent 24:1 we need 32 bits
 #define BITS_APPROACH 1 // sign magnitud, value interleaving, golomb
 #define BITS_LOSSY 2
 
@@ -45,7 +44,7 @@ struct Block {
     FRAME_TYPE type; // I or P
     PREDICTOR_TYPE predictor;
     /* Data */
-    vector<vector<uint8_t>> data; // 2D vector of bytes -> each byte represents a y value of a pixel
+    vector<uint8_t> data; // 1D vector of bytes
 };
 
 struct FrameSegment {
@@ -80,15 +79,15 @@ class GEncoder {
     Predictor predictorClass;
     int m;
     //int frameId = 0;
-    Frame frame;
+    //Frame frame;
 
     std::string outputFileName;
     File fileStruct;
 
     // TODO - DELETE abs_value_vector?
     std::vector<unsigned short> abs_value_vector(std::vector<short>& values);
-    int calculate_m(std::vector<std::vector<uint8_t>>& values);
-    Block process_block(std::vector<std::vector<uint8_t>>& block, int blockId, int nBlocks);
+    int calculate_m(std::vector<uint8_t>& values);
+    Block process_block(std::vector<uint8_t>& block, int blockId, int nBlocks);
 
     void write_file_header();
     // TODO
@@ -132,7 +131,7 @@ class GDecoder {
 
     bool headerRead = false;
 
-    std::vector<short> decode_block(Block& block);
+    std::vector<uint8_t> decode_block(Block& block);
 
     Block read_file_block(int blockId, int nBlocks);
 

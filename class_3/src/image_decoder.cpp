@@ -1,4 +1,4 @@
-#include <audio_codec.h>
+#include <image_codec.h>
 #include <string.h>
 #include <cmath>
 #include <iostream>
@@ -9,8 +9,8 @@ using namespace std;
 
 // configurable parameters
 namespace Options {
-string musicName = "decodedMusic.wav";
-string encodedName = "encodedSample";
+string movieName = "decodedMovie.y4m";
+string encodedName = "encodedMovie";
 }  // namespace Options
 
 static void print_usage() {
@@ -43,7 +43,7 @@ int process_arguments(int argc, char* argv[]) {
                    strcmp(argv[i], "--output") == 0) {
             i++;
             if (i < argc) {
-                Options::musicName = argv[i];
+                Options::movieName = argv[i];
             } else {
                 std::cerr << "Error: Missing argument for -o/--output option."
                           << std::endl;
@@ -59,30 +59,32 @@ int process_arguments(int argc, char* argv[]) {
 }
 
 void print_processing_information(File& f, int nBlocks) {
-    cout << "\nMusic Processing information: \n"
+    cout << "\nMovie Processing information: \n"
          << " - Encoded File Name: " << Options::encodedName
-         << "\n - Decoded Music Name: " << Options::musicName
+         << "\n - Decoded Music Name: " << Options::movieName
+         << "\n - Fily Type: " << f.type
          << "\n - Block Size: " << f.blockSize
-         << "\n - Number of Channels: " << unsigned(f.nChannels)
-         << "\n - Sample Rate: " << f.sampleRate
-         << "\n - Total Number of Frames: " << unsigned(f.nFrames)
+         << "\n - Chroma Value: " << f.chroma
+         << "\n - Frames Width: " << f.width
+         << "\n - Frames Height: " << f.height
+         << "\n - Frames per Second: " << f.fps
          << "\n - Number of Blocks: " << nBlocks
          << "\n - Golomb Approach: " << approach_to_string(f.approach)
          << "\n - Encode type: " << (f.lossy ? "lossy" : "lossless") << "\n"
          << endl;
 }
 
-void save_decoded_music(File& f, std::vector<short>& samples) {
-    SndfileHandle sfhOut{
-        Options::musicName, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_PCM_16,
-        static_cast<int>(f.nChannels), static_cast<int>(f.sampleRate)};
-    if (sfhOut.error()) {
-        cerr << "Error: problem generating output .wav file\n";
-        exit(1);
-    }
+// void save_decoded_music(File& f, std::vector<short>& samples) {
+//     SndfileHandle sfhOut{
+//         Options::musicName, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_PCM_16,
+//         static_cast<int>(f.nChannels), static_cast<int>(f.sampleRate)};
+//     if (sfhOut.error()) {
+//         cerr << "Error: problem generating output .wav file\n";
+//         exit(1);
+//     }
 
-    sfhOut.writef(samples.data(), samples.size() / f.nChannels);
-}
+//     sfhOut.writef(samples.data(), samples.size() / f.nChannels);
+// }
 
 int main(int argc, char* argv[]) {
     int ret = process_arguments(argc, argv);
@@ -107,7 +109,7 @@ int main(int argc, char* argv[]) {
     clock_t endTime = clock();
     std::cout << "Program took "
               << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Music decompressed to " << Options::musicName
+              << " ms to run. Movie decompressed to " << Options::movieName
               << std::endl;
 
     return 0;
