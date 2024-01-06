@@ -62,29 +62,18 @@ void print_processing_information(File& f, int nBlocks) {
     cout << "\nMovie Processing information: \n"
          << " - Encoded File Name: " << Options::encodedName
          << "\n - Decoded Music Name: " << Options::movieName
-         << "\n - Fily Type: " << f.type
+         << "\n - File Type: " << f.type
          << "\n - Block Size: " << f.blockSize
          << "\n - Chroma Value: " << f.chroma
+         << "\n - Number of Frames: " << f.nFrames
          << "\n - Frames Width: " << f.width
          << "\n - Frames Height: " << f.height
          << "\n - Frames per Second: " << f.fps
-         << "\n - Number of Blocks: " << nBlocks
+         << "\n - Number of Blocks per Frame: " << nBlocks
          << "\n - Golomb Approach: " << approach_to_string(f.approach)
          << "\n - Encode type: " << (f.lossy ? "lossy" : "lossless") << "\n"
          << endl;
 }
-
-// void save_decoded_music(File& f, std::vector<short>& samples) {
-//     SndfileHandle sfhOut{
-//         Options::musicName, SFM_WRITE, SF_FORMAT_WAV | SF_FORMAT_PCM_16,
-//         static_cast<int>(f.nChannels), static_cast<int>(f.sampleRate)};
-//     if (sfhOut.error()) {
-//         cerr << "Error: problem generating output .wav file\n";
-//         exit(1);
-//     }
-
-//     sfhOut.writef(samples.data(), samples.size() / f.nChannels);
-// }
 
 int main(int argc, char* argv[]) {
     int ret = process_arguments(argc, argv);
@@ -102,9 +91,14 @@ int main(int argc, char* argv[]) {
 
     print_processing_information(gDecoder.get_file(), nBlocks);
 
-    std::vector<short> decodedSamples = gDecoder.decode_file();
+    std::cout << "Decoding file with " << unsigned(nFrames) << " Frames..."
+              << endl;
 
-    save_decoded_music(gDecoder.get_file(), decodedSamples);
+    for(int fId = 1; fId <= nFrames; fId++) {
+        std::vector<short> decodedSamples = gDecoder.decode_file();
+    }
+
+    std::cout << "\nAll Frames read and decoded\n" << endl;
 
     clock_t endTime = clock();
     std::cout << "Program took "

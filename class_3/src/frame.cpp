@@ -31,6 +31,24 @@ std::vector<cv::Mat> Frame::get_blocks(Mat& image, int blockSize) {
     return blocks;
 }
 
+Mat compose_blocks(std::vector<cv::Mat> blocks, int blockSize, int rows,
+                   int cols) {
+    Mat composedImage(rows, cols, blocks[0].type(), Scalar(0));
+
+    int currentBlock = 0;
+    for (int y = 0; y < rows; y += blockSize) {
+        for (int x = 0; x < cols; x += blockSize) {
+            int blockWidth = std::min(blockSize, cols - x);
+            int blockHeight = std::min(blockSize, rows - y);
+
+            Rect roi(x, y, blockWidth, blockHeight);
+            blocks[currentBlock++].copyTo(composedImage(roi));
+        }
+    }
+
+    return composedImage;
+}
+
 std::vector<uint8_t> Frame::mat_to_linear_vector(Mat& image) {
     std::vector<uint8_t> linearData;
     linearData.reserve(image.rows * image.cols);

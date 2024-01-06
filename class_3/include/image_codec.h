@@ -121,20 +121,19 @@ class GDecoder {
     std::string inputFileName;
     File fileStruct;
     Predictor predictorClass;
-
+    int nBlocksPerFrame
     bool headerRead = false;
 
-    std::vector<uint8_t> decode_block(Block& block);
-
-    Block read_file_block(int blockId, int nBlocks);
+    FrameSegment read_frame_header();
+    Block read_file_block(int blockId, int nBlocks, FrameSegment& frame);
+    Mat decode_block(Block& block, FrameSegment& frame);
 
    public:
     GDecoder(std::string inFileName);
     ~GDecoder();
 
     int read_file_header();
-    void print_processing_information();
-    std::vector<short> decode_file();
+    Mat decode_frame(int frameId);
 
     File& get_file();
 };

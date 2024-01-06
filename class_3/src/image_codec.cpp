@@ -119,8 +119,8 @@ Block GEncoder::process_block(Mat& block, int blockId, int nBlocks,
     std::vector<uint8_t> blockVector = Frame::mat_to_linear_vector(block);
     std::vector<uint8_t> predictBlockVector =
         Frame::mat_to_linear_vector(predictBlock);
-    int bitsIntra = golomb.test_best_frame_type(blockVector);
-    int bitsPredict = golomb.test_best_frame_type(predictBlockVector);
+    int bitsIntra = golomb.get_bits_needed(blockVector);
+    int bitsPredict = golomb.get_bits_needed(predictBlockVector);
     if (bitsIntra < bitsPredict) {
         encodedBlock.type = I;
         encodedBlock.data = blockVector;
@@ -216,6 +216,7 @@ int GDecoder::read_file_header() {
         fileStruct.type =
             static_cast<FILE_TYPE>(reader.readNBits(BITS_FILE_TYPE));
         fileStruct.blockSize = reader.readNBits(BITS_BLOCK_SIZE);
+        fileStruct.nFrames = reader.readNBits(BITS_N_FRAMES);
         fileStruct.chroma = reader.readNBits(BITS_CHROMA);
         fileStruct.width = reader.readNBits(BITS_WIDTH);
         fileStruct.height = reader.readNBits(BITS_HEIGHT);
@@ -234,27 +235,45 @@ int GDecoder::read_file_header() {
         golomb.setApproach(fileStruct.approach);
     }
 
-    int nBlocks{static_cast<int>(ceil(static_cast<double>(fileStruct.nFrames) /
-                                      fileStruct.blockSize)) *
-                fileStruct.nChannels};
+    int numBlocksWidth = fileStruct.width / fileStruct.blockSize;
+    int numBlocksHeight = fileStruct.height / fileStruct.blockSize;
 
-    return nBlocks;
+    if (fileStruct.width % fileStruct.blockSize != 0)
+        ++numBlocksWidth;  // Add another column of blocks not fully occupied
+
+    if (fileStruct.height % fileStruct.blockSize != 0)
+        ++numBlocksHeight;  // Add another row of blocks not fully occupied
+
+    size_t nBlocksPerFrame =
+        static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
+
+    return nBlocksPerFrame;
 }
 
-Block GDecoder::read_file_block(int blockId, int nBlocks) {
+FrameSegment GDecoder::read_frame_header() {
+    FrameSegment segment;
+    segment.type = static_cast<FRAME_TYPE>(reader.readNBits(BITS_FRAME_TYPE));
+    segment.predictor = reader.readNBits(BITS_PREDICTOR);
+    segment.m = reader.readNBits(BITS_M);
+    golomb.setM(frame.m);
+}
+
+Block GDecoder::read_file_block(int blockId, int nBlocks, FrameSegment& frame) {
     Block block;
 
-    // Read Block header
-    block.m = reader.readNBits(BITS_M);
-    block.predictor =
-        static_cast<PREDICTOR_TYPE>(reader.readNBits(BITS_PREDICTOR));
+    // Read Frame type
+    if (frame.type == I)
+        block.type = I;
+    else
+        block.type = static_cast<FRAME_TYPE>(reader.readNBits(BITS_FRAME_TYPE));
 
     // Read Block data
-    this->golomb.setM(block.m);
-    std::cout << " - Reading Block " << std::setw(3) << blockId << "/"
+    this->golomb.setM(frame.m);
+
+    /*std::cout << " - Reading Block " << std::setw(3) << blockId << "/"
               << std::setw(3) << nBlocks << " with m = " << std::setw(3)
               << unsigned(block.m) << ", predictor = " << std::setw(1)
-              << unsigned(block.predictor) << endl;
+              << unsigned(block.predictor) << endl;*/
 
     // check m
     if (block.m < 1) {
@@ -262,45 +281,71 @@ Block GDecoder::read_file_block(int blockId, int nBlocks) {
         exit(2);
     }
 
-    for (uint16_t i = 0; i < fileStruct.blockSize; i++) {
+    // Since edge blocks have different sizes than the regular ones, we need to test
+    //  the edge cases.
+    int nCol = fileStruct.blockSize;
+    int nRows = fileStruct.blockSize;
+    int numBlocksWidth = fileStruct.width / fileStruct.blockSize;
+    int numBlocksHeight = fileStruct.height / fileStruct.blockSize;
+
+    // If the blockId is a multiple of the number of blocks in a row and the final block
+    //  in the row has a different size than the rest
+    if ((blockId % numBlocksWidth) == 0 &&
+        fileStruct.width % fileStruct.blockSize)
+        nCols = fileStruct.width % fileStruct.blockSize;
+
+    // If the blockId is a multiple of the number of blocks in a column and the final block
+    //  in the column has a different size than the rest
+    if ((blockId % numBlocksHeight) == 0 &&
+        fileStruct.height % fileStruct.blockSize)
+        nRows = fileStruct.height % fileStruct.blockSize;
+
+    int nSamples = nCol * nRows;
+
+    for (uint16_t i = 0; i < nSamples; i++) {
         int data = golomb.decode();
-        block.data.push_back((short)data);
+        block.data.push_back((uint8_t)data);
     }
 
     return block;
 }
 
-std::vector<uint8_t> GDecoder::decode_block(Block& block) {
-    std::vector<uint8_t> decodedBlock;
-    PREDICTOR_TYPE pred = static_cast<PREDICTOR_TYPE>(block.predictor);
+Mat GDecoder::decode_block(Mat& blockImg, FrameSegment& frame) {
 
-    for (int i = 0; i < (int)block.data.size(); i++) {
-        int prediction = predictorClass.predict(pred, decodedBlock, i);
-        // error + prediction
-        int sample = block.data.at(i) + prediction;
-        decodedBlock.push_back(sample);
+    cv::Mat decodedBlock = cv::Mat::zeros(block.size(), block.type());
+    for (int i = 0; i < blockImg.rows; ++i) {
+        for (int j = 0; j < blockImg.cols; ++j) {
+            int prediction =
+                predictorClass.predict(frame.type, decodedBlock, i, j);
+            int error = blockImg.at<uint8_t>(i, j) - prediction;
+            rowErrors.push_back(static_cast<uint8_t>(error));
+            decodedBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(error);
+        }
     }
 
     return decodedBlock;
 }
 
-std::vector<short> GDecoder::decode_file() {
-    std::vector<short> outSamples;
+Mat GDecoder::decode_frame(int frameId) {
 
-    int nBlocks = read_file_header();
+    int nBlocksPerFrame = read_file_header();
 
-    std::cout << "Decoding file with " << unsigned(nBlocks) << " Blocks..."
-              << endl;
+    FrameSegment frameStruct = read_frame_header();
 
-    for (int bId = 0; bId < nBlocks; bId++) {
-        Block block = read_file_block(bId + 1, nBlocks);
+    std::vector<Mat> frameVector;
+    for (int bId = 1; bId <= nBlocksPerFrame; bId++) {
+        Block block = read_file_block(bId, nBlocks);
 
-        std::cout << " - Decoding Block: " << bId + 1 << "\r" << std::flush;
-        std::vector<short> blockSamples = decode_block(block);
-        outSamples.insert(outSamples.end(), blockSamples.begin(),
-                          blockSamples.end());
+        Mat blockImg = Frame::linear_vector_to_mat(block.data);
+
+        if (block.type == I)
+            frameVector.push_back(blockImg);
+        else
+            frameVector.push_back(decode_block(blockImg, frameStruct));
     }
-    std::cout << "\nAll Blocks read and decoded\n" << endl;
 
-    return outSamples;
+    Mat frameImg = Frame::compose_blocks(frameVector, fileStruct.blockSize,
+                                         fileStruct.height, fileStruct.width);
+
+    return frameImg;
 }
