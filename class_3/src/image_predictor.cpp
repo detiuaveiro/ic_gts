@@ -34,7 +34,7 @@ std::string get_type_string(PREDICTOR_TYPE type) {
 }
 
 bool Predictor::check_type(PREDICTOR_TYPE type) {
-    if (type >= 0 && type <= 8)
+    if (type >= JPEG1 && type <= JPEG_LS)
         return true;
     return false;
 }
@@ -76,8 +76,7 @@ int Predictor::predict_jpeg_LS(int a, int b, int c) {
         return a + b - c;
 }
 
-double Predictor::calculate_entropy(PREDICTOR_TYPE type,
-                                    std::vector<vector<uint8_t>>& samples) {
+double Predictor::calculate_entropy(PREDICTOR_TYPE type, Mat& frame) {
 
     if (!check_type(type) || type == AUTOMATIC) {
         cerr << "Error: Unknown/Invalid Predictor " << unsigned(type)
@@ -88,37 +87,57 @@ double Predictor::calculate_entropy(PREDICTOR_TYPE type,
     int total_predictions = 0;
     std::vector<int> predictions;
 
-    // Predict based on the given type and count occurrences of predictions
-    for (size_t i = 0; i < samples.size(); ++i) {
-        int prediction = predict(type, samples, i, 1);
-        predictions.push_back(prediction);
-        total_predictions++;
+    // Assuming frame is a single channel grayscale image
+    for (int i = 0; i < frame.rows; ++i) {
+        for (int j = 0; j < frame.cols; ++j) {
+            int prediction = predict(type, frame, i, j);
+            predictions.push_back(prediction);
+            total_predictions++;
+        }
     }
 
     // Calculate probability distribution and entropy
     double entropy = 0.0;
     for (int value : predictions) {
         double probability =
-            std::count(predictions.begin(), predictions.end(), value) /
+            count(predictions.begin(), predictions.end(), value) /
             static_cast<double>(total_predictions);
-        entropy -= probability * std::log2(probability);
+        entropy -= probability * log2(probability);
     }
 
     return entropy;
 }
 
-int Predictor::predict(PREDICTOR_TYPE type, vector<vector<uint8_t>>& block,
-                       int idX, int idY) {
+PREDICTOR_TYPE Predictor::benchmark(Mat& frame) {
+    double min_entropy = numeric_limits<double>::max();
+    PREDICTOR_TYPE best_predictor = AUTOMATIC;
+
+    array<double, 8> entropies = {
+        calculate_entropy(JPEG1, frame), calculate_entropy(JPEG2, frame),
+        calculate_entropy(JPEG3, frame), calculate_entropy(JPEG4, frame),
+        calculate_entropy(JPEG5, frame), calculate_entropy(JPEG6, frame),
+        calculate_entropy(JPEG7, frame), calculate_entropy(JPEG_LS, frame)};
+
+    for (size_t i = 0; i < entropies.size(); ++i) {
+        if (entropies[i] < min_entropy) {
+            min_entropy = entropies[i];
+            best_predictor = static_cast<PREDICTOR_TYPE>(i);
+        }
+    }
+
+    return best_predictor;
+}
+
+int Predictor::predict(PREDICTOR_TYPE type, Mat& frame, int idX, int idY) {
     if (!check_type(type) || type == AUTOMATIC) {
         cerr << "Error: Unknown/Invalid Predictor " << unsigned(type)
              << " encountered while decoding Block" << endl;
         exit(2);
     }
 
-    // change this to calculate correctly
-    int a = idX - idY;
-    int b = idX - idY;
-    int c = idX - idY;
+    int a = idX > 0 ? frame.at<uint8_t>(idX - 1, idY) : 0;
+    int b = idY > 0 ? frame.at<uint8_t>(idX, idY - 1) : 0;
+    int c = (idX > 0 && idY > 0) ? frame.at<uint8_t>(idX - 1, idY - 1) : 0;
 
     if (type == JPEG1)
         return predict_jpeg_1(a);
@@ -136,24 +155,4 @@ int Predictor::predict(PREDICTOR_TYPE type, vector<vector<uint8_t>>& block,
         return predict_jpeg_7(a, b);
     else
         return predict_jpeg_LS(a, b, c);
-}
-
-PREDICTOR_TYPE Predictor::benchmark(std::vector<vector<uint8_t>>& samples) {
-    double min_entropy = std::numeric_limits<double>::max();
-    PREDICTOR_TYPE best_predictor = AUTOMATIC;
-
-    std::array<double, 8> entropies = {
-        calculate_entropy(JPEG1, samples), calculate_entropy(JPEG2, samples),
-        calculate_entropy(JPEG3, samples), calculate_entropy(JPEG4, samples),
-        calculate_entropy(JPEG5, samples), calculate_entropy(JPEG6, samples),
-        calculate_entropy(JPEG7, samples), calculate_entropy(JPEG_LS, samples)};
-
-    for (size_t i = 0; i < entropies.size(); ++i) {
-        if (entropies[i] < min_entropy) {
-            min_entropy = entropies[i];
-            best_predictor = static_cast<PREDICTOR_TYPE>(i);
-        }
-    }
-
-    return best_predictor;
 }

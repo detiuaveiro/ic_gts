@@ -144,7 +144,8 @@ void GEncoder::encode_file_header(File file, size_t nBlocksPerFrame,
 
 void GEncoder::encode_frame(Frame frame, int frameId) {
 
-    std::cout << "\nStarting frame processing..." << std::endl;
+    std::cout << "\nStarting processing frame " << std::setw(3) << frameId
+              << " ..." << std::endl;
 
     // Divide frame in blocks
     std::vector<Mat> blocks = Frame::get_blocks(frame, fileStruct.blockSize);
