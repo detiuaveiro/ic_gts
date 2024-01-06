@@ -1,9 +1,9 @@
 #include <image_codec.h>
+#include <movie.h>
 #include <string.h>
 #include <cmath>
 #include <iostream>
 #include <vector>
-#include <movie.h>
 
 using namespace std;
 
@@ -15,42 +15,37 @@ using namespace std;
 // 1. se for y4m, criar um objeto da classe movie -> read frame from movie -> dps usar classe frame -> encoding
 // 2. se for pgm, criar um objeto da classe frame -> encoding
 
-// header parameters
-namespace MovieFile {
-    size_t chroma;
-    size_t width;
-    size_t height;
-    string fps;
-}
-
 // configurable parameters
 namespace Options {
-    string fileName = "../movies/sintel_trailer_2k_480p24.y4m";
-    string encodedName = "encodedMovie";
-    size_t blockSize = 64;
-    //size_t nFrames;
-    int m = -1;  // automatic
-    bool lossy = false;
-    PREDICTOR_TYPE predictor = AUTOMATIC;
-    APPROACH approach = SIGN_MAGNITUDE;
-}  
+string fileName = "../movies/sintel_trailer_2k_480p24.y4m";
+string encodedName = "encodedMovie";
+size_t blockSize = 64;
+size_t nFrames;
+int m = -1;  // automatic
+bool lossy = false;
+PREDICTOR_TYPE predictor = AUTOMATIC;
+APPROACH approach = SIGN_MAGNITUDE;
+int intraFramePeriodicity = 10;
+}  // namespace Options
 
 static void print_usage() {
-    cerr << "Usage: %s [OPTIONS]\n"
-            "  OPTIONS:\n"
-            "  -h, --help        --- print this help\n"
-            "  -i, --input       --- set image/video file name (default: "
-            "../images/airplane_gray.pgm)\n"
-            "  -o, --output      --- set encoded file name (default: "
-            "encodedMovie)\n"
-            "  -b, --blockSize   --- set block size (default: 1024)\n"
-            "  -l, --lossy       --- set lossy compression (default: off)\n"
-            "  -m, --modulus     --- set m number (default: automatic "
-            "calculation)\n"
-            "  -p, --predict     --- set predictor [0,3] (default: PREDICT1)\n"
-            "  -a, --approach    --- set approach [0,1] (default: "
-            "SIGN_MAGNITUDE)"
-         << endl;
+    cerr
+        << "Usage: %s [OPTIONS]\n"
+           "  OPTIONS:\n"
+           "  -h, --help        --- print this help\n"
+           "  -i, --input       --- set image/video file name (default: "
+           "../images/airplane_gray.pgm)\n"
+           "  -o, --output      --- set encoded file name (default: "
+           "encodedMovie)\n"
+           "  -b, --blockSize   --- set block size (default: 1024)\n"
+           "  -l, --lossy       --- set lossy compression (default: off)\n"
+           "  -m, --modulus     --- set m number (default: automatic "
+           "calculation)\n"
+           "  -p, --predict     --- set predictor [0,7] (default: JPEG1)\n"
+           "  -f, --framePeriod --- set intra frame periodicity (default: 10)\n"
+           "  -a, --approach    --- set approach [0,1] (default: "
+           "SIGN_MAGNITUDE)"
+        << endl;
 }
 
 int process_arguments(int argc, char* argv[]) {
@@ -125,6 +120,18 @@ int process_arguments(int argc, char* argv[]) {
                     << argv[i] << std::endl;
                 return -1;
             }
+        } else if (strcmp(argv[i], "-f") == 0 ||
+                   strcmp(argv[i], "--framePeriod") == 0) {
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::intraFramePeriodicity =
+                    static_cast<int>(atoi(argv[i]));
+            } else {
+                std::cerr << "Error: Missing or bad argument for "
+                             "-f/--framePeriod option."
+                          << argv[i] << std::endl;
+                return -1;
+            }
         } else if (argv[i][0] == '-') {
             std::cerr << "Error: Unknown option or argument: " << argv[i]
                       << std::endl;
@@ -135,19 +142,19 @@ int process_arguments(int argc, char* argv[]) {
 }
 
 void print_processing_information(int nBlocks) {
-    cout << "\nVideo/Image Processing information: \n"
-         << " - Video/Image File Name: " << Options::fileName
+    cout << "\nVideo Processing information: \n"
+         << " - Video File Name: " << Options::fileName
          << "\n - Encoded File Name: " << Options::encodedName
          << "\n - Block Size: " << Options::blockSize
-         //<< "\n - Bit Rate: " << Options::bitRate
-         //<< "\n - Total Number of Frames: " << Options::nFrames
-         << "\n - Number of Blocks: " << nBlocks
+         << "\n - Total Number of Frames: " << Options::nFrames
+         << "\n - Number of Blocks per Frame: " << nBlocks
          << "\n - Predictor: " << get_type_string(Options::predictor)
          << "\n - Golomb Approach: " << approach_to_string(Options::approach)
          << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless")
          << "\n"
          << endl;
 }
+
 int main(int argc, char* argv[]) {
     int ret = process_arguments(argc, argv);
     if (ret < 0)
@@ -158,50 +165,48 @@ int main(int argc, char* argv[]) {
     clock_t startTime = clock();
 
     // TODO - Check .pgm or .y4m file
-    Movie movie{};
-    fstream file(Options::fileName, std::ios::in);
-
-    movie.getHeaderParameters(file);
-    MovieFile::chroma = movie.getChroma();
-    MovieFile::width = movie.getWidth();
-    MovieFile::height = movie.getHeight();
-    MovieFile::fps = movie.getFps();
-
-    /* TODO - WRITE HEADER PARAMETERS USING WRITE FILE HEADER */
+    Movie movieClass{};
+    fstream movieStream(Options::fileName, std::ios::in);
 
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
-    /* TODO - Create file struct for video/image */
+    movieClass.getHeaderParameters(movieStream);
+
     File f;
     f.type = Y4M;
     f.blockSize = Options::blockSize;
-    //f.nFrames = Options::nFrames;
-    f.chroma = MovieFile::chroma;
-    f.width = MovieFile::width;
-    f.height = MovieFile::height;
-    f.fps = MovieFile::fps;
+    f.nFrames = movieClass.getNumberFrames();
+    f.chroma = movieClass.getChroma();
+    f.width = movieClass.getWidth();
+    f.height = movieClass.getHeight();
+    f.fps = movieClass.getFps();
     f.approach = Options::approach;
     f.lossy = Options::lossy;
 
-    gEncoder.encode_file_header(f);
-
-    
-
-    // TODO
-    /* Need to read frame by frame, encode the frame and go to next frame */
     int frameSize = static_cast<int>(MovieFile::width * MovieFile::height);
 
-    size_t nBlocks{static_cast<size_t>(
+    size_t nBlocksPerFrame{static_cast<size_t>(
         ceil(static_cast<double>(frameSize) / Options::blockSize))};
-    //TODO - While (frames nao acabaram) {
-        cv::Mat fr = movie.readFrameFromMovie(file);
-        Mat* frPtr = &fr;
-        Frame frame(frPtr, frameSize); 
-        gEncoder.encode_frame(frame, nBlocks);
-    // }
 
-    //print_processing_information(nBlocks);
+    Options::nFrames = movieClass.getNumberFrames();
+
+    print_processing_information(nBlocksPerFrame);
+
+    gEncoder.encode_file_header(f, nBlocksPerFrame,
+                                Options::intraFramePeriodicity);
+
+    Mat mat = Mat();
+    int frameCounter = 0;
+    while (true) {
+        Mat frame = movieClass.readFrameFromMovie(movieStream);
+        if (frame.size() == mat.size())
+            break;
+        gEncoder.encode_frame(frame, nBlocksPerFrame);
+        frameCounter++;
+    }
+
+    movieStream.close();
 
     clock_t endTime = clock();
     std::cout << "Program took " << std::fixed << std::setprecision(2)

@@ -11,20 +11,8 @@ using namespace std;
 
 class Frame {
    private:
-    Mat frame;
-    int frameSize;
-    short frameWidth;
-    short frameHeight;
-    short indexX = 0;
-    short indexY = 0;
-
    public:
-    // Maybe use move constructor
-    Frame(Mat frame, int frameSize, short frameWidth, short frameHeight);
+    static uint8_t get_pixel(Mat& image, int pixelIndex);
 
-    uint8_t getPixel(int pixelIndex);
-
-    vector<uint8_t> getBlock(int nBlocks);
-
-    Mat& getFrame() { return this->frame; }
+    static std::vector<cv::Mat> get_blocks(Mat& image, int blockSize);
 };

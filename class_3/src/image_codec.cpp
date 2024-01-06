@@ -63,8 +63,8 @@ int GEncoder::calculate_m(std::vector<std::vector<uint8_t>>& values) {
 
         // Calculate pixel values mean for the block
         double mean = static_cast<double>(std::accumulate(
-                            img_values.begin(), img_values.end(), 0)) /
-                        img_values.size();
+                          img_values.begin(), img_values.end(), 0)) /
+                      img_values.size();
         alpha = exp(-1.0 / mean);  // Calculate alpha using mean
     }
 
@@ -81,11 +81,11 @@ int GEncoder::calculate_m(std::vector<std::vector<uint8_t>>& values) {
 void GEncoder::write_file_header() {
     writer.writeNBits(fileStruct.type, BITS_FILE_TYPE);
     writer.writeNBits(fileStruct.blockSize, BITS_BLOCK_SIZE);
-    //writer.writeNBits(fileStruct.nFrames, BITS_N_FRAMES);
+    writer.writeNBits(fileStruct.nFrames, BITS_N_FRAMES);
     writer.writeNBits(fileStruct.chroma, BITS_CHROMA);
     writer.writeNBits(fileStruct.width, BITS_WIDTH);
     writer.writeNBits(fileStruct.height, BITS_HEIGHT);
-    writer.writeString(fileStruct.fps);
+    writer.writeString(fileStruct.fps, BITS_FPS);
     writer.writeNBits(fileStruct.approach, BITS_APPROACH);
     writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
 }
@@ -114,7 +114,7 @@ void GEncoder::write_file_block(Block& block, int blockId, int nBlocks) {
     writer.writeNBits(block.m, BITS_M);
     writer.writeNBits(block.predictor, BITS_PREDICTOR);
 
-    golomb.setM(block.m); 
+    golomb.setM(block.m);
 
     // Write Block data
     std::cout << "\r" << std::flush << " - Writing Block " << std::setw(3)
@@ -131,8 +131,8 @@ void GEncoder::write_file_block(Block& block, int blockId, int nBlocks) {
 }
 
 // TODO
-Block GEncoder::process_block(std::vector<std::vector<uint8_t>>& block, int blockId,
-                              int nBlocks) {
+Block GEncoder::process_block(std::vector<std::vector<uint8_t>>& block,
+                              int blockId, int nBlocks) {
 
     PREDICTOR_TYPE pred = predictor;
     if (pred == AUTOMATIC) {
@@ -146,10 +146,11 @@ Block GEncoder::process_block(std::vector<std::vector<uint8_t>>& block, int bloc
     encodedBlock.predictor = pred;
 
     // For each pixel in the block, calculate prediction and error
-    for (int i = 0; i < static_cast<int>(block.size()); i++) { 
+    for (int i = 0; i < static_cast<int>(block.size()); i++) {
         std::vector<uint8_t> rowErrors;
-        for (int j = 0; j < static_cast<int>(block[i].size()); j++) { 
-            int prediction = predictorClass.predict(pred, block, i, j); // (i, j) -> (row, col)
+        for (int j = 0; j < static_cast<int>(block[i].size()); j++) {
+            int prediction = predictorClass.predict(pred, block, i,
+                                                    j);  // (i, j) -> (row, col)
             int error = block[i][j] - prediction;
             rowErrors.push_back(static_cast<uint8_t>(error));
         }
@@ -168,41 +169,37 @@ Block GEncoder::process_block(std::vector<std::vector<uint8_t>>& block, int bloc
 }
 
 // TODO
-void GEncoder::encode_file_header(File file) {
+void GEncoder::encode_file_header(File file, size_t nBlocksPerFrame,
+                                  int intraFramePeriodicity) {
     this->fileStruct = file;
     this->golomb.setApproach(fileStruct.approach);
+    this->nBlocksPerFrame = nBlocksPerFrame;
+    this->intraFramePeriodicity = intraFramePeriodicity;
 
     write_file_header();
+}
 
-    /*if(frameId == 0){
-    write_file_header();}
+void GEncoder::encode_frame(Frame frame, int frameId) {
 
     std::cout << "\nStarting encoding phase..." << std::endl;
-    // Divide in blocks and process each one
-    for (int i = 0; i < (int)nBlocks; i++) {
-        std::vector<short> block;
-        for (int j = 0; j < file.blockSize; j++)
-            block.push_back(inSamples[i * file.blockSize + j]);
 
+    // Divide frame in blocks
+    std::vector<Mat> blocks;
+
+    // Process and write to file each block
+    int counter = 0;
+    for (Mat& block : blocks) {
         Block encodedBlock = process_block(block, i + 1, nBlocks);
         write_file_block(encodedBlock, i + 1, nBlocks);
+        counter++;
     }
 
     std::cout << "\nEncoding ended, all data written to file\n" << endl;
 
-    frameId++;
-
-    if (frameId == nFrames) {
+    if (frameId == fileStruct.nFrames) {
         std::cout << "All frames encoded..." << std::endl;
-    }*/
+    }
 }
-
-void GEncoder::encode_frame(Frame frame, size_t nBlocks){
-
-
-}
-
-
 
 /*
 ##############################################################################
@@ -247,8 +244,9 @@ int GDecoder::read_file_header() {
         golomb.setApproach(fileStruct.approach);
     }
 
-    int nBlocks{static_cast<int>(
-        ceil(static_cast<double>(fileStruct.nFrames) / fileStruct.blockSize)) * fileStruct.nChannels};
+    int nBlocks{static_cast<int>(ceil(static_cast<double>(fileStruct.nFrames) /
+                                      fileStruct.blockSize)) *
+                fileStruct.nChannels};
 
     return nBlocks;
 }

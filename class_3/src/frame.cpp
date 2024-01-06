@@ -1,54 +1,28 @@
-#include "frame.h"
+#include <frame.h>
 #include <cmath>
 
-
-Frame::Frame(Mat frame, int frameSize, short frameWidth, short frameHeight) {
-    this->frame = frame;
-    this->frameSize = frameSize;
-    this->frameWidth = frameWidth;
-    this->frameHeight = frameHeight;
-}
-
-uint8_t Frame::getPixel(int pixelIndex) {
-    uint8_t pixel = frame.at<uint8_t>(pixelIndex);
+uint8_t Frame::get_pixel(Mat& image, int pixelIndex) {
+    uint8_t pixel = image.at<uint8_t>(pixelIndex);
     return pixel;
 }
 
-vector<uint8_t> Frame::getBlock(int nBlocks) {
-    vector<uint8_t> block;
+std::vector<cv::Mat> Frame::get_blocks(Mat& image, int blockSize) {
+    std::vector<cv::Mat> blocks;
 
-    /*
-    std::cout << "blocks: " << nBlocks << std::endl;
-    std::cout << "Frame Size: " << this->frameSize << std::endl;*/
+    int rows = image.rows;
+    int cols = image.cols;
 
-    //number of pixels per block
-    int nPixelBlock = (this->frameSize / nBlocks) + (this->frameSize % nBlocks);
-    //Length of the edge of the block
-    int blockEdge =  sqrt(nPixelBlock);
+    for (int y = 0; y < rows; y += blockSize) {
+        for (int x = 0; x < cols; x += blockSize) {
+            int blockWidth = std::min(blockSize, cols - x);
+            int blockHeight = std::min(blockSize, rows - y);
 
-    /*
-    std::cout << "blockEdge: " << blockEdge << std::endl;
-    std::cout << "frameEdge: " << frameEdge << std::endl;
-    std::cout << "nPixelBlock: " << nPixelBlock << std::endl;
-
-    //Process blocks (literal geometrical squares)
-    std::cout << indexY+blockEdge << std::endl;
-    std::cout << indexX+blockEdge << std::endl;*/
-
-    for (int i = indexY; i < indexY + blockEdge; i++)
-    {
-        for (int j = indexX; j < indexX + blockEdge; j++)
-        {
-            block.push_back(frame.at<uint8_t>(j, i));
+            cv::Mat block = image(cv::Range(y, y + blockHeight),
+                                  cv::Range(x, x + blockWidth))
+                                .clone();
+            blocks.push_back(block);
         }
     }
 
-    //if last block of a row is reached
-    if(indexX + blockEdge == 512){
-        indexX = 0;
-        indexY +=blockEdge;
-    }
-    else indexX+=blockEdge;
-    
-    return block;
+    return blocks;
 }

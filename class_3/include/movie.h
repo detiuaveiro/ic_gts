@@ -1,32 +1,33 @@
 #pragma once
 
 #include <stdio.h>
-#include <iostream>
-#include <fstream>
 #include <string.h>
+#include <fstream>
+#include <iostream>
 #include <opencv2/opencv.hpp>
 
-typedef struct{
+typedef struct {
     uint16_t chroma;
     uint16_t width;
     uint16_t height;
     std::string fps;
     int bytesPerFrame;
     int currentFrameIndex;
-}HeaderParameters;
+    int numberFrames;
+} HeaderParameters;
 
 using namespace std;
 using namespace cv;
+
 //Usar Mat, criar mat com um plano, .ptr() para obter o ponteiro po buffer, .at para aceder a um pixel
 //
-class Movie
-{
-private:
-    
+class Movie {
+   private:
     int movieIndex;
     HeaderParameters headerParameters;
-public:
-    Movie(){
+
+   public:
+    Movie() {
         this->movieIndex = 0;
         this->headerParameters.currentFrameIndex = 0;
     }
@@ -43,16 +44,19 @@ public:
     //Creates a movie with the frames
     FILE createMovie(vector<Mat> frames);
 
-    uint16_t getChroma(){ return this->headerParameters.chroma;}
+    uint16_t getChroma() { return this->headerParameters.chroma; }
 
-    uint16_t getWidth(){ return this->headerParameters.width;}
-    
-    uint16_t getHeight(){ return this->headerParameters.height;}
+    uint16_t getWidth() { return this->headerParameters.width; }
 
-    string getFps(){ return this->headerParameters.fps;}
+    uint16_t getHeight() { return this->headerParameters.height; }
 
-    int getBytesPerFrame(){ return this->headerParameters.bytesPerFrame;}
+    string getFps() { return this->headerParameters.fps; }
 
-    int getCurrentFrameIndex(){ return this->headerParameters.currentFrameIndex;}
+    int getBytesPerFrame() { return this->headerParameters.bytesPerFrame; }
 
+    int getNumberFrames() { return this->headerParameters.numberFrames; }
+
+    int getCurrentFrameIndex() {
+        return this->headerParameters.currentFrameIndex;
+    }
 };

@@ -5,6 +5,10 @@ void Movie::getHeaderParameters(std::fstream& movie) {
         cerr << "Error: movie file is not open" << std::endl;
     }
 
+    movie.seekg(0, std::ios::end);
+    int64_t fileSize = movie.tellg();
+    movie.seekg(0, std::ios::beg);
+
     string line;
     getline(movie, line);
     for (size_t i = 9; i < line.length(); i++) {
@@ -35,6 +39,18 @@ void Movie::getHeaderParameters(std::fstream& movie) {
     //It would be times 3/2 if it was all
     headerParameters.bytesPerFrame =
         headerParameters.height * headerParameters.width;
+
+    int frameDataSize =
+        headerParameters.bytesPerFrame * 3 / 2;  // Assuming 4:2:0 format
+
+    if (fileSize > 0 && frameDataSize > 0) {
+        int64_t totalFrameDataSize =
+            fileSize - line.length();  // Excluding header size
+        headerParameters.numberFrames =
+            static_cast<int>(totalFrameDataSize / frameDataSize);
+    } else {
+        headerParameters.numberFrames = 0;  // Unable to determine frame count
+    }
 }
 
 string Movie::getParameter(string line, size_t startPos, char parameterType) {
@@ -70,22 +86,23 @@ Mat Movie::readFrameFromMovie(std::fstream& movie) {
         //So, iterates 1253 times, and then sets goodbit to 0, the loop is not stopping
         //std::cout << "Goodbit inside of while: " << movie.good() << std::endl;
         //i++;
-        if(line.length() < 20){ std::cout << line << std::endl;}
+        if (line.length() < 20) {
+            std::cout << line << std::endl;
+        }
     }
 
     //returns 1 in the first iteration (1 means no errors), on the remaining it returns 0,
     //means at least one of the error flags is set
     //std::cout << "Goodbit: " << movie.good() << std::endl;
-        //std::cout << "iterates : " << i << std::endl;
-
+    //std::cout << "iterates : " << i << std::endl;
 
     //std::cout << "movie peak: " << std::to_string(movie.peek()) << std::endl;
     if (movie.peek() == EOF) {
-        std::cout << "End of the y4m file" << std::endl;
+        //std::cout << "End of the y4m file" << std::endl;
         return Mat();
     }
 
-    std::cout << "current pos: " << movie.tellg() << std::endl;
+    //std::cout << "current pos: " << movie.tellg() << std::endl;
 
     vector<uint8_t> frameData(headerParameters.bytesPerFrame);
     vector<uint8_t> garbage(headerParameters.bytesPerFrame / 2);
@@ -94,9 +111,9 @@ Mat Movie::readFrameFromMovie(std::fstream& movie) {
     movie.read(reinterpret_cast<char*>(frameData.data()),
                headerParameters.bytesPerFrame);
     movie.read(reinterpret_cast<char*>(garbage.data()),
-               headerParameters.bytesPerFrame/2);
+               headerParameters.bytesPerFrame / 2);
 
-    std::cout << "Goodbit after read: " << movie.good() << std::endl;
+    //std::cout << "Goodbit after read: " << movie.good() << std::endl;
     garbage.clear();
 
     std::cin.clear(movie.goodbit);
@@ -104,7 +121,7 @@ Mat Movie::readFrameFromMovie(std::fstream& movie) {
     std::cin.clear(movie.failbit);
     std::cin.clear(movie.badbit);
 
-    std::cout << "current pos after read: " << movie.tellg() << std::endl;
+    //std::cout << "current pos after read: " << movie.tellg() << std::endl;
 
     return Mat(headerParameters.height, headerParameters.width, CV_8UC1,
                frameData.data());
