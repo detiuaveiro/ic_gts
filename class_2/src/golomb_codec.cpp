@@ -402,6 +402,12 @@ int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
     //  the sample. We do that by quantizing the error and then the samples
     //  should be updated to guarantee that our audio pattern didn't get
     //  corrupted.
+
+    // skip compiler warnings
+    pred = pred;
+    phase = phase;
+    samples = samples;
+
     const int bitsPerSample = 16;  // size of short
 
     int defaultBitRate =  // in kbps
@@ -411,7 +417,7 @@ int GEncoder::lossy_error(int error, PREDICTOR_TYPE pred, PHASE phase,
         double(defaultBitRate - fileStruct.bitRate) /
         double(fileStruct.sampleRate * fileStruct.nChannels);
 
-    int bitsToEliminatePerSecond = defaultBitRate - fileStruct.bitRate;
+    //int bitsToEliminatePerSecond = defaultBitRate - fileStruct.bitRate;
 
     if (averageBitsToEliminate == 0.0 ||
         (currentIndex == 0 && fileStruct.nChannels == 1) ||

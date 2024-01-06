@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
 
         std::cin >> Options::bitRate;
 
-        if (Options::bitRate > bitsPerFrame) {
+        if ((long) Options::bitRate > bitsPerFrame) {
             std::cout << "The New bitrate can't be higher than the original"
                       << std::endl;
             return 1;

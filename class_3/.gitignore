@@ -1,0 +1,7 @@
+sndfile-example-bin
+.vscode
+.idea
+cmake-build-debug
+
+movies
+.y4m
