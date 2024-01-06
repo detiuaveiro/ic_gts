@@ -162,3 +162,68 @@ int Golomb::decode() {
         std::invalid_argument("Invalid approach");
     return 0;
 }
+
+// Given a vector of ints, how many bits are needed to represent them
+int Golomb::get_bits_needed(std::vector<int> values) {
+    int totalBits = 0;
+
+    for (int value : values) {
+        std::cout << "value: " << value << std::endl;
+        // Encode each integer and accumulate the bits required
+        if (approach == SIGN_MAGNITUDE) {
+            value = abs(value);
+
+            int quotient = value / m;
+            int remainder = value % m;
+
+            // Unary part bits
+            totalBits += quotient + 1; // Adding 1 for the '0' separator
+
+            int b = ceil(log2(m));
+            if (b > 0) {
+                if ((m & (m - 1)) == 0) {
+                    totalBits += b;
+                } else {
+                    if (remainder < (pow(2, b) - m)) {
+                        totalBits += b - 1; // Extra bit for values_divider
+                    } else {
+                        totalBits += b;
+                    }
+                }
+            }
+
+            if (value != 0) {  // 0 dont need signal
+                totalBits++;
+            }
+        } else if (approach == VALUE_INTERLEAVING) {
+            if (value < 0)
+                value = 2 * abs(value) - 1;
+            else
+                value = 2 * value;
+
+            int quotient = value / m;
+            int remainder = value % m;
+
+            // Unary part bits
+            totalBits += quotient + 1; // Adding 1 for the '0' separator
+
+            int b = ceil(log2(m));
+            if (b > 0) {
+                if ((m & (m - 1)) == 0) {
+                    totalBits += b;
+                } else {
+                    if (remainder < (pow(2, b) - m)) {
+                        totalBits += b - 1; // Extra bit for values_divider
+                    } else {
+                        totalBits += b;
+                    }
+                }
+            }
+        }
+    }
+
+    return totalBits;
+}
+
+
+
