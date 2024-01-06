@@ -60,7 +60,7 @@ struct File {
     uint16_t chroma;
     uint16_t width;
     uint16_t height;
-    string fps;
+    uint8_t fps;
     APPROACH approach;
     bool lossy;  // true if lossy, false if lossless
 };
@@ -85,11 +85,13 @@ class GEncoder {
     File fileStruct;
 
     int calculate_m(Mat& values);
-    Block process_block(Mat& block, int blockId, int nBlocks);
+    Block process_block(Mat& block, int blockId, int nBlocks,
+                        PREDICTOR_TYPE pred, FrameSegment& frame);
 
     void write_file_header();
     void write_frame_header(FrameSegment& frame);
-    void write_file_block(Block& block, int blockId, int nBlocks);
+    void write_file_block(Block& block, int blockId, int nBlocks,
+                          FrameSegment& frame);
 
    public:
     GEncoder(std::string outFileName, int m = -1,
@@ -99,12 +101,12 @@ class GEncoder {
     void encode_file_header(File file, size_t nBlocksPerFrame,
                             int intraFramePeriodicity);
 
-    void encode_frame(Mat frame, int blockId, size_t nBlocks);
+    void encode_frame(Mat frame, int frameId);
 
     void setFile(File file);
 
-    // Stuff used for testing private members (TODO)
-    int test_calculate_m(std::vector<std::vector<uint8_t>>& values);
+    // Stuff used for testing private members
+    int test_calculate_m(Mat& values);
 };
 
 /*
@@ -121,7 +123,7 @@ class GDecoder {
     std::string inputFileName;
     File fileStruct;
     Predictor predictorClass;
-    int nBlocksPerFrame
+    int nBlocksPerFrame;
     bool headerRead = false;
 
     FrameSegment read_frame_header();

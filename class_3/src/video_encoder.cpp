@@ -180,21 +180,21 @@ int main(int argc, char* argv[]) {
     f.chroma = movieClass.getChroma();
     f.width = movieClass.getWidth();
     f.height = movieClass.getHeight();
-    f.fps = movieClass.getFps();
+    f.fps = (uint8_t)std::stoi(movieClass.getFps());
     f.approach = Options::approach;
     f.lossy = Options::lossy;
 
-    int numBlocksWidth = MovieFile::width / Options::blockSize;
-    int numBlocksHeight = MovieFile::height / Options::blockSize;
+    int numBlocksWidth = f.width / Options::blockSize;
+    int numBlocksHeight = f.height / Options::blockSize;
 
-    if (MovieFile::width % Options::blockSize != 0)
-        ++numBlocksWidth; // Add another column of blocks not fully occupied
+    if (f.width % Options::blockSize != 0)
+        ++numBlocksWidth;  // Add another column of blocks not fully occupied
 
-    if (MovieFile::height % Options::blockSize != 0)
-        ++numBlocksHeight; // Add another row of blocks not fully occupied
+    if (f.height % Options::blockSize != 0)
+        ++numBlocksHeight;  // Add another row of blocks not fully occupied
 
-    size_t nBlocksPerFrame = static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
-
+    size_t nBlocksPerFrame =
+        static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
 
     Options::nFrames = movieClass.getNumberFrames();
 

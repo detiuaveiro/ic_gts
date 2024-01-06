@@ -49,5 +49,5 @@ class Golomb {
     // Decode a sequence of bits
     int decode();
 
-    int get_bits_needed(std::vector<int> values);
+    int get_bits_needed(std::vector<uint8_t> values);
 };

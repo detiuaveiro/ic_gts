@@ -28,7 +28,7 @@ void GEncoder::setFile(File file) {
     this->fileStruct = file;
 }
 
-int GEncoder::test_calculate_m(std::vector<std::vector<uint8_t>>& values) {
+int GEncoder::test_calculate_m(Mat& values) {
     return calculate_m(values);
 }
 
@@ -36,9 +36,10 @@ int GEncoder::calculate_m(Mat& values) {
     /* Calculate alpha */
     double alpha = 1.0;
     if (!values.empty()) {
+        std::vector<uint8_t> linearValues = Frame::mat_to_linear_vector(values);
         double mean = static_cast<double>(std::accumulate(
-                          abs_values.begin(), abs_values.end(), 0)) /
-                      abs_values.size();
+                          linearValues.begin(), linearValues.end(), 0)) /
+                      linearValues.size();
         alpha = exp(-1.0 / mean);  // Calculate alpha using mean
     }
 
@@ -49,7 +50,9 @@ int GEncoder::calculate_m(Mat& values) {
     // guarantee that minimum value is 1
     m = std::max(1, m);
 
-    return std::min(m, pow(2, BITS_M) - 1);  // cap golomb max size
+    int max = std::pow(2, BITS_M) - 1;  // cap golomb max size
+
+    return std::min(m, max);  // cap golomb max size
 }
 
 void GEncoder::write_file_header() {
@@ -59,7 +62,7 @@ void GEncoder::write_file_header() {
     writer.writeNBits(fileStruct.chroma, BITS_CHROMA);
     writer.writeNBits(fileStruct.width, BITS_WIDTH);
     writer.writeNBits(fileStruct.height, BITS_HEIGHT);
-    writer.writeString(fileStruct.fps, BITS_FPS);
+    writer.writeNBits(fileStruct.fps, BITS_FPS);
     writer.writeNBits(fileStruct.approach, BITS_APPROACH);
     writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
 }
@@ -101,7 +104,7 @@ Block GEncoder::process_block(Mat& block, int blockId, int nBlocks,
     if (frame.type == I) {
         encodedBlock.type = I;
         encodedBlock.data = block;
-        return encodedBlock
+        return encodedBlock;
     }
 
     // Predict the data and create a new predicted object
@@ -125,7 +128,7 @@ Block GEncoder::process_block(Mat& block, int blockId, int nBlocks,
         encodedBlock.data = blockVector;
     } else {
         encodedBlock.type = P;
-        encodedBlock.type = predictBlockVector;
+        encodedBlock.data = predictBlockVector;
     }
 
     return encodedBlock;
@@ -141,7 +144,7 @@ void GEncoder::encode_file_header(File file, size_t nBlocksPerFrame,
     write_file_header();
 }
 
-void GEncoder::encode_frame(Frame frame, int frameId) {
+void GEncoder::encode_frame(Mat frame, int frameId) {
 
     std::cout << "\nStarting processing frame " << std::setw(3) << frameId
               << " ..." << std::endl;
@@ -160,15 +163,12 @@ void GEncoder::encode_frame(Frame frame, int frameId) {
     if (bM < 1)
         bM = calculate_m(frame);
 
-    // Determine frame type
-    if (frameId % intraFramePeriodicity == 0)
-        frame.type = I;
-    else
-        frame.type = P;
-
     // Write frame header
     FrameSegment segment;
-    segment.type = frame.type;
+    if (frameId % intraFramePeriodicity == 0)
+        segment.type = I;
+    else
+        segment.type = P;
     segment.m = bM;
     segment.predictor = pred;
     write_frame_header(segment);
@@ -178,7 +178,7 @@ void GEncoder::encode_frame(Frame frame, int frameId) {
     for (Mat& block : blocks) {
         Block encodedBlock =
             process_block(block, i, nBlocksPerFrame, pred, segment);
-        write_file_block(encodedBlock, i, nBlocksPerFrame);
+        write_file_block(encodedBlock, i, nBlocksPerFrame, segment);
         i++;
     }
 
@@ -219,7 +219,7 @@ int GDecoder::read_file_header() {
         fileStruct.chroma = reader.readNBits(BITS_CHROMA);
         fileStruct.width = reader.readNBits(BITS_WIDTH);
         fileStruct.height = reader.readNBits(BITS_HEIGHT);
-        fileStruct.fps = reader.readString(BITS_FPS);
+        fileStruct.fps = reader.readNBits(BITS_FPS);
         fileStruct.approach =
             static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
         fileStruct.lossy = reader.readNBits(BITS_LOSSY);
@@ -252,9 +252,19 @@ int GDecoder::read_file_header() {
 FrameSegment GDecoder::read_frame_header() {
     FrameSegment segment;
     segment.type = static_cast<FRAME_TYPE>(reader.readNBits(BITS_FRAME_TYPE));
-    segment.predictor = reader.readNBits(BITS_PREDICTOR);
+    segment.predictor =
+        static_cast<PREDICTOR_TYPE>(reader.readNBits(BITS_PREDICTOR));
     segment.m = reader.readNBits(BITS_M);
-    golomb.setM(frame.m);
+    golomb.setM(segment.m);
+
+    // check m
+    if (segment.m < 1) {
+        cerr << "Error: Encountered invalid m = " << unsigned(segment.m)
+             << endl;
+        exit(2);
+    }
+
+    return segment;
 }
 
 Block GDecoder::read_file_block(int blockId, int nBlocks, FrameSegment& frame) {
@@ -274,34 +284,7 @@ Block GDecoder::read_file_block(int blockId, int nBlocks, FrameSegment& frame) {
               << unsigned(block.m) << ", predictor = " << std::setw(1)
               << unsigned(block.predictor) << endl;*/
 
-    // check m
-    if (block.m < 1) {
-        cerr << "Error: Encountered invalid m = " << unsigned(block.m) << endl;
-        exit(2);
-    }
-
-    // Since edge blocks have different sizes than the regular ones, we need to test
-    //  the edge cases.
-    int nCol = fileStruct.blockSize;
-    int nRows = fileStruct.blockSize;
-    int numBlocksWidth = fileStruct.width / fileStruct.blockSize;
-    int numBlocksHeight = fileStruct.height / fileStruct.blockSize;
-
-    // If the blockId is a multiple of the number of blocks in a row and the final block
-    //  in the row has a different size than the rest
-    if ((blockId % numBlocksWidth) == 0 &&
-        fileStruct.width % fileStruct.blockSize)
-        nCols = fileStruct.width % fileStruct.blockSize;
-
-    // If the blockId is a multiple of the number of blocks in a column and the final block
-    //  in the column has a different size than the rest
-    if ((blockId % numBlocksHeight) == 0 &&
-        fileStruct.height % fileStruct.blockSize)
-        nRows = fileStruct.height % fileStruct.blockSize;
-
-    int nSamples = nCol * nRows;
-
-    for (uint16_t i = 0; i < nSamples; i++) {
+    for (uint16_t i = 0; i < fileStruct.blockSize * fileStruct.blockSize; i++) {
         int data = golomb.decode();
         block.data.push_back((uint8_t)data);
     }
@@ -315,7 +298,7 @@ Mat GDecoder::decode_block(Mat& blockImg, FrameSegment& frame) {
     for (int i = 0; i < blockImg.rows; ++i) {
         for (int j = 0; j < blockImg.cols; ++j) {
             int prediction =
-                predictorClass.predict(frame.type, decodedBlock, i, j);
+                predictorClass.predict(frame.predictor, decodedBlock, i, j);
             int error = blockImg.at<uint8_t>(i, j) - prediction;
             decodedBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(error);
         }
@@ -330,11 +313,14 @@ Mat GDecoder::decode_frame(int frameId) {
 
     FrameSegment frameStruct = read_frame_header();
 
+    cout << "Processing frame " << frameId << endl;
+
     std::vector<Mat> frameVector;
     for (int bId = 1; bId <= nBlocksPerFrame; bId++) {
         Block block = read_file_block(bId, nBlocksPerFrame, frameStruct);
 
-        Mat blockImg = Frame::linear_vector_to_mat(block.data);
+        Mat blockImg = Frame::linear_vector_to_mat(
+            block.data, fileStruct.blockSize, fileStruct.blockSize);
 
         if (block.type == I)
             frameVector.push_back(blockImg);

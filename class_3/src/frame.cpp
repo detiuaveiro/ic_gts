@@ -35,7 +35,7 @@ std::vector<cv::Mat> Frame::get_blocks(Mat& image, int blockSize) {
     return blocks;
 }
 
-Mat compose_blocks(std::vector<cv::Mat> blocks, int blockSize, int rows,
+Mat Frame::compose_blocks(std::vector<cv::Mat> blocks, int blockSize, int rows,
                    int cols) {
     Mat composedImage(rows, cols, blocks[0].type(), Scalar(0));
 
@@ -46,7 +46,18 @@ Mat compose_blocks(std::vector<cv::Mat> blocks, int blockSize, int rows,
             int blockHeight = std::min(blockSize, rows - y);
 
             Rect roi(x, y, blockWidth, blockHeight);
-            blocks[currentBlock++].copyTo(composedImage(roi));
+
+            // Adjust block size for the padded blocks
+            if (x + blockWidth > cols) {
+                blockWidth = cols - x;
+            }
+            if (y + blockHeight > rows) {
+                blockHeight = rows - y;
+            }
+
+            blocks[currentBlock++]
+                .cv::Mat::operator()(Rect(0, 0, blockWidth, blockHeight))
+                .copyTo(composedImage(roi));
         }
     }
 

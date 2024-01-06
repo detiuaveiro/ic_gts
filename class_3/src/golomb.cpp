@@ -164,10 +164,10 @@ int Golomb::decode() {
 }
 
 // Given a vector of ints, how many bits are needed to represent them
-int Golomb::get_bits_needed(std::vector<int> values) {
+int Golomb::get_bits_needed(std::vector<uint8_t> values) {
     int totalBits = 0;
 
-    for (int value : values) {
+    for (uint8_t value : values) {
         std::cout << "value: " << value << std::endl;
         // Encode each integer and accumulate the bits required
         if (approach == SIGN_MAGNITUDE) {
@@ -177,7 +177,7 @@ int Golomb::get_bits_needed(std::vector<int> values) {
             int remainder = value % m;
 
             // Unary part bits
-            totalBits += quotient + 1; // Adding 1 for the '0' separator
+            totalBits += quotient + 1;  // Adding 1 for the '0' separator
 
             int b = ceil(log2(m));
             if (b > 0) {
@@ -185,7 +185,7 @@ int Golomb::get_bits_needed(std::vector<int> values) {
                     totalBits += b;
                 } else {
                     if (remainder < (pow(2, b) - m)) {
-                        totalBits += b - 1; // Extra bit for values_divider
+                        totalBits += b - 1;  // Extra bit for values_divider
                     } else {
                         totalBits += b;
                     }
@@ -196,16 +196,13 @@ int Golomb::get_bits_needed(std::vector<int> values) {
                 totalBits++;
             }
         } else if (approach == VALUE_INTERLEAVING) {
-            if (value < 0)
-                value = 2 * abs(value) - 1;
-            else
-                value = 2 * value;
+            value = 2 * value;
 
             int quotient = value / m;
             int remainder = value % m;
 
             // Unary part bits
-            totalBits += quotient + 1; // Adding 1 for the '0' separator
+            totalBits += quotient + 1;  // Adding 1 for the '0' separator
 
             int b = ceil(log2(m));
             if (b > 0) {
@@ -213,7 +210,7 @@ int Golomb::get_bits_needed(std::vector<int> values) {
                     totalBits += b;
                 } else {
                     if (remainder < (pow(2, b) - m)) {
-                        totalBits += b - 1; // Extra bit for values_divider
+                        totalBits += b - 1;  // Extra bit for values_divider
                     } else {
                         totalBits += b;
                     }
@@ -224,6 +221,3 @@ int Golomb::get_bits_needed(std::vector<int> values) {
 
     return totalBits;
 }
-
-
-
