@@ -129,7 +129,7 @@ class GDecoder {
 
     bool headerRead = false;
 
-    std::vector<short> decode_block(Block& block);
+    std::vector<uint8_t> decode_block(Block& block);
 
     Block read_file_block(int blockId, int nBlocks);
 

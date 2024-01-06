@@ -185,6 +185,7 @@ int main(int argc, char* argv[]) {
     f.lossy = Options::lossy;
 
     int frameSize = static_cast<int>(MovieFile::width * MovieFile::height);
+    // std::cout << "frame size after cast: " << frameSize << "\n";
 
     size_t nBlocksPerFrame{static_cast<size_t>(
         ceil(static_cast<double>(frameSize) / Options::blockSize))};
