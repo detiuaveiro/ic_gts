@@ -1,4 +1,4 @@
-#include "grayscale_converter.h"
+#include <grayscale_converter.h>
 
 /*
 ##############################################################################
@@ -9,6 +9,7 @@ GrayscaleConverter::GrayscaleConverter(std::string fileName){
     this->file.open(fileName, std::fstream::in | std::fstream::binary);
     this->img = imread(fileName);
 }
+
 bool GrayscaleConverter::IsGrayScale(){
       //For grayscale, pixels must have the same value
     for (int i = 0; i < img.rows; i++)
@@ -38,4 +39,3 @@ void GrayscaleConverter::SaveToFile(std::string outputFileName) {
         cout << "Grayscale image saved to: " << outputFileName << endl;
     }
     
-GrayscaleConverter::~GrayscaleConverter(){}

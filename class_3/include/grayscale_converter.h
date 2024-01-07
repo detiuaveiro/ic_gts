@@ -1,8 +1,9 @@
-#include <stdio.h>
-#include <iostream>
+#pragma once
+
 #include <fstream>
-#include <string.h>
+#include <iostream>
 #include <opencv2/opencv.hpp>
+#include <string.h>
 
 using namespace cv;
 using namespace std;
@@ -13,22 +14,13 @@ class GrayscaleConverter {
     Mat img;
 
    public:
-    GrayscaleConverter(std::string fileName) {}
+    GrayscaleConverter(std::string fileName);
 
-    bool IsGrayScale() {}
+    bool IsGrayScale();
 
-    void ColorScaleToGrayScale() {
-        //Perform Color Scale change
-        if (IsGrayScale()) {
-            cout << "Image is already in greyscale\n";
-            return;
-        }
-        cvtColor(img, img, COLOR_BGR2GRAY);
-    }
+    void ColorScaleToGrayScale();
 
-    void SaveToFile(std::string outputFileName) {
-        imwrite(outputFileName, img);
-        cout << "Grayscale image saved to: " << outputFileName << endl;
-    }
+    void SaveToFile(std::string outputFileName);
+
     ~GrayscaleConverter(){}
 };
