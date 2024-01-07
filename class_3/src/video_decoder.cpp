@@ -1,3 +1,4 @@
+#include <frame.h>
 #include <image_codec.h>
 #include <string.h>
 #include <cmath>
@@ -29,29 +30,24 @@ int process_arguments(int argc, char* argv[]) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage();
             return 1;
-        } else if (strcmp(argv[i], "-i") == 0 ||
-                   strcmp(argv[i], "--input") == 0) {
+        } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0) {
             i++;
             if (i < argc) {
                 Options::encodedName = argv[i];
             } else {
-                std::cerr << "Error: Missing argument for -i/--input option."
-                          << std::endl;
+                std::cerr << "Error: Missing argument for -i/--input option." << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-o") == 0 ||
-                   strcmp(argv[i], "--output") == 0) {
+        } else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             i++;
             if (i < argc) {
                 Options::movieName = argv[i];
             } else {
-                std::cerr << "Error: Missing argument for -o/--output option."
-                          << std::endl;
+                std::cerr << "Error: Missing argument for -o/--output option." << std::endl;
                 return -1;
             }
         } else if (argv[i][0] == '-') {
-            std::cerr << "Error: Unknown option or argument: " << argv[i]
-                      << std::endl;
+            std::cerr << "Error: Unknown option or argument: " << argv[i] << std::endl;
             return -1;
         }
     }
@@ -61,14 +57,10 @@ int process_arguments(int argc, char* argv[]) {
 void print_processing_information(File& f, int nBlocks) {
     cout << "\nMovie Processing information: \n"
          << " - Encoded File Name: " << Options::encodedName
-         << "\n - Decoded Music Name: " << Options::movieName
-         << "\n - File Type: " << f.type
-         << "\n - Block Size: " << f.blockSize
-         << "\n - Chroma Value: " << f.chroma
-         << "\n - Number of Frames: " << f.nFrames
-         << "\n - Frames Width: " << f.width
-         << "\n - Frames Height: " << f.height
-         << "\n - Frames per Second: " << f.fps
+         << "\n - Decoded Music Name: " << Options::movieName << "\n - File Type: " << f.type
+         << "\n - Block Size: " << f.blockSize << "\n - Chroma Value: " << f.chroma
+         << "\n - Number of Frames: " << f.nFrames << "\n - Frames Width: " << f.width
+         << "\n - Frames Height: " << f.height << "\n - Frames per Second: " << f.fps
          << "\n - Number of Blocks per Frame: " << nBlocks
          << "\n - Golomb Approach: " << approach_to_string(f.approach)
          << "\n - Encode type: " << (f.lossy ? "lossy" : "lossless") << "\n"
@@ -92,20 +84,18 @@ int main(int argc, char* argv[]) {
     File f = gDecoder.get_file();
     print_processing_information(f, nBlocks);
 
-    std::cout << "Decoding file with " << unsigned(f.nFrames) << " Frames..."
-              << endl;
+    std::cout << "Video Decoding starting..." << endl;
 
-    for(int fId = 1; fId <= (int) f.nFrames; fId++) {
-        Mat decodedSamples = gDecoder.decode_frame(fId);
+    for (int fId = 1; fId <= (int)f.nFrames; fId++) {
+        Mat decodedFrame = gDecoder.decode_frame(fId);
+        Frame::display_image(decodedFrame);
     }
 
-    std::cout << "\nAll Frames read and decoded\n" << endl;
+    std::cout << "\nAll Frames read and decoded. All good!\n" << endl;
 
     clock_t endTime = clock();
-    std::cout << "Program took "
-              << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
-              << " ms to run. Movie decompressed to " << Options::movieName
-              << std::endl;
+    std::cout << "Program took " << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000
+              << " ms to run. Movie decompressed to " << Options::movieName << std::endl;
 
     return 0;
 }

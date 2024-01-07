@@ -165,7 +165,6 @@ int main(int argc, char* argv[]) {
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
-    
     File f;
     f.type = Y4M;
     f.blockSize = Options::blockSize;
@@ -193,26 +192,30 @@ int main(int argc, char* argv[]) {
     print_processing_information(nBlocksPerFrame);
 
     gEncoder.encode_file_header(f, nBlocksPerFrame, Options::intraFramePeriodicity);
-    
+
+    std::cout << "Video processing starting..." << std::endl;
+
     Mat mat = Mat();
     int frameCounter = 0;
     while (true) {
+        std::cout << " - Processing frame: " << std::setw(4) << frameCounter << "/" << std::setw(4)
+                  << Options::nFrames << "\r" << std::flush;
         Mat frame = movieClass.read_frame(movieStream);
         if (frame.size() == mat.size())
             break;
-        cout << "Frame " << frameCounter << " of " << Options::nFrames << endl;
-        Frame::display_image(frame);
-        cout << "Press any key to continue..." << endl;
+        //Frame::display_image(frame);
         gEncoder.encode_frame(frame, frameCounter);
         frameCounter++;
     }
+
+    std::cout << "Video processing finished. All good!\n" << std::endl;
 
     movieStream.close();
 
     clock_t endTime = clock();
     std::cout << "Program took " << std::fixed << std::setprecision(2)
               << (double(endTime - startTime) / CLOCKS_PER_SEC)
-              << " seconds to run. Music compressed to " << Options::encodedName << std::endl;
+              << " seconds to run. Video compressed to " << Options::encodedName << std::endl;
 
     return 0;
 }

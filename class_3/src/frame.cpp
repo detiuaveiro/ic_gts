@@ -68,8 +68,6 @@ std::vector<uint8_t> Frame::mat_to_linear_vector(Mat& image) {
 
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
-            cout << "i: " << i << ", j: " << j << endl;
-            cout << " Value: " << (int)image.at<uint8_t>(i, j) << endl;
             linearData.push_back(image.at<uint8_t>(i, j));
         }
     }

@@ -102,7 +102,7 @@ Block GEncoder::process_block(Mat& block, int blockId, int nBlocks, PREDICTOR_TY
     // If it's an inter-frame, no need to test data
     if (frame.type == I) {
         encodedBlock.type = I;
-        encodedBlock.data = block;
+        encodedBlock.data = Frame::mat_to_linear_vector(block);
         return encodedBlock;
     }
 
@@ -143,17 +143,12 @@ void GEncoder::encode_file_header(File file, size_t nBlocksPerFrame, int intraFr
 
 void GEncoder::encode_frame(Mat& frame, int frameId) {
 
-    std::cout << "\nStarting processing frame " << std::setw(3) << frameId << " ..." << std::endl;
-
-    cout << "Predictor phase" << endl;
     // Test/determine predictor
     PREDICTOR_TYPE pred = predictor;
     if (pred == AUTOMATIC) {
         pred = predictorClass.benchmark(frame);
     }
 
-    cout << "M phase" << endl;
-    cout << "Pixel: " << frame.at<uint8_t>(0, 0) << endl;
     // Use attributed m or calculate one
     int bM = m;
     if (bM < 1)
@@ -169,7 +164,6 @@ void GEncoder::encode_frame(Mat& frame, int frameId) {
     segment.predictor = pred;
     write_frame_header(segment);
 
-    cout << "Block phase" << endl;
     // Divide frame in blocks
     std::vector<Mat> blocks = Frame::get_blocks(frame, fileStruct.blockSize);
 
@@ -179,12 +173,6 @@ void GEncoder::encode_frame(Mat& frame, int frameId) {
         Block encodedBlock = process_block(block, i, nBlocksPerFrame, pred, segment);
         write_file_block(encodedBlock, i, nBlocksPerFrame, segment);
         i++;
-    }
-
-    std::cout << "\nFrame processed, all data written to file\n" << endl;
-
-    if (frameId == fileStruct.nFrames) {
-        std::cout << "All frames encoded..." << std::endl;
     }
 }
 

@@ -92,7 +92,8 @@ Mat Movie::read_frame(std::fstream& stream) {
     // Read the frame data
     stream.read(frameData, dataToRead);
 
-    std::ofstream file("./temp_file.txt");  // Open the file for writing
+    /* Debug */
+    /*std::ofstream file("./temp_file.txt");  // Open the file for writing
 
     if (file.is_open()) {
         file << frameData;  // Write the char* data to the file
@@ -100,7 +101,7 @@ Mat Movie::read_frame(std::fstream& stream) {
         std::cout << "Data successfully written to file" << std::endl;
     } else {
         std::cerr << "Unable to open file" << std::endl;
-    }
+    }*/
 
     // Ignore the remaining planes and "FRAME\n" tag at the beginning of the next frame
     int offset = 20;

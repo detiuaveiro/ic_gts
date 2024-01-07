@@ -168,7 +168,6 @@ int Golomb::get_bits_needed(std::vector<uint8_t> values) {
     int totalBits = 0;
 
     for (uint8_t value : values) {
-        std::cout << "value: " << value << std::endl;
         // Encode each integer and accumulate the bits required
         if (approach == SIGN_MAGNITUDE) {
             value = abs(value);
