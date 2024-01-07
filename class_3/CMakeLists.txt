@@ -77,6 +77,11 @@ target_link_libraries( audio_decoder ${OpenCV_LIBS} sndfile )
 #add_executable(video_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/video_decoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp)
 #target_link_libraries( video_decoder ${OpenCV_LIBS} )
 
+#add_executable(image_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/image_encoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp ${SOURCE_FOLDER}/grayscale_converter.cpp)
+#target_link_libraries( image_encoder ${OpenCV_LIBS} )
+
+#add_executable(image_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/image_decoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp)
+#target_link_libraries( image_decoder ${OpenCV_LIBS} )
 
 ##############################################################################
 ###################                 Tests                  ###################
