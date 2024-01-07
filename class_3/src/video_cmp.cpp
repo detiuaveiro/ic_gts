@@ -27,13 +27,13 @@ int main(int argc, char* argv[]) {
     fstream reconstructedFile;
     reconstructedFile.open(argv[2], std::fstream::in | std::fstream::binary);
 
-    originalMovie.getHeaderParameters(originalFile);
-    reconstructedMovie.getHeaderParameters(reconstructedFile);
+    originalMovie.get_header_parameters(originalFile);
+    reconstructedMovie.get_header_parameters(reconstructedFile);
 
-    uint16_t width1 = originalMovie.getWidth();
-    uint16_t height1 = originalMovie.getHeight();
-    uint16_t width2 = reconstructedMovie.getWidth();
-    uint16_t height2 = reconstructedMovie.getHeight();
+    uint16_t width1 = originalMovie.get_width();
+    uint16_t height1 = originalMovie.get_height();
+    uint16_t width2 = reconstructedMovie.get_width();
+    uint16_t height2 = reconstructedMovie.get_height();
 
     // Check if files have the same size
     if (width1 != width2 || height1 != height2){
@@ -42,19 +42,20 @@ int main(int argc, char* argv[]) {
     }
 
     // TODO - Check if files have the same number of frames
-
+    if (originalMovie.get_number_frames() != reconstructedMovie.get_number_frames()){
+        cerr << "Error: files have different number of frames\n";
+        return 1;
+    }
 
 
     vector<uint8_t> originalYValues;
     vector<uint8_t> reconstructedYValues;
-    // Get Y values and calculate PSNR
-    // Go through each frame and obtain a vector only with the Y values
+    double peakPSNR = 0;
+    double avgPSNR = 0;
     while(true){
-        cout << "Reading frame"<< endl;
-
         // Frame returned is a Mat with only the Y channel
-        Mat originalFrame = originalMovie.readFrameFromMovie(originalFile);
-        Mat reconstructedFrame = reconstructedMovie.readFrameFromMovie(reconstructedFile);
+        Mat originalFrame = originalMovie.read_frame(originalFile);
+        Mat reconstructedFrame = reconstructedMovie.read_frame(reconstructedFile);
 
         if (originalFrame.empty() || reconstructedFrame.empty()){
             break;
@@ -74,8 +75,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        cout << "Original Y values size: " << originalYValues.size() << endl;
-
         // Calculate PSNR
         double e2 = 0; // Mean squared error
         for (int i = 0; i < originalYValues.size(); i++){
@@ -84,14 +83,27 @@ int main(int argc, char* argv[]) {
         e2 /= originalYValues.size();
 
         double psnr = 10 * log10(pow(255, 2) / e2);
-        cout << "PSNR: " << psnr << endl;
+
+        if (psnr != INFINITY){
+            // Update peak PSNR
+            if (psnr > peakPSNR){
+                peakPSNR = psnr;
+            }
+
+            // Update average PSNR
+            avgPSNR += psnr;
+        }
 
         // Clear the vectors
         originalYValues.clear();
         reconstructedYValues.clear();
-
-        cout << "Finished reading frame"<< endl;
     }
+
+    std::cout << "Peak PSNR: " << peakPSNR << std::endl;
+
+    // Calculate average PSNR
+    avgPSNR /= originalMovie.get_number_frames();
+    std::cout << "Average PSNR: " << avgPSNR << std::endl;
 
     return 0;
 }
