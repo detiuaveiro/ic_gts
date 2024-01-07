@@ -89,13 +89,14 @@ int main(int argc, char* argv[]) {
 
     int nBlocks = gDecoder.read_file_header();
 
-    print_processing_information(gDecoder.get_file(), nBlocks);
+    File f = gDecoder.get_file();
+    print_processing_information(f, nBlocks);
 
-    std::cout << "Decoding file with " << unsigned(nFrames) << " Frames..."
+    std::cout << "Decoding file with " << unsigned(f.nFrames) << " Frames..."
               << endl;
 
-    for(int fId = 1; fId <= nFrames; fId++) {
-        std::vector<short> decodedSamples = gDecoder.decode_file();
+    for(int fId = 1; fId <= (int) f.nFrames; fId++) {
+        Mat decodedSamples = gDecoder.decode_frame(fId);
     }
 
     std::cout << "\nAll Frames read and decoded\n" << endl;

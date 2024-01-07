@@ -135,19 +135,22 @@ Mat Movie::readFrameFromMovie(std::fstream& movie) {
     }
 
     std::string line;
-    while (getline(movie, line) && line.compare("FRAME") != 0) {
-        // Do nothing while waiting for a FRAME
-        cout << "stuck" << endl;
+    bool foundFrame = false;
+
+    while (getline(movie, line)) {
+        if (line.compare("FRAME") == 0) {
+            foundFrame = true;
+            break;
+        }
     }
 
-    if (movie.peek() == EOF) {
+    if (!foundFrame) {
         std::cout << "End of the y4m file" << std::endl;
         return cv::Mat();
     }
 
     std::vector<uint8_t> frameData(headerParameters.bytesPerFrame);
-    movie.read(reinterpret_cast<char*>(frameData.data()),
-               headerParameters.bytesPerFrame);
+    movie.read(reinterpret_cast<char*>(frameData.data()), headerParameters.bytesPerFrame);
 
     // Construct a CV_8UC1 (grayscale) image from Y channel data
     cv::Mat frame(headerParameters.height, headerParameters.width, CV_8UC1);
