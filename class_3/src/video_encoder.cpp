@@ -36,7 +36,7 @@ static void print_usage() {
             "  OPTIONS:\n"
             "  -h, --help        --- print this help\n"
             "  -i, --input       --- set image/video file name (default: "
-            "../images/airplane_gray.pgm)\n"
+            "../movies/sintel_trailer_2k_480p24.y4m)\n"
             "  -o, --output      --- set encoded file name (default: "
             "encodedMovie)\n"
             "  -b, --blockSize   --- set block size (default: 1024)\n"
