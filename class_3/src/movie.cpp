@@ -70,9 +70,9 @@ HeaderParameters Movie::get_header_parameters(std::fstream& stream) {
         chroma_subsampling_vertical_factor = 1;
     }
 
+    /*Frame Size = W * H + 1.5 * [(W / 2) * (H / 2) + (W / 2) * (H / 2)]*/
     headerParameters.frameSize =
-        headerParameters.width * headerParameters.height *
-        (1 + 2 * (chroma_subsampling_horizontal_factor / chroma_subsampling_vertical_factor));
+        headerParameters.width * headerParameters.height * 1.5;
 
     // Count header, but remove the inclusion of Frame keyword
     int headerLength = header.length() - 5;
@@ -100,7 +100,7 @@ Mat Movie::read_frame(std::fstream& stream) {
     }
 
     // Allocate memory to read a frame, but only Y plane
-    int dataToRead = headerParameters.frameSize / 3;
+    int dataToRead =(int) ((double) headerParameters.frameSize/1.5);
     char* frameData = new char[dataToRead+1];
     frameData[dataToRead] = '\0'; // add termination character
 

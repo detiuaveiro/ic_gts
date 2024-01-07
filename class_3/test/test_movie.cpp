@@ -25,8 +25,8 @@ TEST(Movie, testGetHeaderParameters) {
     EXPECT_EQ(movieClass.get_interlace(), "Ip");
     EXPECT_EQ(movieClass.get_aspectRatio(), "A1:1");
     EXPECT_EQ(movieClass.get_fileSize(), 770452201);
-    EXPECT_EQ(movieClass.get_frame_size(), 1229760);
-    EXPECT_EQ(movieClass.get_number_frames(), 626);
+    EXPECT_EQ(movieClass.get_frame_size(), 614880);
+    EXPECT_EQ(movieClass.get_number_frames(), 1253);
 
     movieStream.close();
 }
@@ -44,7 +44,7 @@ TEST(Movie, testReadFrameFromMovie) {
     EXPECT_EQ(movieClass.get_fps(), 24);
 
     Mat mat = Mat();
-    int frameCounter = 1;
+    int frameCounter = 0;
     while (true) {
         Mat frame = movieClass.read_frame(movieStream);
         if (frame.size() == mat.size())

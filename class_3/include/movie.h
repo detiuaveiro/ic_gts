@@ -17,7 +17,7 @@ struct HeaderParameters {
     std::string aspectRatio;
     unsigned long fileSize;
     int numberFrames;
-    int frameSize;
+    double frameSize;
 };
 
 using namespace std;

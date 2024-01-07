@@ -62,7 +62,7 @@ TEST(Frame, testReadFrameFromMovie) {
     EXPECT_EQ(movieClass.get_fps(), 24);
 
     Mat mat = Mat();
-    int frameCounter = 1;
+    int frameCounter = 0;
     while (true) {
         cout << "Frame: " << frameCounter << std::endl;
         Mat frame = movieClass.read_frame(movieStream);
