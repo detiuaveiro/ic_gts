@@ -25,6 +25,7 @@ size_t blockSize = 64;
 size_t nFrames;
 int m = -1;  // automatic
 bool lossy = false;
+uint16_t quantizationLevels = 1;
 PREDICTOR_TYPE predictor = AUTOMATIC;
 APPROACH approach = SIGN_MAGNITUDE;
 int intraFramePeriodicity = 10;
@@ -39,7 +40,7 @@ static void print_usage() {
             "  -o, --output      --- set encoded file name (default: "
             "encodedMovie)\n"
             "  -b, --blockSize   --- set block size (default: 1024)\n"
-            "  -l, --lossy       --- set lossy compression (default: off)\n"
+            "  -l, --lossy x      --- set lossy compression with x quantization (default: 1)\n"
             "  -m, --modulus     --- set m number (default: automatic "
             "calculation)\n"
             "  -p, --predict     --- set predictor [0,7] (default: JPEG1)\n"
@@ -81,7 +82,16 @@ int process_arguments(int argc, char* argv[]) {
                 return -1;
             }
         } else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--lossy") == 0) {
-            Options::lossy = true;
+            i++;
+            if (i < argc && isdigit(*argv[i])) {
+                Options::quantizationLevels = atoi(argv[i]);
+                Options::lossy = true;
+            } else {
+                std::cerr << "Error: Missing or bad argument for "
+                             "-l/--lossy option: "
+                          << argv[i] << std::endl;
+                return -1;
+            }
         } else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--modulus") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
@@ -136,8 +146,11 @@ void print_processing_information(int nBlocks) {
          << "\n - Number of Blocks per Frame: " << nBlocks
          << "\n - Predictor: " << get_type_string(Options::predictor)
          << "\n - Golomb Approach: " << approach_to_string(Options::approach)
-         << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless") << "\n"
-         << endl;
+         << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless") << endl;
+    if (Options::lossy)
+        cout << " - Quantization Levels: " << Options::quantizationLevels << "\n" << endl;
+    else
+        cout << "\n" << endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -175,6 +188,7 @@ int main(int argc, char* argv[]) {
     f.fps = (uint8_t)movieClass.get_fps();
     f.approach = Options::approach;
     f.lossy = Options::lossy;
+    f.quantizationLevels = Options::quantizationLevels;
 
     int numBlocksWidth = f.width / Options::blockSize;
     int numBlocksHeight = f.height / Options::blockSize;

@@ -28,6 +28,11 @@ void GEncoder::setFile(File file) {
     this->fileStruct = file;
 }
 
+uint8_t GEncoder::quantize_error(uint8_t cell) {
+    cell >>= fileStruct.quantizationLevels;
+    return cell;
+}
+
 int GEncoder::test_calculate_m(Mat& values) {
     return calculate_m(values);
 }
@@ -65,6 +70,8 @@ void GEncoder::write_file_header() {
     writer.writeNBits(fileStruct.fps, BITS_FPS);
     writer.writeNBits(fileStruct.approach, BITS_APPROACH);
     writer.writeNBits(fileStruct.lossy, BITS_LOSSY);
+    if (fileStruct.lossy)
+        writer.writeNBits(fileStruct.quantizationLevels, BITS_QUANTIZATION_LEVELS);
 }
 
 void GEncoder::write_frame_header(FrameSegment& frame) {
@@ -112,6 +119,8 @@ Block GEncoder::process_block(Mat& block, int blockId, int nBlocks, PREDICTOR_TY
         for (int j = 0; j < block.cols; ++j) {
             int prediction = predictorClass.predict(pred, block, i, j);
             int error = block.at<uint8_t>(i, j) - prediction;
+            if (fileStruct.lossy)
+                error = quantize_error(error);
             predictBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(error);
         }
     }
@@ -208,6 +217,8 @@ int GDecoder::read_file_header() {
         fileStruct.fps = reader.readNBits(BITS_FPS);
         fileStruct.approach = static_cast<APPROACH>(reader.readNBits(BITS_APPROACH));
         fileStruct.lossy = reader.readNBits(BITS_LOSSY);
+        if (fileStruct.lossy)
+            fileStruct.quantizationLevels = reader.readNBits(BITS_QUANTIZATION_LEVELS);
         headerRead = true;
 
         if (!check_approach(fileStruct.approach)) {
@@ -294,7 +305,8 @@ Mat GDecoder::decode_frame(int frameId) {
 
     FrameSegment frameStruct = read_frame_header();
 
-    cout << " - Processing frame " << std::setw(4) << frameId << " with m = " << unsigned(frameStruct.m)
+    cout << " - Processing frame " << std::setw(4) << frameId
+         << " with m = " << unsigned(frameStruct.m)
          << ", predictor = " << get_type_string(frameStruct.predictor)
          << ", frame type = " << frameStruct.type << endl;
 

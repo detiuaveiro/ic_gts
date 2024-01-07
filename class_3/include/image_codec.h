@@ -21,11 +21,10 @@
 #define BITS_FPS 8
 #define BITS_APPROACH 1  // sign magnitud, value interleaving, golomb
 #define BITS_LOSSY 2
-
 #define BITS_FRAME_TYPE 1  // for each block and frame
-
 #define BITS_M 4
 #define BITS_PREDICTOR 4
+#define BITS_QUANTIZATION_LEVELS 8
 
 using namespace std;
 using namespace cv;
@@ -66,6 +65,7 @@ struct File {
     uint8_t fps;
     APPROACH approach;
     bool lossy;  // true if lossy, false if lossless
+    uint16_t quantizationLevels;
 };
 
 /*
@@ -87,6 +87,7 @@ class GEncoder {
     std::string outputFileName;
     File fileStruct;
 
+    uint8_t quantize_error(uint8_t cell);
     int calculate_m(Mat& values);
     Block process_block(Mat& block, int blockId, int nBlocks, PREDICTOR_TYPE pred,
                         FrameSegment& frame);

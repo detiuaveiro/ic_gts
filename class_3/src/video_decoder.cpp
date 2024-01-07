@@ -64,8 +64,11 @@ void print_processing_information(File& f, int nBlocks) {
          << "\n - Frames Height: " << f.height << "\n - Frames per Second: " << f.fps
          << "\n - Number of Blocks per Frame: " << nBlocks
          << "\n - Golomb Approach: " << approach_to_string(f.approach)
-         << "\n - Encode type: " << (f.lossy ? "lossy" : "lossless") << "\n"
-         << endl;
+         << "\n - Encode type: " << (f.lossy ? "lossy" : "lossless") << endl;
+    if (f.lossy)
+        cout << " - Quantization Levels: " << f.quantizationLevels << "\n" << endl;
+    else
+        cout << "\n" << endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -112,7 +115,6 @@ int main(int argc, char* argv[]) {
     for (int fId = 1; fId <= (int)f.nFrames; fId++) {
         Mat decodedFrame = gDecoder.decode_frame(fId);
         movieClass.write_movie_frame(movieStream, decodedFrame);
-        //Frame::display_image(decodedFrame);
     }
 
     movieStream.close();
