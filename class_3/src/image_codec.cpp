@@ -279,8 +279,9 @@ Mat GDecoder::decode_block(Mat& blockImg, FrameSegment& frame) {
     for (int i = 0; i < blockImg.rows; ++i) {
         for (int j = 0; j < blockImg.cols; ++j) {
             int prediction = predictorClass.predict(frame.predictor, decodedBlock, i, j);
-            int error = blockImg.at<uint8_t>(i, j) - prediction;
-            decodedBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(error);
+            // error + prediction
+            int cell = blockImg.at<uint8_t>(i, j) + prediction;
+            decodedBlock.at<uint8_t>(i, j) = static_cast<uint8_t>(cell);
         }
     }
 
@@ -293,7 +294,7 @@ Mat GDecoder::decode_frame(int frameId) {
 
     FrameSegment frameStruct = read_frame_header();
 
-    cout << " - Processing frame " << frameId << " with m = " << unsigned(frameStruct.m)
+    cout << " - Processing frame " << std::setw(4) << frameId << " with m = " << unsigned(frameStruct.m)
          << ", predictor = " << get_type_string(frameStruct.predictor)
          << ", frame type = " << frameStruct.type << endl;
 
