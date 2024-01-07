@@ -71,11 +71,11 @@ target_link_libraries( audio_encoder ${OpenCV_LIBS} sndfile )
 add_executable(audio_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/audio_codec.cpp ${SOURCE_FOLDER}/audio_decoder.cpp)
 target_link_libraries( audio_decoder ${OpenCV_LIBS} sndfile )
 
-add_executable(video_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/video_encoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp)
-target_link_libraries( video_encoder ${OpenCV_LIBS} )
+#add_executable(video_encoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/video_encoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp)
+#target_link_libraries( video_encoder ${OpenCV_LIBS} )
 
-add_executable(video_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/video_decoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp)
-target_link_libraries( video_decoder ${OpenCV_LIBS} )
+#add_executable(video_decoder ${SOURCE_FOLDER}/golomb.cpp ${SOURCE_FOLDER}/image_codec.cpp ${SOURCE_FOLDER}/video_decoder.cpp ${SOURCE_FOLDER}/frame.cpp ${SOURCE_FOLDER}/movie.cpp ${SOURCE_FOLDER}/image_predictor.cpp)
+#target_link_libraries( video_decoder ${OpenCV_LIBS} )
 
 
 ##############################################################################

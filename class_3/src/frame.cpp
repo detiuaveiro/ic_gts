@@ -17,17 +17,16 @@ std::vector<cv::Mat> Frame::get_blocks(Mat& image, int blockSize) {
     int paddedCols = ((cols + blockSize - 1) / blockSize) * blockSize;
 
     Mat paddedImage;
-    copyMakeBorder(image, paddedImage, 0, paddedRows - rows, 0,
-                   paddedCols - cols, BORDER_CONSTANT, Scalar(0));
+    copyMakeBorder(image, paddedImage, 0, paddedRows - rows, 0, paddedCols - cols, BORDER_CONSTANT,
+                   Scalar(0));
 
     for (int y = 0; y < paddedRows; y += blockSize) {
         for (int x = 0; x < paddedCols; x += blockSize) {
             int blockWidth = std::min(blockSize, paddedCols - x);
             int blockHeight = std::min(blockSize, paddedRows - y);
 
-            cv::Mat block = paddedImage(cv::Range(y, y + blockHeight),
-                                        cv::Range(x, x + blockWidth))
-                                .clone();
+            cv::Mat block =
+                paddedImage(cv::Range(y, y + blockHeight), cv::Range(x, x + blockWidth)).clone();
             blocks.push_back(block);
         }
     }
@@ -35,8 +34,7 @@ std::vector<cv::Mat> Frame::get_blocks(Mat& image, int blockSize) {
     return blocks;
 }
 
-Mat Frame::compose_blocks(std::vector<cv::Mat> blocks, int blockSize, int rows,
-                   int cols) {
+Mat Frame::compose_blocks(std::vector<cv::Mat> blocks, int blockSize, int rows, int cols) {
     Mat composedImage(rows, cols, blocks[0].type(), Scalar(0));
 
     int currentBlock = 0;
@@ -87,4 +85,30 @@ Mat Frame::linear_vector_to_mat(std::vector<uint8_t> data, int rows, int cols) {
         }
     }
     return image;
+}
+
+void Frame::display_image(Mat& image) {
+    if (image.empty()) {
+        std::cerr << "Error: Frame is empty" << std::endl;
+        return;
+    }
+
+    // Split the YUV image into separate channels
+    std::vector<cv::Mat> channels;
+    cv::split(image, channels);
+
+    cout << "Channels: " << channels.size() << endl;
+
+    // Create U and V channels filled with 127
+    cv::Mat uChannel = cv::Mat::ones(image.size(), CV_8UC1) * 127;
+    cv::Mat vChannel = cv::Mat::ones(image.size(), CV_8UC1) * 127;
+
+    // Merge Y, U, and V channels to form the final image
+    std::vector<cv::Mat> mergedChannels = { channels[0], uChannel, vChannel };
+    cv::Mat finalImage;
+    cv::merge(mergedChannels, finalImage);
+
+    // Display the image
+    cv::imshow("YUV Image with U and V set to 127", finalImage);
+    cv::waitKey(0); // Wait indefinitely for a key press
 }

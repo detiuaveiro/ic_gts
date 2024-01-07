@@ -12,64 +12,47 @@ using namespace std;
 TEST(Movie, testGetHeaderParameters) {
     fstream movieStream;
     movieStream.open("../movies/sintel_trailer_2k_480p24.y4m",
-               std::fstream::in | std::fstream::binary);
+                     std::fstream::in | std::fstream::binary);
 
     Movie movieClass = Movie();
-    movieClass.getHeaderParameters(movieStream);
+    movieClass.get_header_parameters(movieStream);
 
-    EXPECT_EQ(movieClass.getChroma(), 420);
-    EXPECT_EQ(movieClass.getWidth(), 854);
-    EXPECT_EQ(movieClass.getHeight(), 480);
-    EXPECT_EQ(movieClass.getFps(), "24:1");
+    EXPECT_EQ(movieClass.get_format(), "YUV4MPEG2");
+    EXPECT_EQ(movieClass.get_chroma(), "C420jpeg");
+    EXPECT_EQ(movieClass.get_width(), 854);
+    EXPECT_EQ(movieClass.get_height(), 480);
+    EXPECT_EQ(movieClass.get_fps(), 24);
+    EXPECT_EQ(movieClass.get_interlace(), "Ip");
+    EXPECT_EQ(movieClass.get_aspectRatio(), "A1:1");
+    EXPECT_EQ(movieClass.get_fileSize(), 770452201);
+    EXPECT_EQ(movieClass.get_frame_size(), 1229760);
+    EXPECT_EQ(movieClass.get_number_frames(), 626);
 
     movieStream.close();
 }
 
 TEST(Movie, testReadFrameFromMovie) {
-    fstream movie;
-    movie.open("../movies/sintel_trailer_2k_480p24.y4m",
-               std::fstream::in | std::fstream::binary);
-    Movie movieObj = Movie();
-    movieObj.getHeaderParameters(movie);
-    Mat mat = Mat();
-    while (true) {
-        Mat frame = movieObj.readFrameFromMovie(movie);
-        if (frame.size() == mat.size())
-            break;
-        //std::cout << "FRAME SIZE: \n" << frame.size();
-    }
-    /*
-
-    for (size_t i = 0; i < 10; i++)
-    {
-        Mat frame = movieObj.readFrameFromMovie(movie);
-        std::cout << "FRAME SIZE: \n" << frame.size();
-    }
-    */
-}
-
-TEST(Movie, testIntensive) {
     fstream movieStream;
     movieStream.open("../movies/sintel_trailer_2k_480p24.y4m",
                      std::fstream::in | std::fstream::binary);
 
     Movie movieClass = Movie();
-    movieClass.getHeaderParameters(movieStream);
+    movieClass.get_header_parameters(movieStream);
 
-    EXPECT_EQ(movieClass.getChroma(), 420);
-    EXPECT_EQ(movieClass.getWidth(), 854);
-    EXPECT_EQ(movieClass.getHeight(), 480);
-    EXPECT_EQ(movieClass.getFps(), "24:1");
+    EXPECT_EQ(movieClass.get_width(), 854);
+    EXPECT_EQ(movieClass.get_height(), 480);
+    EXPECT_EQ(movieClass.get_fps(), 24);
 
     Mat mat = Mat();
-    int frameCounter = 0;
+    int frameCounter = 1;
     while (true) {
-        Mat frame = movieClass.readFrameFromMovie(movieStream);
-        if(frame.size() == mat.size()) break;
+        Mat frame = movieClass.read_frame(movieStream);
+        if (frame.size() == mat.size())
+            break;
         frameCounter++;
     }
 
-    EXPECT_EQ(movieClass.getNumberFrames(), frameCounter);
+    EXPECT_EQ(movieClass.get_number_frames(), frameCounter);
 
     movieStream.close();
 }

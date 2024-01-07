@@ -5,16 +5,20 @@
 #include <fstream>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <regex>
 
-typedef struct {
-    uint16_t chroma;
+struct HeaderParameters {
+    std::string format;
+    std::string chroma;
     uint16_t width;
     uint16_t height;
-    std::string fps;
-    int bytesPerFrame;
-    int currentFrameIndex;
+    uint16_t fps;
+    std::string interlace;
+    std::string aspectRatio;
+    unsigned long fileSize;
     int numberFrames;
-} HeaderParameters;
+    int frameSize;
+};
 
 using namespace std;
 using namespace cv;
@@ -23,40 +27,39 @@ using namespace cv;
 //
 class Movie {
    private:
-    int movieIndex;
     HeaderParameters headerParameters;
 
+    bool check_contains_frame(string line);
+
    public:
-    Movie() {
-        this->movieIndex = 0;
-        this->headerParameters.currentFrameIndex = 0;
-    }
+    Movie() {}
 
     //Get the parameters from an y4m file's header
-    void getHeaderParameters(std::fstream& movie);
-
-    //Auxiliar function used in getHeaderParameters to get one specific parameter
-    string getParameter(string line, size_t startPos, char parameterType);
+    HeaderParameters get_header_parameters(std::fstream& stream);
 
     //Returns one frame of the video/movie
-    Mat readFrameFromMovie(std::fstream& movie);
+    Mat read_frame(std::fstream& stream);
 
     //Creates a movie with the frames
     FILE createMovie(vector<Mat> frames);
 
-    uint16_t getChroma() { return this->headerParameters.chroma; }
+    string get_format() { return this->headerParameters.format; }
 
-    uint16_t getWidth() { return this->headerParameters.width; }
+    string get_chroma() { return this->headerParameters.chroma; }
 
-    uint16_t getHeight() { return this->headerParameters.height; }
+    uint16_t get_width() { return this->headerParameters.width; }
 
-    string getFps() { return this->headerParameters.fps; }
+    uint16_t get_height() { return this->headerParameters.height; }
 
-    int getBytesPerFrame() { return this->headerParameters.bytesPerFrame; }
+    uint16_t get_fps() { return this->headerParameters.fps; }
 
-    int getNumberFrames() { return this->headerParameters.numberFrames; }
+    string get_interlace() { return this->headerParameters.interlace; }
 
-    int getCurrentFrameIndex() {
-        return this->headerParameters.currentFrameIndex;
-    }
+    string get_aspectRatio() { return this->headerParameters.aspectRatio; }
+
+    unsigned long get_fileSize() { return this->headerParameters.fileSize; }
+
+    int get_number_frames() { return this->headerParameters.numberFrames; }
+
+    int get_frame_size() { return this->headerParameters.frameSize; };
 };

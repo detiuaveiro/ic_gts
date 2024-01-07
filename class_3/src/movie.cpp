@@ -1,165 +1,142 @@
 #include "movie.h"
 
-void Movie::getHeaderParameters(std::fstream& movie) {
-    if (!movie.is_open()) {
+bool Movie::check_contains_frame(string line) {
+    // check if last 5 characters are "FRAME"
+    return line.length() >= 5 && (line.substr(line.length() - 5) == "FRAME");
+}
+
+HeaderParameters Movie::get_header_parameters(std::fstream& stream) {
+    if (!stream.is_open()) {
         cerr << "Error: movie file is not open" << std::endl;
     }
 
-    movie.seekg(0, std::ios::end);
-    int64_t fileSize = movie.tellg();
-    movie.seekg(0, std::ios::beg);
+    // check appropriate format
 
-    string line;
-    getline(movie, line);
-    for (size_t i = 9; i < line.length(); i++) {
-        switch (line[i]) {
-            case 'W':
-                headerParameters.width = stoi(getParameter(line, i, 'W'));
-                break;
+    stream.seekg(0, std::ios::end);
+    headerParameters.fileSize = stream.tellg();
+    stream.seekg(0, std::ios::beg);
 
-            case 'H':
-                headerParameters.height = stoi(getParameter(line, i, 'H'));
-                break;
-
-            case 'C':
-                headerParameters.chroma = stoi(getParameter(line, i, 'C'));
-
-                break;
-            case 'F':
-                headerParameters.fps = getParameter(line, i, 'F');
-
-                break;
-            default:
-                break;
-        }
+    char ch;
+    string header = "";
+    // Attention that '\n' after Frame get's deleted
+    while (stream.get(ch) && !check_contains_frame(header)) {
+        header += ch;
     }
 
-    //For 4:2:0 chroma
-    //IMPORTANT: THIS IS THE SIZE OF THE Y CHANNEL ONLY,
-    //It would be times 3/2 if it was all
-    headerParameters.bytesPerFrame =
-        headerParameters.height * headerParameters.width;
+    //cout << "Header: " << header << endl;
 
-    int frameDataSize =
-        headerParameters.bytesPerFrame * 3 / 2;  // Assuming 4:2:0 format
-
-    if (fileSize > 0 && frameDataSize > 0) {
-        int64_t totalFrameDataSize =
-            fileSize - line.length();  // Excluding header size
-        headerParameters.numberFrames =
-            static_cast<int>(totalFrameDataSize / frameDataSize);
-    } else {
-        headerParameters.numberFrames = 0;  // Unable to determine frame count
-    }
-}
-
-string Movie::getParameter(string line, size_t startPos, char parameterType) {
-    size_t endPos = line.find_first_of(' ', startPos);
-
+    // Takes only space separated C++ strings.
+    stringstream headerStream(header);
     string parameter;
+    // Extract word from the stream (remove whitespaces)
+    int count = 0;
+    while (headerStream >> parameter) {
+        if (count == 0)
+            headerParameters.format = parameter;
+        else if (count == 1)
+            headerParameters.chroma = parameter;
+        else if (count == 2)
+            headerParameters.width = std::stoi(parameter.substr(1));  // Skip 'W'
+        else if (count == 3)
+            headerParameters.height = std::stoi(parameter.substr(1));  // Skip 'H'
+        else if (count == 4) {
+            size_t pos = parameter.find(':');
+            if (pos != std::string::npos) {
+                int frameRateNumerator = std::stoi(parameter.substr(1, pos - 1));  // before ':'
+                int frameRateDenominator = std::stoi(parameter.substr(pos + 1));   // after ':'
+                headerParameters.fps = static_cast<int>(frameRateNumerator) / frameRateDenominator;
+            }
+        } else if (count == 5)
+            headerParameters.interlace = parameter;
+        else if (count == 6)
+            headerParameters.aspectRatio = parameter;
 
-    //4:2:0 Chroma parameter is expected to have jpeg after the actual parameter
-    if (parameterType == 'C')
-        parameter = line.substr(startPos + 1, endPos - startPos - 4);
-    else {
-        parameter = line.substr(startPos + 1, endPos - startPos - 1);
+        count++;
     }
 
-    return parameter;
+    // Calculate frame size based on chroma subsampling
+    int chroma_subsampling_horizontal_factor = 1;
+    int chroma_subsampling_vertical_factor = 1;
+
+    if ((headerParameters.chroma).compare("C420jpeg") == 0) {
+        chroma_subsampling_horizontal_factor = 2;
+        chroma_subsampling_vertical_factor = 2;
+    } else if ((headerParameters.chroma).compare("C422jpeg") == 0) {
+        chroma_subsampling_horizontal_factor = 2;
+        chroma_subsampling_vertical_factor = 1;
+    } else if ((headerParameters.chroma).compare("C444") == 0) {
+        chroma_subsampling_horizontal_factor = 1;
+        chroma_subsampling_vertical_factor = 1;
+    }
+
+    headerParameters.frameSize =
+        headerParameters.width * headerParameters.height *
+        (1 + 2 * (chroma_subsampling_horizontal_factor / chroma_subsampling_vertical_factor));
+
+    // Count header, but remove the inclusion of Frame keyword
+    int headerLength = header.length() - 5;
+
+    // Excluding header size
+    int64_t frameFileSize = headerParameters.fileSize - headerLength;
+
+    // Include Frame keyword
+    int frameS = headerParameters.frameSize + 5;
+    headerParameters.numberFrames = static_cast<int>(frameFileSize / frameS);
+
+    return headerParameters;
 }
 
-Mat Movie::readFrameFromMovie(std::fstream& movie) {
-    if (!movie.is_open()) {
-        cerr << "Error: movie file is not open" << std::endl;
-        return Mat();
-    }
-
-    string line;
-
-    //goodbit before the while is 0, but then changes
-    //std::cout << "Goodbit before while: " << movie.good() << std::endl;
-
-    //compare returns 0 if strings match
-    //int i = 0;
-    while (getline(movie, line) && line.compare("FRAME") != 0) {
-        //Do nothing while waiting for a FRAME
-        //So, iterates 1253 times, and then sets goodbit to 0, the loop is not stopping
-        //std::cout << "Goodbit inside of while: " << movie.good() << std::endl;
-        //i++;
-        if (line.length() < 20) {
-            std::cout << line << std::endl;
-        }
-    }
-
-    //returns 1 in the first iteration (1 means no errors), on the remaining it returns 0,
-    //means at least one of the error flags is set
-    //std::cout << "Goodbit: " << movie.good() << std::endl;
-    //std::cout << "iterates : " << i << std::endl;
-
-    //std::cout << "movie peak: " << std::to_string(movie.peek()) << std::endl;
-    if (movie.peek() == EOF) {
-        //std::cout << "End of the y4m file" << std::endl;
-        return Mat();
-    }
-
-    //std::cout << "current pos: " << movie.tellg() << std::endl;
-
-    vector<uint8_t> frameData(headerParameters.bytesPerFrame);
-    vector<uint8_t> garbage(headerParameters.bytesPerFrame / 2);
-    //frameData.data() returns pointer to data inside vector
-    //reinterpret_cast<char*> used for the * to be interpretated as a char* because readsome requires it to be
-    movie.read(reinterpret_cast<char*>(frameData.data()),
-               headerParameters.bytesPerFrame);
-    movie.read(reinterpret_cast<char*>(garbage.data()),
-               headerParameters.bytesPerFrame / 2);
-
-    //std::cout << "Goodbit after read: " << movie.good() << std::endl;
-    garbage.clear();
-
-    std::cin.clear(movie.goodbit);
-    std::cin.clear(movie.eofbit);
-    std::cin.clear(movie.failbit);
-    std::cin.clear(movie.badbit);
-
-    //std::cout << "current pos after read: " << movie.tellg() << std::endl;
-
-    return Mat(headerParameters.height, headerParameters.width, CV_8UC1,
-               frameData.data());
-}
-
-/*
-Mat Movie::readFrameFromMovie(std::fstream& movie) {
-    if (!movie.is_open()) {
+Mat Movie::read_frame(std::fstream& stream) {
+    if (!stream.is_open()) {
         std::cerr << "Error: movie file is not open" << std::endl;
         return cv::Mat();
     }
 
-    std::string line;
-    bool foundFrame = false;
+    // Check for the end of file
+    if (stream.eof()) {
+        std::cerr << "Reached end of file while reading frame" << std::endl;
+        return cv::Mat();  // Return an empty Mat object or handle appropriately
+    }
 
-    while (getline(movie, line)) {
-        if (line.compare("FRAME") == 0) {
-            foundFrame = true;
-            break;
+    // Allocate memory to read a frame, but only Y plane
+    int dataToRead = headerParameters.frameSize / 3;
+    char* frameData = new char[dataToRead];
+
+    // Read the frame data
+    stream.read(frameData, dataToRead);
+    int nCounter = 0;
+
+    for (int i = 0; i < dataToRead; ++i) {
+        // Check for newline character
+        if (frameData[i] == '\n') {
+            nCounter++;
+        }
+
+        // Check for "FRAME"
+        if (i + 4 <= dataToRead && std::strncmp(frameData + i, "FRAME", 5) == 0) {
+            std::cerr << "The frameData contains 'FRAME' at " << i << " / " << dataToRead << ".\n";
+            exit(2);
         }
     }
 
-    if (!foundFrame) {
-        std::cout << "End of the y4m file" << std::endl;
-        return cv::Mat();
+    if (nCounter > 1) {
+        //std::cerr << "The frameData contains a newline character '\\n' at " << i << " / "
+        //          << dataToRead << ".\n";
+        std::cerr << "The frameData contains "<< nCounter << " newline characters '\\n'" << endl;
+        exit(1);
     }
 
-    std::vector<uint8_t> frameData(headerParameters.bytesPerFrame);
-    movie.read(reinterpret_cast<char*>(frameData.data()), headerParameters.bytesPerFrame);
+    // Ignore the remaining planes
+    stream.ignore(headerParameters.frameSize - dataToRead);
 
-    // Construct a CV_8UC1 (grayscale) image from Y channel data
-    cv::Mat frame(headerParameters.height, headerParameters.width, CV_8UC1);
-    for (int i = 0; i < headerParameters.height; ++i) {
-        for (int j = 0; j < headerParameters.width; ++j) {
-            frame.at<uint8_t>(i, j) = frameData[i * headerParameters.width + j];
-        }
-    }
+    // Convert the frame data to a Mat object with just the Y field
+    cv::Mat frame(headerParameters.height, headerParameters.width, CV_8UC1, frameData);
+
+    // Ignore the "FRAME\n" tag at the beginning of the next frame data
+    std::string frameTag = "\nFRAME\n";
+    stream.ignore(frameTag.length());
+
+    delete[] frameData;  // Free memory
 
     return frame;
 }
-*/
