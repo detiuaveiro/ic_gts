@@ -168,6 +168,12 @@ int main(int argc, char* argv[]) {
     Movie movieClass{};
     fstream movieStream(Options::fileName, std::ios::in);
 
+    if (!movieStream.is_open()) {
+        std::cerr << "Error: Could not open file " << Options::fileName
+                  << std::endl;
+        return -1;
+    }
+
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
@@ -209,7 +215,7 @@ int main(int argc, char* argv[]) {
         Mat frame = movieClass.readFrameFromMovie(movieStream);
         if (frame.size() == mat.size())
             break;
-        gEncoder.encode_frame(frame, nBlocksPerFrame);
+        gEncoder.encode_frame(frame, frameCounter);
         frameCounter++;
     }
 

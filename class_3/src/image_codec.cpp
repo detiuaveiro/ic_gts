@@ -12,7 +12,7 @@ GEncoder::GEncoder(std::string outFileName, int m, PREDICTOR_TYPE pred)
     this->m = m;
     this->outputFileName = outFileName;
 
-    if (!predictorClass.check_type(pred)) {
+    if (!predictorClass.check_type(pred) && pred != AUTOMATIC) {
         cerr << "Error: Unknown Predictor " << unsigned(pred)
              << " encountered while creating Encoder" << endl;
         exit(2);
@@ -152,11 +152,14 @@ void GEncoder::encode_frame(Mat frame, int frameId) {
     // Divide frame in blocks
     std::vector<Mat> blocks = Frame::get_blocks(frame, fileStruct.blockSize);
 
+    cout << "Predictor phase" << endl;
     // Test/determine predictor
     PREDICTOR_TYPE pred = predictor;
     if (pred == AUTOMATIC) {
         pred = predictorClass.benchmark(frame);
     }
+
+    cout << "M phase" << endl;
 
     // Use attributed m or calculate one
     int bM = m;
@@ -172,6 +175,8 @@ void GEncoder::encode_frame(Mat frame, int frameId) {
     segment.m = bM;
     segment.predictor = pred;
     write_frame_header(segment);
+
+    cout << "Block phase" << endl;
 
     // Process and write to file each block
     int i = 1;

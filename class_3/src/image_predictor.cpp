@@ -11,7 +11,7 @@ Predictor::Predictor() {}
 Predictor::~Predictor() {}
 
 std::string get_type_string(PREDICTOR_TYPE type) {
-    std::string predText = "AUTOMATIC (0)";
+    std::string predText = "UNKNOWN";
     if (type == JPEG1)
         predText = "JPEG1 (1)";
     else if (type == JPEG2)
@@ -29,7 +29,7 @@ std::string get_type_string(PREDICTOR_TYPE type) {
     else if (type == JPEG_LS)
         predText = "JPEG_LS (8)";
     else
-        predText = "UNKNOWN";
+        predText = "AUTOMATIC (0)";
     return predText;
 }
 
@@ -135,9 +135,22 @@ int Predictor::predict(PREDICTOR_TYPE type, Mat& frame, int idX, int idY) {
         exit(2);
     }
 
-    int a = idX > 0 ? frame.at<uint8_t>(idX - 1, idY) : 0;
-    int b = idY > 0 ? frame.at<uint8_t>(idX, idY - 1) : 0;
-    int c = (idX > 0 && idY > 0) ? frame.at<uint8_t>(idX - 1, idY - 1) : 0;
+    int a = 0, b = 0, c = 0;
+
+    //cout << "idX: " << idX << ", idY: " << idY << endl;
+    //cout << "frame.rows: " << frame.rows << ", frame.cols: " << frame.cols
+    //     << endl;
+
+    // Check if idX and idY are within the frame range
+    if (idX > 0 && idY >= 0 && idY < frame.cols) {
+        a = frame.at<uint8_t>(idX - 1, idY);
+    }
+    if (idY > 0 && idX >= 0 && idX < frame.rows) {
+        b = frame.at<uint8_t>(idX, idY - 1);
+    }
+    if (idX > 0 && idY > 0 && idX < frame.rows && idY < frame.cols) {
+        c = frame.at<uint8_t>(idX - 1, idY - 1);
+    }
 
     if (type == JPEG1)
         return predict_jpeg_1(a);
