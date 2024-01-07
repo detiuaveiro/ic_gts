@@ -55,21 +55,7 @@ HeaderParameters Movie::get_header_parameters(std::fstream& stream) {
         count++;
     }
 
-    // Calculate frame size based on chroma subsampling
-    int chroma_subsampling_horizontal_factor = 1;
-    int chroma_subsampling_vertical_factor = 1;
-
-    if ((headerParameters.chroma).compare("C420jpeg") == 0) {
-        chroma_subsampling_horizontal_factor = 2;
-        chroma_subsampling_vertical_factor = 2;
-    } else if ((headerParameters.chroma).compare("C422jpeg") == 0) {
-        chroma_subsampling_horizontal_factor = 2;
-        chroma_subsampling_vertical_factor = 1;
-    } else if ((headerParameters.chroma).compare("C444") == 0) {
-        chroma_subsampling_horizontal_factor = 1;
-        chroma_subsampling_vertical_factor = 1;
-    }
-
+    // Attention, only tested for C420jpeg
     /*Frame Size = W * H + 1.5 * [(W / 2) * (H / 2) + (W / 2) * (H / 2)]*/
     headerParameters.frameSize =
         headerParameters.width * headerParameters.height * 1.5;

@@ -29,23 +29,22 @@ int intraFramePeriodicity = 10;
 }  // namespace Options
 
 static void print_usage() {
-    cerr
-        << "Usage: %s [OPTIONS]\n"
-           "  OPTIONS:\n"
-           "  -h, --help        --- print this help\n"
-           "  -i, --input       --- set image/video file name (default: "
-           "../images/airplane_gray.pgm)\n"
-           "  -o, --output      --- set encoded file name (default: "
-           "encodedMovie)\n"
-           "  -b, --blockSize   --- set block size (default: 1024)\n"
-           "  -l, --lossy       --- set lossy compression (default: off)\n"
-           "  -m, --modulus     --- set m number (default: automatic "
-           "calculation)\n"
-           "  -p, --predict     --- set predictor [0,7] (default: JPEG1)\n"
-           "  -f, --framePeriod --- set intra frame periodicity (default: 10)\n"
-           "  -a, --approach    --- set approach [0,1] (default: "
-           "SIGN_MAGNITUDE)"
-        << endl;
+    cerr << "Usage: %s [OPTIONS]\n"
+            "  OPTIONS:\n"
+            "  -h, --help        --- print this help\n"
+            "  -i, --input       --- set image/video file name (default: "
+            "../images/airplane_gray.pgm)\n"
+            "  -o, --output      --- set encoded file name (default: "
+            "encodedMovie)\n"
+            "  -b, --blockSize   --- set block size (default: 1024)\n"
+            "  -l, --lossy       --- set lossy compression (default: off)\n"
+            "  -m, --modulus     --- set m number (default: automatic "
+            "calculation)\n"
+            "  -p, --predict     --- set predictor [0,7] (default: JPEG1)\n"
+            "  -f, --framePeriod --- set intra frame periodicity (default: 10)\n"
+            "  -a, --approach    --- set approach [0,1] (default: "
+            "SIGN_MAGNITUDE)"
+         << endl;
 }
 
 int process_arguments(int argc, char* argv[]) {
@@ -53,28 +52,23 @@ int process_arguments(int argc, char* argv[]) {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage();
             return 1;
-        } else if (strcmp(argv[i], "-i") == 0 ||
-                   strcmp(argv[i], "--input") == 0) {
+        } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--input") == 0) {
             i++;
             if (i < argc) {
                 Options::fileName = argv[i];
             } else {
-                std::cerr << "Error: Missing argument for -i/--input option."
-                          << std::endl;
+                std::cerr << "Error: Missing argument for -i/--input option." << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-o") == 0 ||
-                   strcmp(argv[i], "--output") == 0) {
+        } else if (strcmp(argv[i], "-o") == 0 || strcmp(argv[i], "--output") == 0) {
             i++;
             if (i < argc) {
                 Options::encodedName = argv[i];
             } else {
-                std::cerr << "Error: Missing argument for -o/--output option."
-                          << std::endl;
+                std::cerr << "Error: Missing argument for -o/--output option." << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-b") == 0 ||
-                   strcmp(argv[i], "--blockSize") == 0) {
+        } else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--blockSize") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
                 Options::blockSize = atoi(argv[i]);
@@ -84,48 +78,39 @@ int process_arguments(int argc, char* argv[]) {
                           << argv[i] << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-l") == 0 ||
-                   strcmp(argv[i], "--lossy") == 0) {
+        } else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--lossy") == 0) {
             Options::lossy = true;
-        } else if (strcmp(argv[i], "-m") == 0 ||
-                   strcmp(argv[i], "--modulus") == 0) {
+        } else if (strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--modulus") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
                 Options::m = atoi(argv[i]);
             } else {
-                std::cerr
-                    << "Error: Missing or bad argument for -m/--modulus option."
-                    << argv[i] << std::endl;
+                std::cerr << "Error: Missing or bad argument for -m/--modulus option." << argv[i]
+                          << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-p") == 0 ||
-                   strcmp(argv[i], "--predict") == 0) {
+        } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--predict") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
                 Options::predictor = static_cast<PREDICTOR_TYPE>(atoi(argv[i]));
             } else {
-                std::cerr
-                    << "Error: Missing or bad argument for -p/--predict option."
-                    << argv[i] << std::endl;
+                std::cerr << "Error: Missing or bad argument for -p/--predict option." << argv[i]
+                          << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-a") == 0 ||
-                   strcmp(argv[i], "--approach") == 0) {
+        } else if (strcmp(argv[i], "-a") == 0 || strcmp(argv[i], "--approach") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
                 Options::approach = static_cast<APPROACH>(atoi(argv[i]));
             } else {
-                std::cerr
-                    << "Error: Missing or bad argument for -p/--predict option."
-                    << argv[i] << std::endl;
+                std::cerr << "Error: Missing or bad argument for -p/--predict option." << argv[i]
+                          << std::endl;
                 return -1;
             }
-        } else if (strcmp(argv[i], "-f") == 0 ||
-                   strcmp(argv[i], "--framePeriod") == 0) {
+        } else if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--framePeriod") == 0) {
             i++;
             if (i < argc && isdigit(*argv[i])) {
-                Options::intraFramePeriodicity =
-                    static_cast<int>(atoi(argv[i]));
+                Options::intraFramePeriodicity = static_cast<int>(atoi(argv[i]));
             } else {
                 std::cerr << "Error: Missing or bad argument for "
                              "-f/--framePeriod option."
@@ -133,8 +118,7 @@ int process_arguments(int argc, char* argv[]) {
                 return -1;
             }
         } else if (argv[i][0] == '-') {
-            std::cerr << "Error: Unknown option or argument: " << argv[i]
-                      << std::endl;
+            std::cerr << "Error: Unknown option or argument: " << argv[i] << std::endl;
             return -1;
         }
     }
@@ -150,8 +134,7 @@ void print_processing_information(int nBlocks) {
          << "\n - Number of Blocks per Frame: " << nBlocks
          << "\n - Predictor: " << get_type_string(Options::predictor)
          << "\n - Golomb Approach: " << approach_to_string(Options::approach)
-         << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless")
-         << "\n"
+         << "\n - Encode type: " << (Options::lossy ? "lossy" : "lossless") << "\n"
          << endl;
 }
 
@@ -166,27 +149,26 @@ int main(int argc, char* argv[]) {
 
     // TODO - Check .pgm or .y4m file
     Movie movieClass{};
-    fstream movieStream(Options::fileName, std::ios::in);
+    fstream movieStream(Options::fileName, std::ios::in | std::fstream::binary);
 
     if (!movieStream.is_open()) {
-        std::cerr << "Error: Could not open file " << Options::fileName
-                  << std::endl;
+        std::cerr << "Error: Could not open file " << Options::fileName << std::endl;
         return -1;
     }
 
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
-    movieClass.getHeaderParameters(movieStream);
+    movieClass.get_header_parameters(movieStream);
 
     File f;
     f.type = Y4M;
     f.blockSize = Options::blockSize;
-    f.nFrames = movieClass.getNumberFrames();
-    f.chroma = movieClass.getChroma();
-    f.width = movieClass.getWidth();
-    f.height = movieClass.getHeight();
-    f.fps = (uint8_t)std::stoi(movieClass.getFps());
+    f.nFrames = movieClass.get_number_frames();
+    f.chroma = C420jpeg;  // movieClass.getChroma(); Change this in the future
+    f.width = movieClass.get_width();
+    f.height = movieClass.get_height();
+    f.fps = (uint8_t)movieClass.get_fps();
     f.approach = Options::approach;
     f.lossy = Options::lossy;
 
@@ -199,22 +181,23 @@ int main(int argc, char* argv[]) {
     if (f.height % Options::blockSize != 0)
         ++numBlocksHeight;  // Add another row of blocks not fully occupied
 
-    size_t nBlocksPerFrame =
-        static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
+    size_t nBlocksPerFrame = static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
 
-    Options::nFrames = movieClass.getNumberFrames();
+    Options::nFrames = movieClass.get_number_frames();
 
     print_processing_information(nBlocksPerFrame);
 
-    gEncoder.encode_file_header(f, nBlocksPerFrame,
-                                Options::intraFramePeriodicity);
+    gEncoder.encode_file_header(f, nBlocksPerFrame, Options::intraFramePeriodicity);
 
     Mat mat = Mat();
     int frameCounter = 0;
     while (true) {
-        Mat frame = movieClass.readFrameFromMovie(movieStream);
+        Mat frame = movieClass.read_frame(movieStream);
         if (frame.size() == mat.size())
             break;
+        cout << "Frame " << frameCounter << " of " << Options::nFrames << endl;
+        Frame::display_image(frame);
+        cout << "Press any key to continue..." << endl;
         gEncoder.encode_frame(frame, frameCounter);
         frameCounter++;
     }
@@ -224,8 +207,7 @@ int main(int argc, char* argv[]) {
     clock_t endTime = clock();
     std::cout << "Program took " << std::fixed << std::setprecision(2)
               << (double(endTime - startTime) / CLOCKS_PER_SEC)
-              << " seconds to run. Music compressed to " << Options::encodedName
-              << std::endl;
+              << " seconds to run. Music compressed to " << Options::encodedName << std::endl;
 
     return 0;
 }

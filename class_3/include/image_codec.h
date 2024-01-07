@@ -1,5 +1,6 @@
 #pragma once
 
+#include <frame.h>
 #include <golomb.h>
 #include <image_predictor.h>
 #include <fstream>
@@ -14,9 +15,9 @@
 #define BITS_FILE_TYPE 2
 #define BITS_BLOCK_SIZE 16
 #define BITS_N_FRAMES 32
-#define BITS_CHROMA 16
-#define BITS_WIDTH 16
-#define BITS_HEIGHT 16
+#define BITS_CHROMA 4
+#define BITS_WIDTH 12
+#define BITS_HEIGHT 12
 #define BITS_FPS 8
 #define BITS_APPROACH 1  // sign magnitud, value interleaving, golomb
 #define BITS_LOSSY 2
@@ -32,6 +33,8 @@ using namespace cv;
 enum FRAME_TYPE { I, P };
 
 enum FILE_TYPE { Y4M, PGM };
+
+enum CHROMA_TYPES { C420jpeg, C420paldv, C420mpeg2, C420, C422, C444, C444alpha, Cmono };
 /*
 ##############################################################################
 ###################           Data Structures              ###################
@@ -85,23 +88,20 @@ class GEncoder {
     File fileStruct;
 
     int calculate_m(Mat& values);
-    Block process_block(Mat& block, int blockId, int nBlocks,
-                        PREDICTOR_TYPE pred, FrameSegment& frame);
+    Block process_block(Mat& block, int blockId, int nBlocks, PREDICTOR_TYPE pred,
+                        FrameSegment& frame);
 
     void write_file_header();
     void write_frame_header(FrameSegment& frame);
-    void write_file_block(Block& block, int blockId, int nBlocks,
-                          FrameSegment& frame);
+    void write_file_block(Block& block, int blockId, int nBlocks, FrameSegment& frame);
 
    public:
-    GEncoder(std::string outFileName, int m = -1,
-             PREDICTOR_TYPE pred = AUTOMATIC);
+    GEncoder(std::string outFileName, int m = -1, PREDICTOR_TYPE pred = AUTOMATIC);
     ~GEncoder();
 
-    void encode_file_header(File file, size_t nBlocksPerFrame,
-                            int intraFramePeriodicity);
+    void encode_file_header(File file, size_t nBlocksPerFrame, int intraFramePeriodicity);
 
-    void encode_frame(Mat frame, int frameId);
+    void encode_frame(Mat& frame, int frameId);
 
     void setFile(File file);
 

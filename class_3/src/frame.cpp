@@ -68,6 +68,8 @@ std::vector<uint8_t> Frame::mat_to_linear_vector(Mat& image) {
 
     for (int i = 0; i < image.rows; ++i) {
         for (int j = 0; j < image.cols; ++j) {
+            cout << "i: " << i << ", j: " << j << endl;
+            cout << " Value: " << (int)image.at<uint8_t>(i, j) << endl;
             linearData.push_back(image.at<uint8_t>(i, j));
         }
     }
@@ -112,5 +114,5 @@ void Frame::display_image(Mat& image) {
 
     // Display the image
     cv::imshow("YUV Image with U and V set to 127", image);
-    cv::waitKey(0); // Wait indefinitely for a key press
+    cv::waitKey(0);  // Wait indefinitely for a key press
 }
