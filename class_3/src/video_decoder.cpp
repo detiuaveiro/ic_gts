@@ -1,5 +1,6 @@
 #include <frame.h>
 #include <image_codec.h>
+#include <movie.h>
 #include <string.h>
 #include <cmath>
 #include <iostream>
@@ -84,14 +85,39 @@ int main(int argc, char* argv[]) {
     File f = gDecoder.get_file();
     print_processing_information(f, nBlocks);
 
+    fstream movieStream;
+    movieStream.open(Options::movieName, std::fstream::out | std::fstream::binary);
+
+    if (!movieStream.is_open()) {
+        std::cerr << "Error: Could not open file " << Options::movieName << std::endl;
+        return -1;
+    }
+
+    HeaderParameters movieParams;
+    movieParams.format = "YUV4MPEG2";
+    movieParams.chroma = "C420jpeg";
+    movieParams.width = f.width;
+    movieParams.height = f.height;
+    movieParams.fps = f.fps;
+    movieParams.interlace = "Ip";
+    movieParams.aspectRatio = "A1:1";
+    movieParams.numberFrames = f.nFrames;
+
+    Movie movieClass = Movie();
+    movieClass.set_headerParameters(movieParams);
+    movieClass.write_movie_header(movieStream);
+
     std::cout << "Video Decoding starting..." << endl;
 
     for (int fId = 1; fId <= (int)f.nFrames; fId++) {
         Mat decodedFrame = gDecoder.decode_frame(fId);
-        Frame::display_image(decodedFrame);
+        movieClass.write_movie_frame(movieStream, decodedFrame);
+        //Frame::display_image(decodedFrame);
     }
 
-    std::cout << "\nAll Frames read and decoded. All good!\n" << endl;
+    movieStream.close();
+
+    std::cout << "All Frames read and decoded. All good!\n" << endl;
 
     clock_t endTime = clock();
     std::cout << "Program took " << (double(endTime - startTime) / CLOCKS_PER_SEC) * 1000

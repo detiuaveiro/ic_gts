@@ -293,7 +293,9 @@ Mat GDecoder::decode_frame(int frameId) {
 
     FrameSegment frameStruct = read_frame_header();
 
-    cout << "Processing frame " << frameId << endl;
+    cout << " - Processing frame " << frameId << " with m = " << unsigned(frameStruct.m)
+         << ", predictor = " << get_type_string(frameStruct.predictor)
+         << ", frame type = " << frameStruct.type << endl;
 
     std::vector<Mat> frameVector;
     for (int bId = 1; bId <= nBlocksPerFrame; bId++) {

@@ -1,12 +1,12 @@
 #pragma once
 
+#include <frame.h>
 #include <stdio.h>
 #include <string.h>
 #include <fstream>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <regex>
-#include <frame.h>
 
 struct HeaderParameters {
     std::string format;
@@ -41,9 +41,6 @@ class Movie {
     //Returns one frame of the video/movie
     Mat read_frame(std::fstream& stream);
 
-    //Creates a movie with the frames
-    FILE createMovie(vector<Mat> frames);
-
     string get_format() { return this->headerParameters.format; }
 
     string get_chroma() { return this->headerParameters.chroma; }
@@ -63,4 +60,12 @@ class Movie {
     int get_number_frames() { return this->headerParameters.numberFrames; }
 
     int get_frame_size() { return this->headerParameters.frameSize; };
+
+    /* Movie section */
+    void write_movie_header(std::fstream& stream);
+    void write_movie_frame(std::fstream& stream, Mat& frame);
+
+    void set_headerParameters(HeaderParameters headerParameters) {
+        this->headerParameters = headerParameters;
+    };
 };

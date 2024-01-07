@@ -80,7 +80,7 @@ Mat Movie::read_frame(std::fstream& stream) {
 
     // Check for the end of file
     if (stream.eof()) {
-        std::cerr << "Reached end of file while reading frame" << std::endl;
+        //std::cerr << "Reached end of file while reading frame" << std::endl;
         return cv::Mat();  // Return an empty Mat object or handle appropriately
     }
 
@@ -114,4 +114,58 @@ Mat Movie::read_frame(std::fstream& stream) {
     delete[] frameData;  // Free memory
 
     return frame;
+}
+
+void Movie::write_movie_header(std::fstream& stream) {
+    if (!stream.is_open()) {
+        std::cerr << "Error: movie file is not open" << std::endl;
+        return;
+    }
+
+    // Write Y4M header information to the file
+    stream << headerParameters.format << " ";
+    stream << headerParameters.chroma << " ";
+    stream << "W" << headerParameters.width << " ";
+    stream << "H" << headerParameters.height << " ";
+    stream << "F" << headerParameters.fps << ":1 ";
+    stream << headerParameters.interlace << " ";
+    stream << headerParameters.aspectRatio << std::endl;
+}
+
+//! This function only works for C420jpeg
+void Movie::write_movie_frame(std::fstream& stream, cv::Mat& frame) {
+    if (!stream.is_open()) {
+        std::cerr << "Error: movie file is not open" << std::endl;
+        return;
+    }
+
+    // Write the frame data to the file in Y4M format
+    stream << "FRAME" << std::endl;
+
+    if (frame.channels() != 1) {
+        std::cerr << "Error: Expected grayscale frame format (Y plane only)" << std::endl;
+        return;
+    }
+
+    int yWidth = frame.cols;
+    int yHeight = frame.rows;
+    int uvWidth = yWidth / 2;  // U and V planes have half the width and height of Y plane
+    int uvHeight = yHeight / 2;
+
+    // Prepare U and V planes (filled with 127, as mentioned)
+    cv::Mat uPlane = cv::Mat::ones(uvHeight, uvWidth, CV_8UC1) * 127;
+    cv::Mat vPlane = cv::Mat::ones(uvHeight, uvWidth, CV_8UC1) * 127;
+
+    // Write Y plane
+    for (int i = 0; i < yHeight; ++i) {
+        stream.write(reinterpret_cast<char*>(frame.ptr(i)), yWidth);
+    }
+
+    // Write U and V planes
+    for (int i = 0; i < uvHeight; ++i) {
+        stream.write(reinterpret_cast<char*>(uPlane.ptr(i)), uvWidth);
+    }
+    for (int i = 0; i < uvHeight; ++i) {
+        stream.write(reinterpret_cast<char*>(vPlane.ptr(i)), uvWidth);
+    }
 }
