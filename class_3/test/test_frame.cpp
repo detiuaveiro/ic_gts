@@ -68,7 +68,7 @@ TEST(Frame, testReadFrameFromMovie) {
         Mat frame = movieClass.read_frame(movieStream);
         if (frame.size() == mat.size())
             break;
-        Frame::display_image(frame);
+        //Frame::display_image(frame);
         frameCounter++;
     }
 
