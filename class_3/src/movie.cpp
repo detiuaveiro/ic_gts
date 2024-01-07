@@ -75,13 +75,13 @@ HeaderParameters Movie::get_header_parameters(std::fstream& stream) {
         headerParameters.width * headerParameters.height * 1.5;
 
     // Count header, but remove the inclusion of Frame keyword
-    int headerLength = header.length() - 5;
+    int headerLength = header.length() - 6;
 
     // Excluding header size
     int64_t frameFileSize = headerParameters.fileSize - headerLength;
 
     // Include Frame keyword
-    int frameS = headerParameters.frameSize + 5;
+    int frameS = headerParameters.frameSize + 6;
     headerParameters.numberFrames = static_cast<int>(frameFileSize / frameS);
 
     return headerParameters;

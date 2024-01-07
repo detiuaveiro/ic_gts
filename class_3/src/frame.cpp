@@ -93,22 +93,24 @@ void Frame::display_image(Mat& image) {
         return;
     }
 
+    // No need
     // Split the YUV image into separate channels
-    std::vector<cv::Mat> channels;
-    cv::split(image, channels);
-
-    cout << "Channels: " << channels.size() << endl;
+    //std::vector<cv::Mat> channels;
+    //cv::split(image, channels);
 
     // Create U and V channels filled with 127
-    cv::Mat uChannel = cv::Mat::ones(image.size(), CV_8UC1) * 127;
-    cv::Mat vChannel = cv::Mat::ones(image.size(), CV_8UC1) * 127;
+    //cv::Mat uChannel = cv::Mat::ones(image.size(), CV_8UC1) * 127;
+    //cv::Mat vChannel = cv::Mat::ones(image.size(), CV_8UC1) * 127;
 
     // Merge Y, U, and V channels to form the final image
-    std::vector<cv::Mat> mergedChannels = { channels[0], uChannel, vChannel };
-    cv::Mat finalImage;
-    cv::merge(mergedChannels, finalImage);
+    //std::vector<cv::Mat> mergedChannels = { channels[0], uChannel, vChannel };
+    //cv::Mat finalImage;
+    // cv::merge(mergedChannels, finalImage);
+
+    // Convert the final image to grayscale
+    //cv::cvtColor(finalImage, finalImage, cv::COLOR_YUV2GRAY_420);
 
     // Display the image
-    cv::imshow("YUV Image with U and V set to 127", finalImage);
+    cv::imshow("YUV Image with U and V set to 127", image);
     cv::waitKey(0); // Wait indefinitely for a key press
 }
