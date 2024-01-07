@@ -5,6 +5,7 @@ bool Movie::check_contains_frame(string line) {
     return line.length() >= 5 && (line.substr(line.length() - 5) == "FRAME");
 }
 
+// This function is validated to end on the correct byte
 HeaderParameters Movie::get_header_parameters(std::fstream& stream) {
     if (!stream.is_open()) {
         cerr << "Error: movie file is not open" << std::endl;
@@ -100,41 +101,61 @@ Mat Movie::read_frame(std::fstream& stream) {
 
     // Allocate memory to read a frame, but only Y plane
     int dataToRead = headerParameters.frameSize / 3;
-    char* frameData = new char[dataToRead];
+    char* frameData = new char[dataToRead+1];
+    frameData[dataToRead] = '\0'; // add termination character
 
     // Read the frame data
     stream.read(frameData, dataToRead);
+    
+    /*
     int nCounter = 0;
-
+    int frameCounter = 0;
     for (int i = 0; i < dataToRead; ++i) {
         // Check for newline character
         if (frameData[i] == '\n') {
+            std::cerr << "The frameData contains a newline character '\\n' at " << i << " / "
+                      << dataToRead << ".\n";
             nCounter++;
         }
 
         // Check for "FRAME"
         if (i + 4 <= dataToRead && std::strncmp(frameData + i, "FRAME", 5) == 0) {
             std::cerr << "The frameData contains 'FRAME' at " << i << " / " << dataToRead << ".\n";
-            exit(2);
+            frameCounter++;
         }
     }
 
-    if (nCounter > 1) {
+    
+    if (nCounter > 0 || frameCounter > 0) {
         //std::cerr << "The frameData contains a newline character '\\n' at " << i << " / "
         //          << dataToRead << ".\n";
-        std::cerr << "The frameData contains "<< nCounter << " newline characters '\\n'" << endl;
+        std::cerr << "The frameData contains " << frameCounter << " FRAME words" << endl;
+        std::cerr << "The frameData contains " << nCounter << " newline characters '\\n'" << endl;
+        //std::cerr << "The frameData contains 'FRAME' at " << i << " / " << dataToRead << ".\n";
+        //exit(1);
+    }
+    static int ola = 0;
+
+    if(ola == 1){
+        std::ofstream file("./temp_file.txt");  // Open the file for writing
+
+        if (file.is_open()) {
+            file << frameData;  // Write the char* data to the file
+            file.close();  // Close the file stream
+            std::cout << "Data successfully written to file" << std::endl;
+        } else {
+            std::cerr << "Unable to open file" << std::endl;
+        }
         exit(1);
     }
+    ola++;*/
 
-    // Ignore the remaining planes
-    stream.ignore(headerParameters.frameSize - dataToRead);
+    // Ignore the remaining planes and "FRAME\n" tag at the beginning of the next frame
+    int offset = 20;
+    stream.ignore(headerParameters.frameSize - dataToRead + offset, '\n');
 
     // Convert the frame data to a Mat object with just the Y field
     cv::Mat frame(headerParameters.height, headerParameters.width, CV_8UC1, frameData);
-
-    // Ignore the "FRAME\n" tag at the beginning of the next frame data
-    std::string frameTag = "\nFRAME\n";
-    stream.ignore(frameTag.length());
 
     delete[] frameData;  // Free memory
 
