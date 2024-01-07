@@ -49,6 +49,34 @@ TEST(Frame, testGetBlock_image) {
     EXPECT_EQ(blocks.size(), expectedBlockCount);
 }
 
+TEST(Frame, testReadFrameFromMovie) {
+    fstream movieStream;
+    movieStream.open("../movies/sintel_trailer_2k_480p24.y4m",
+                     std::fstream::in | std::fstream::binary);
+
+    Movie movieClass = Movie();
+    movieClass.get_header_parameters(movieStream);
+
+    EXPECT_EQ(movieClass.get_width(), 854);
+    EXPECT_EQ(movieClass.get_height(), 480);
+    EXPECT_EQ(movieClass.get_fps(), 24);
+
+    Mat mat = Mat();
+    int frameCounter = 1;
+    while (true) {
+        cout << "Frame: " << frameCounter << std::endl;
+        Mat frame = movieClass.read_frame(movieStream);
+        if (frame.size() == mat.size())
+            break;
+        //Frame::display_image(frame);
+        frameCounter++;
+    }
+
+    EXPECT_EQ(movieClass.get_number_frames(), frameCounter);
+
+    movieStream.close();
+}
+/*
 TEST(Frame, testGetBlock_frame) {
     fstream movieStream;
     movieStream.open("../movies/sintel_trailer_2k_480p24.y4m",
@@ -104,4 +132,4 @@ TEST(Movie, test) {
     EXPECT_EQ(frame.size(), Size(854, 480));
 
     movieStream.close();
-}
+}*/

@@ -21,4 +21,7 @@ std::vector<uint8_t> mat_to_linear_vector(Mat& image);
 
 Mat linear_vector_to_mat(std::vector<uint8_t> data, int rows, int cols);
 
+/*! Accept an image only with Y field and display it */
+void display_image(Mat& image);
+
 };  // namespace Frame
