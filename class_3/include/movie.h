@@ -6,6 +6,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <regex>
+#include <frame.h>
 
 struct HeaderParameters {
     std::string format;

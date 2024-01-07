@@ -1,7 +1,9 @@
+#include <frame.h>
 #include <image_codec.h>
 #include <movie.h>
 #include <string.h>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <vector>
 
@@ -148,19 +150,22 @@ int main(int argc, char* argv[]) {
     clock_t startTime = clock();
 
     // TODO - Check .pgm or .y4m file
-    Movie movieClass{};
-    fstream movieStream(Options::fileName, std::ios::in | std::fstream::binary);
+
+    fstream movieStream;
+    movieStream.open(Options::fileName, std::fstream::in | std::fstream::binary);
 
     if (!movieStream.is_open()) {
         std::cerr << "Error: Could not open file " << Options::fileName << std::endl;
         return -1;
     }
 
+    Movie movieClass = Movie();
+    movieClass.get_header_parameters(movieStream);
+
     // Create Golomb Encoder class
     GEncoder gEncoder(Options::encodedName, Options::m, Options::predictor);
 
-    movieClass.get_header_parameters(movieStream);
-
+    
     File f;
     f.type = Y4M;
     f.blockSize = Options::blockSize;
@@ -183,12 +188,12 @@ int main(int argc, char* argv[]) {
 
     size_t nBlocksPerFrame = static_cast<size_t>(int(numBlocksWidth * numBlocksHeight));
 
-    Options::nFrames = movieClass.get_number_frames();
+    Options::nFrames = f.nFrames;
 
     print_processing_information(nBlocksPerFrame);
 
     gEncoder.encode_file_header(f, nBlocksPerFrame, Options::intraFramePeriodicity);
-
+    
     Mat mat = Mat();
     int frameCounter = 0;
     while (true) {

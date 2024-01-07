@@ -64,7 +64,7 @@ TEST(Frame, testReadFrameFromMovie) {
     Mat mat = Mat();
     int frameCounter = 0;
     while (true) {
-        cout << "Frame: " << frameCounter << std::endl;
+        //out << "Frame: " << frameCounter << std::endl;
         Mat frame = movieClass.read_frame(movieStream);
         if (frame.size() == mat.size())
             break;
